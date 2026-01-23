@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Search,
   Filter,
@@ -20,165 +20,127 @@ export type RoutingStep =
   | 'reasoning'
   | 'complete';
 
+interface Timing {
+  totalMs: number;
+  analysisMs: number;
+  scoringMs: number;
+  selectionMs: number;
+}
+
 interface RoutingStepsProps {
   currentStep: RoutingStep;
-  timing?: {
-    analysisMs?: number;
-    scoringMs?: number;
-    selectionMs?: number;
-    totalMs?: number;
-  };
+  timing?: Timing;
 }
 
 const steps = [
-  { id: 'analyzing', label: 'Analyzing', description: 'Understanding your prompt', icon: Search },
-  { id: 'filtering', label: 'Filtering', description: 'Applying constraints', icon: Filter },
-  { id: 'scoring', label: 'Scoring', description: 'Evaluating all models', icon: BarChart3 },
-  { id: 'selecting', label: 'Selecting', description: 'Choosing the best match', icon: CheckCircle2 },
-  { id: 'reasoning', label: 'Reasoning', description: 'Generating explanation', icon: MessageSquare },
+  { id: 'analyzing', label: 'Analyze', icon: Search },
+  { id: 'filtering', label: 'Filter', icon: Filter },
+  { id: 'scoring', label: 'Score', icon: BarChart3 },
+  { id: 'selecting', label: 'Select', icon: CheckCircle2 },
+  { id: 'reasoning', label: 'Explain', icon: MessageSquare },
 ];
 
 export function RoutingSteps({ currentStep, timing }: RoutingStepsProps) {
   const getStepStatus = (stepId: string) => {
-    const stepOrder = ['idle', 'analyzing', 'filtering', 'scoring', 'selecting', 'reasoning', 'complete'];
+    const stepOrder = ['analyzing', 'filtering', 'scoring', 'selecting', 'reasoning'];
     const currentIndex = stepOrder.indexOf(currentStep);
     const stepIndex = stepOrder.indexOf(stepId);
 
     if (currentStep === 'idle') return 'pending';
-    if (currentStep === 'complete') return 'complete';
-    if (stepIndex < currentIndex) return 'complete';
+    if (currentStep === 'complete') return 'completed';
+    if (stepIndex < currentIndex) return 'completed';
     if (stepIndex === currentIndex) return 'active';
     return 'pending';
   };
 
+  if (currentStep === 'idle') {
+    return null;
+  }
+
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-lg font-semibold text-text-primary">Routing Pipeline</h3>
-        {timing?.totalMs && currentStep === 'complete' && (
-          <motion.span
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="text-sm font-mono text-accent-success"
-          >
-            {timing.totalMs}ms
-          </motion.span>
-        )}
-      </div>
+    <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-primary)] p-4">
+      <div className="flex items-center justify-between gap-2">
+        {steps.map((step, index) => {
+          const status = getStepStatus(step.id);
+          const Icon = step.icon;
+          const nextStepId = steps[index + 1]?.id;
+          const nextStatus = nextStepId ? getStepStatus(nextStepId) : 'pending';
 
-      <div className="relative">
-        {/* Connection Line */}
-        <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-border-primary" />
-
-        {/* Progress Line */}
-        <motion.div
-          className="absolute left-6 top-8 w-0.5 bg-accent-secondary"
-          initial={{ height: 0 }}
-          animate={{
-            height: currentStep === 'complete' ? 'calc(100% - 64px)' :
-                   currentStep === 'idle' ? 0 :
-                   `${(steps.findIndex(s => s.id === currentStep) / (steps.length - 1)) * 100}%`
-          }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        />
-
-        <div className="space-y-6">
-          {steps.map((step, index) => {
-            const status = getStepStatus(step.id);
-            const Icon = step.icon;
-
-            return (
-              <motion.div
-                key={step.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="relative flex items-center gap-4"
-              >
-                {/* Step Icon */}
-                <motion.div
+          return (
+            <div key={step.id} className="flex items-center flex-1 last:flex-none">
+              {/* Step */}
+              <div className="flex flex-col items-center">
+                <div
                   className={`
-                    relative z-10 flex items-center justify-center w-12 h-12 rounded-full
-                    transition-all duration-300
-                    ${status === 'complete'
-                      ? 'bg-accent-success text-white'
-                      : status === 'active'
-                      ? 'bg-accent-secondary text-white'
-                      : 'bg-bg-tertiary text-text-quaternary border border-border-primary'
-                    }
+                    w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300
+                    ${status === 'completed' ? 'bg-emerald-500 text-white' : ''}
+                    ${status === 'active' ? 'bg-indigo-500 text-white' : ''}
+                    ${status === 'pending' ? 'bg-[var(--bg-tertiary)] text-[var(--text-quaternary)] border border-[var(--border-primary)]' : ''}
                   `}
-                  animate={status === 'active' ? { scale: [1, 1.05, 1] } : {}}
-                  transition={{ duration: 1, repeat: status === 'active' ? Infinity : 0 }}
                 >
-                  <AnimatePresence mode="wait">
-                    {status === 'complete' ? (
-                      <motion.div
-                        key="check"
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        exit={{ scale: 0, rotate: 180 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                      >
-                        <Check className="w-5 h-5" />
-                      </motion.div>
-                    ) : status === 'active' ? (
-                      <motion.div
-                        key="loading"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      >
-                        <Loader2 className="w-5 h-5" />
-                      </motion.div>
-                    ) : (
-                      <Icon className="w-5 h-5" />
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-
-                {/* Step Content */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`
-                      font-medium transition-colors duration-300
-                      ${status === 'complete'
-                        ? 'text-text-primary'
-                        : status === 'active'
-                        ? 'text-accent-secondary'
-                        : 'text-text-tertiary'
-                      }
-                    `}>
-                      {step.label}
-                    </span>
-                    {status === 'active' && (
-                      <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-xs text-accent-secondary"
-                      >
-                        Processing...
-                      </motion.span>
-                    )}
-                  </div>
-                  <p className="text-sm text-text-quaternary">{step.description}</p>
+                  {status === 'completed' ? (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    >
+                      <Check className="w-5 h-5" />
+                    </motion.div>
+                  ) : status === 'active' ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <Loader2 className="w-5 h-5" />
+                    </motion.div>
+                  ) : (
+                    <Icon className="w-4 h-4" />
+                  )}
                 </div>
+                <span
+                  className={`
+                    mt-2 text-xs font-medium whitespace-nowrap
+                    ${status === 'completed' ? 'text-emerald-500' : ''}
+                    ${status === 'active' ? 'text-indigo-500' : ''}
+                    ${status === 'pending' ? 'text-[var(--text-quaternary)]' : ''}
+                  `}
+                >
+                  {step.label}
+                </span>
+              </div>
 
-                {/* Timing Badge */}
-                {status === 'complete' && timing && (
-                  <motion.span
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-xs font-mono text-text-quaternary bg-bg-tertiary px-2 py-1 rounded"
-                  >
-                    {step.id === 'analyzing' && timing.analysisMs ? `${timing.analysisMs}ms` : ''}
-                    {step.id === 'scoring' && timing.scoringMs ? `${timing.scoringMs}ms` : ''}
-                    {step.id === 'selecting' && timing.selectionMs ? `${timing.selectionMs}ms` : ''}
-                  </motion.span>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
+              {/* Connector */}
+              {index < steps.length - 1 && (
+                <div className="flex-1 mx-2 h-0.5 bg-[var(--bg-tertiary)] overflow-hidden rounded-full">
+                  <motion.div
+                    className="h-full bg-emerald-500"
+                    initial={{ width: '0%' }}
+                    animate={{
+                      width: nextStatus !== 'pending' ? '100%' : '0%'
+                    }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
+
+      {/* Timing display */}
+      {currentStep === 'complete' && timing && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="mt-4 pt-4 border-t border-[var(--border-primary)]"
+        >
+          <div className="flex justify-center gap-6 text-xs text-[var(--text-tertiary)]">
+            <span>Analysis: {timing.analysisMs}ms</span>
+            <span>Scoring: {timing.scoringMs}ms</span>
+            <span>Selection: {timing.selectionMs}ms</span>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

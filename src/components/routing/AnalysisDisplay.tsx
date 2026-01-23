@@ -1,8 +1,6 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Badge } from '../ui/Badge';
-import { Card, CardContent, CardHeader } from '../ui/Card';
 import {
   Target,
   Layers,
@@ -27,108 +25,66 @@ interface AnalysisDisplayProps {
 }
 
 export function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
-  const getComplexityColor = (complexity: string) => {
+  const getComplexityStyle = (complexity: string) => {
     switch (complexity.toLowerCase()) {
       case 'quick':
-        return 'success';
+        return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
       case 'standard':
-        return 'warning';
+        return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
       case 'demanding':
-        return 'error';
+        return 'bg-red-500/10 text-red-500 border-red-500/20';
       default:
-        return 'default';
-    }
-  };
-
-  const getToneEmoji = (tone: string) => {
-    switch (tone.toLowerCase()) {
-      case 'casual':
-        return '😊';
-      case 'focused':
-        return '🎯';
-      case 'curious':
-        return '🤔';
-      case 'frustrated':
-        return '😤';
-      case 'urgent':
-        return '⚡';
-      case 'playful':
-        return '😄';
-      case 'professional':
-        return '💼';
-      default:
-        return '💬';
+        return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
     }
   };
 
   const analysisItems = [
-    {
-      icon: Target,
-      label: 'Intent',
-      value: analysis.intent,
-      description: 'What you want to accomplish'
-    },
-    {
-      icon: Layers,
-      label: 'Domain',
-      value: analysis.domain,
-      description: 'Subject area detected'
-    },
-    {
-      icon: Gauge,
-      label: 'Complexity',
-      value: analysis.complexity,
-      badge: getComplexityColor(analysis.complexity),
-      description: 'Task difficulty level'
-    },
-    {
-      icon: MessageCircle,
-      label: 'Tone',
-      value: analysis.tone,
-      emoji: getToneEmoji(analysis.tone),
-      description: 'Communication style detected'
-    },
+    { icon: Target, label: 'Intent', value: analysis.intent },
+    { icon: Layers, label: 'Domain', value: analysis.domain },
+    { icon: Gauge, label: 'Complexity', value: analysis.complexity, isComplexity: true },
+    { icon: MessageCircle, label: 'Tone', value: analysis.tone },
   ];
 
   return (
-    <Card variant="bordered">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-accent-secondary" />
-          <h3 className="font-semibold text-text-primary">Prompt Analysis</h3>
-          {analysis.humanContextUsed && (
-            <Badge variant="info" size="sm">Human Context Applied</Badge>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4">
+    <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-primary)] overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-[var(--border-primary)] flex items-center gap-2">
+        <Sparkles className="w-4 h-4 text-indigo-500" />
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Prompt Analysis</h3>
+        {analysis.humanContextUsed && (
+          <span className="ml-auto text-xs px-2 py-0.5 bg-indigo-500/10 text-indigo-500 rounded-full border border-indigo-500/20">
+            Human Context
+          </span>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {/* Analysis Grid */}
+        <div className="grid grid-cols-2 gap-3">
           {analysisItems.map((item, index) => (
             <motion.div
               key={item.label}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="p-3 rounded-lg bg-bg-tertiary border border-border-subtle"
+              transition={{ delay: index * 0.05 }}
+              className="p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-primary)]"
             >
-              <div className="flex items-center gap-2 mb-1">
-                <item.icon className="w-4 h-4 text-text-quaternary" />
-                <span className="text-xs text-text-quaternary uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <item.icon className="w-3.5 h-3.5 text-[var(--text-quaternary)]" />
+                <span className="text-xs text-[var(--text-quaternary)]">
                   {item.label}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                {item.emoji && <span>{item.emoji}</span>}
-                {item.badge ? (
-                  <Badge variant={item.badge as 'success' | 'warning' | 'error' | 'default'} size="md">
-                    {item.value}
-                  </Badge>
-                ) : (
-                  <span className="font-medium text-text-primary capitalize">
-                    {item.value}
-                  </span>
-                )}
-              </div>
+              {item.isComplexity ? (
+                <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded border ${getComplexityStyle(item.value)}`}>
+                  {item.value}
+                </span>
+              ) : (
+                <span className="text-sm font-medium text-[var(--text-primary)] capitalize">
+                  {item.value}
+                </span>
+              )}
             </motion.div>
           ))}
         </div>
@@ -138,26 +94,21 @@ export function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="mt-4 pt-4 border-t border-border-subtle"
+            transition={{ delay: 0.2 }}
+            className="mt-4 pt-4 border-t border-[var(--border-primary)]"
           >
-            <div className="flex items-center gap-2 mb-2">
-              <Hash className="w-4 h-4 text-text-quaternary" />
-              <span className="text-xs text-text-quaternary uppercase tracking-wider">
-                Keywords Extracted
-              </span>
+            <div className="flex items-center gap-1.5 mb-2">
+              <Hash className="w-3.5 h-3.5 text-[var(--text-quaternary)]" />
+              <span className="text-xs text-[var(--text-quaternary)]">Keywords</span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {analysis.keywords.slice(0, 8).map((keyword, i) => (
-                <motion.span
+            <div className="flex flex-wrap gap-1.5">
+              {analysis.keywords.slice(0, 6).map((keyword) => (
+                <span
                   key={keyword}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.5 + i * 0.05 }}
-                  className="px-2 py-1 text-xs font-mono bg-bg-accent text-text-secondary rounded"
+                  className="px-2 py-1 text-xs font-mono bg-[var(--bg-tertiary)] text-[var(--text-secondary)] rounded border border-[var(--border-primary)]"
                 >
                   {keyword}
-                </motion.span>
+                </span>
               ))}
             </div>
           </motion.div>
@@ -167,17 +118,15 @@ export function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="mt-4 pt-4 border-t border-border-subtle"
+          transition={{ delay: 0.3 }}
+          className="mt-4 pt-4 border-t border-[var(--border-primary)] flex items-center justify-between"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-text-secondary">Input Modality</span>
-            <Badge variant="info" size="md">
-              {analysis.modality.replace('+', ' + ').toUpperCase()}
-            </Badge>
-          </div>
+          <span className="text-xs text-[var(--text-quaternary)]">Input Modality</span>
+          <span className="text-xs px-2 py-1 bg-blue-500/10 text-blue-500 rounded border border-blue-500/20 font-medium">
+            {analysis.modality.toUpperCase()}
+          </span>
         </motion.div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
