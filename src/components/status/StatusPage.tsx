@@ -2,18 +2,14 @@
 
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { Badge } from '../ui/Badge';
-import { Card, CardContent } from '../ui/Card';
 import {
   CheckCircle,
   AlertTriangle,
   XCircle,
-  Activity,
-  Cpu,
-  Database,
   Zap,
   Clock,
-  RefreshCw
+  RefreshCw,
+  Cpu
 } from 'lucide-react';
 
 interface ServiceStatus {
@@ -58,7 +54,7 @@ export function StatusPage() {
 
   useEffect(() => {
     checkHealth();
-    const interval = setInterval(checkHealth, 30000); // Check every 30 seconds
+    const interval = setInterval(checkHealth, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -76,7 +72,7 @@ export function StatusPage() {
       uptime: 99.99
     },
     {
-      name: 'Data Store (KV)',
+      name: 'Data Store',
       status: health?.services.kv === 'connected' ? 'operational' :
               health?.services.kv === 'unavailable' ? 'degraded' : 'outage',
       latency: 8,
@@ -101,52 +97,56 @@ export function StatusPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'operational':
-        return <CheckCircle className="w-5 h-5 text-accent-success" />;
+        return <CheckCircle className="w-5 h-5 text-emerald-500" />;
       case 'degraded':
-        return <AlertTriangle className="w-5 h-5 text-accent-warning" />;
+        return <AlertTriangle className="w-5 h-5 text-amber-500" />;
       case 'outage':
-        return <XCircle className="w-5 h-5 text-accent-error" />;
+        return <XCircle className="w-5 h-5 text-red-500" />;
       default:
-        return <Activity className="w-5 h-5 text-text-quaternary" />;
+        return null;
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusStyle = (status: string) => {
     switch (status) {
       case 'operational':
-        return 'bg-accent-success';
+        return 'bg-emerald-500';
       case 'degraded':
-        return 'bg-accent-warning';
+        return 'bg-amber-500';
       case 'outage':
-        return 'bg-accent-error';
+        return 'bg-red-500';
       default:
-        return 'bg-text-quaternary';
+        return 'bg-gray-500';
+    }
+  };
+
+  const getStatusBadgeStyle = (status: string) => {
+    switch (status) {
+      case 'operational':
+        return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+      case 'degraded':
+        return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+      case 'outage':
+        return 'bg-red-500/10 text-red-500 border-red-500/20';
+      default:
+        return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
     }
   };
 
   return (
-    <div className="w-full">
-      {/* Overall Status Banner */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`
-          p-4 rounded-xl mb-6
-          ${overallStatus === 'operational' ? 'bg-accent-success/10 border border-accent-success/20' :
-            overallStatus === 'degraded' ? 'bg-accent-warning/10 border border-accent-warning/20' :
-            'bg-accent-error/10 border border-accent-error/20'}
-        `}
-      >
+    <div className="w-full space-y-4">
+      {/* Overall Status */}
+      <div className={`p-4 rounded-xl border ${getStatusBadgeStyle(overallStatus)}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {getStatusIcon(overallStatus)}
             <div>
-              <h3 className="font-semibold text-text-primary">
+              <h3 className="font-semibold text-[var(--text-primary)]">
                 {overallStatus === 'operational' ? 'All Systems Operational' :
-                 overallStatus === 'degraded' ? 'Partial System Degradation' :
-                 'System Outage Detected'}
+                 overallStatus === 'degraded' ? 'Partial Degradation' :
+                 'System Outage'}
               </h3>
-              <p className="text-sm text-text-secondary">
+              <p className="text-xs text-[var(--text-tertiary)]">
                 Last checked: {lastCheck.toLocaleTimeString()}
               </p>
             </div>
@@ -154,105 +154,73 @@ export function StatusPage() {
           <button
             onClick={checkHealth}
             disabled={loading}
-            className="p-2 rounded-lg hover:bg-bg-tertiary transition-colors disabled:opacity-50"
+            className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-50"
           >
-            <RefreshCw className={`w-5 h-5 text-text-secondary ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 text-[var(--text-secondary)] ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Service Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Services */}
+      <div className="space-y-3">
         {services.map((service, index) => (
           <motion.div
             key={service.name}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
+            transition={{ delay: index * 0.05 }}
+            className="p-4 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-primary)]"
           >
-            <Card variant="bordered">
-              <CardContent>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${getStatusColor(service.status)}`}>
-                      {service.status === 'operational' && (
-                        <span className={`block w-2 h-2 rounded-full ${getStatusColor(service.status)} animate-ping`} />
-                      )}
-                    </div>
-                    <span className="font-medium text-text-primary">{service.name}</span>
-                  </div>
-                  <Badge
-                    variant={service.status === 'operational' ? 'success' :
-                             service.status === 'degraded' ? 'warning' : 'error'}
-                    size="sm"
-                  >
-                    {service.status}
-                  </Badge>
-                </div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${getStatusStyle(service.status)}`} />
+                <span className="font-medium text-[var(--text-primary)]">{service.name}</span>
+              </div>
+              <span className={`text-xs px-2 py-0.5 rounded border ${getStatusBadgeStyle(service.status)}`}>
+                {service.status}
+              </span>
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-text-quaternary" />
-                    <div>
-                      <p className="text-xs text-text-quaternary">Latency</p>
-                      <p className="text-sm font-mono text-text-primary">
-                        {service.latency !== undefined ? `${service.latency}ms` : '—'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-text-quaternary" />
-                    <div>
-                      <p className="text-xs text-text-quaternary">Uptime</p>
-                      <p className="text-sm font-mono text-text-primary">
-                        {service.uptime !== undefined ? `${service.uptime}%` : '—'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-[var(--text-quaternary)]" />
+                <span className="text-[var(--text-tertiary)]">
+                  {service.latency !== undefined ? `${service.latency}ms` : '—'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-[var(--text-quaternary)]" />
+                <span className="text-[var(--text-tertiary)]">
+                  {service.uptime !== undefined ? `${service.uptime}%` : '—'}
+                </span>
+              </div>
+            </div>
 
-                {/* Uptime Bar */}
-                <div className="mt-4">
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: 30 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`flex-1 h-6 rounded-sm ${
-                          i < 28 ? 'bg-accent-success' :
-                          service.status === 'degraded' ? 'bg-accent-warning' :
-                          service.status === 'outage' ? 'bg-accent-error' :
-                          'bg-accent-success'
-                        }`}
-                        title={`Day ${i + 1}`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-xs text-text-quaternary mt-1">Last 30 days</p>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Uptime bars */}
+            <div className="mt-3 flex gap-px">
+              {Array.from({ length: 30 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`flex-1 h-4 rounded-sm ${
+                    i < 28 ? 'bg-emerald-500' :
+                    service.status === 'degraded' ? 'bg-amber-500' :
+                    service.status === 'outage' ? 'bg-red-500' :
+                    'bg-emerald-500'
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-[var(--text-quaternary)] mt-1">Last 30 days</p>
           </motion.div>
         ))}
       </div>
 
-      {/* Version Info */}
+      {/* Version */}
       {health && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-6 flex items-center justify-center gap-4 text-sm text-text-quaternary"
-        >
-          <span className="flex items-center gap-1">
-            <Cpu className="w-4 h-4" />
-            Version {health.version}
-          </span>
-          <span>•</span>
-          <span className="flex items-center gap-1">
-            <Database className="w-4 h-4" />
-            KV: {health.services.kv}
-          </span>
-        </motion.div>
+        <div className="text-center text-xs text-[var(--text-quaternary)] flex items-center justify-center gap-2">
+          <Cpu className="w-3.5 h-3.5" />
+          <span>Version {health.version}</span>
+        </div>
       )}
     </div>
   );
