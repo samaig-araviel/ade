@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PromptTester } from '@/components/routing/PromptTester';
+import { EngineTester } from '@/components/routing/EngineTester';
 import { StatusPage } from '@/components/status/StatusPage';
 import {
   Sparkles,
@@ -12,6 +12,8 @@ import {
   Cpu,
   Zap,
   BarChart3,
+  FlaskConical,
+  BookOpen,
 } from 'lucide-react';
 
 export default function Home() {
@@ -19,16 +21,19 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
-      {/* Compact Header */}
+      {/* Header */}
       <header className="sticky top-0 z-50 border-b border-[var(--border-primary)] bg-[var(--bg-primary)]/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <Sparkles className="w-4 h-4 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <Sparkles className="w-4.5 h-4.5 text-white" />
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-base font-semibold text-[var(--text-primary)]">ADE</span>
-              <span className="text-[10px] text-[var(--text-quaternary)] hidden sm:inline">Araviel Decision Engine</span>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-semibold text-[var(--text-primary)]">ADE</span>
+              <span className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-medium bg-indigo-500/10 text-indigo-500 rounded-full">
+                <FlaskConical className="w-3 h-3" />
+                Test Console
+              </span>
             </div>
           </div>
 
@@ -53,62 +58,74 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col">
-        {/* Quick Stats Bar */}
-        <div className="border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
-            <div className="flex items-center justify-center gap-6 sm:gap-10">
-              <div className="flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-indigo-500" />
-                <span className="text-xs text-[var(--text-tertiary)]">
-                  <span className="font-semibold text-[var(--text-primary)]">10</span> Models
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-emerald-500" />
-                <span className="text-xs text-[var(--text-tertiary)]">
-                  <span className="font-semibold text-[var(--text-primary)]">&lt;20ms</span> Latency
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-amber-500" />
-                <span className="text-xs text-[var(--text-tertiary)]">
-                  <span className="font-semibold text-[var(--text-primary)]">7</span> Scoring Factors
-                </span>
-              </div>
+      {/* Stats Bar */}
+      <div className="border-b border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5">
+          <div className="flex items-center justify-center gap-6 sm:gap-10">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-indigo-500" />
+              <span className="text-xs text-[var(--text-tertiary)]">
+                <span className="font-semibold text-[var(--text-primary)]">10</span> Models
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-emerald-500" />
+              <span className="text-xs text-[var(--text-tertiary)]">
+                <span className="font-semibold text-[var(--text-primary)]">&lt;50ms</span> Target
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-amber-500" />
+              <span className="text-xs text-[var(--text-tertiary)]">
+                <span className="font-semibold text-[var(--text-primary)]">7</span> Factors
+              </span>
+            </div>
+            <div className="hidden sm:flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-blue-500" />
+              <span className="text-xs text-[var(--text-tertiary)]">
+                <span className="font-semibold text-[var(--text-primary)]">3</span> Providers
+              </span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Tool Interface */}
-        <div className="flex-1 py-6 sm:py-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            {/* Title Section */}
-            <div className="text-center mb-6">
-              <h1 className="text-xl sm:text-2xl font-semibold text-[var(--text-primary)]">
-                Intelligent LLM Router
-              </h1>
-              <p className="mt-1.5 text-sm text-[var(--text-tertiary)]">
-                Enter a prompt to find the optimal AI model
-              </p>
-            </div>
-
-            {/* Main Tester Component */}
-            <PromptTester />
+      {/* Main Content */}
+      <main className="flex-1 py-6 sm:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-xl sm:text-2xl font-semibold text-[var(--text-primary)]">
+              Engine Test Console
+            </h1>
+            <p className="mt-1 text-sm text-[var(--text-tertiary)]">
+              Test the ADE routing engine with full control over prompts, human context, and constraints
+            </p>
           </div>
+
+          {/* Tester Component */}
+          <EngineTester />
         </div>
       </main>
 
-      {/* Minimal Footer */}
+      {/* Footer */}
       <footer className="border-t border-[var(--border-primary)] bg-[var(--bg-secondary)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between text-xs text-[var(--text-quaternary)]">
-            <span>ADE by Araviel</span>
+            <span>Araviel Decision Engine v0.1.0</span>
             <div className="flex items-center gap-4">
-              <span>Anthropic</span>
-              <span>OpenAI</span>
-              <span>Google</span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                Anthropic
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                OpenAI
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                Google
+              </span>
             </div>
           </div>
         </div>
