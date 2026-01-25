@@ -77,6 +77,11 @@ export function requiresAuth(pathname: string): boolean {
     return false;
   }
 
+  // In development mode or when ADE_SKIP_AUTH is set, skip auth for testing
+  if (process.env.NODE_ENV === 'development' || process.env.ADE_SKIP_AUTH === 'true') {
+    return false;
+  }
+
   // All other v1 API endpoints require auth
   return pathname.startsWith('/api/v1/');
 }

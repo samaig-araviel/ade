@@ -2,32 +2,30 @@
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ModelCard } from '@/components/routing/ModelCard';
-import { AnalysisDisplay } from '@/components/routing/AnalysisDisplay';
 import { StatusPage } from '@/components/status/StatusPage';
 import {
   Sparkles,
-  Github,
-  Activity,
+  Search,
+  Settings,
   X,
-  Play,
-  RotateCcw,
-  Type,
-  Image,
-  Mic,
-  ImageIcon,
-  AudioLines,
-  ChevronDown,
-  User,
-  Settings2,
-  Code2,
-  FileJson,
   Copy,
   Check,
   AlertCircle,
-  Target,
   ExternalLink,
-  BarChart3,
+  Briefcase,
+  Clock,
+  MessageSquare,
+  LayoutGrid,
+  Users,
+  Building2,
+  Target,
+  Zap,
+  DollarSign,
+  Gauge,
+  Brain,
+  Layers,
+  TrendingUp,
+  RefreshCw,
 } from 'lucide-react';
 
 interface RouteResponse {
@@ -93,9 +91,6 @@ interface HumanContext {
   };
   preferences?: {
     preferredResponseStyle?: string;
-    preferredResponseLength?: string;
-    preferredModels?: string[];
-    avoidModels?: string[];
   };
 }
 
@@ -106,19 +101,12 @@ interface Constraints {
   requireAudio?: boolean;
 }
 
-const examplePrompts = [
-  { label: 'Code Review', prompt: 'Review this Python function for performance issues and suggest improvements', icon: Code2 },
-  { label: 'Data Analysis', prompt: 'Analyze this sales data and identify key trends for Q4 performance', icon: BarChart3 },
-  { label: 'Creative Writing', prompt: 'Write a short story about a robot discovering emotions', icon: Sparkles },
-  { label: 'Simple Q&A', prompt: 'What is the capital of France?', icon: Target },
-];
-
-const modalityOptions = [
-  { value: 'text', label: 'Text', icon: Type },
-  { value: 'image', label: 'Image', icon: Image },
-  { value: 'voice', label: 'Voice', icon: Mic },
-  { value: 'text+image', label: 'Text+Image', icon: ImageIcon },
-  { value: 'text+voice', label: 'Text+Voice', icon: AudioLines },
+const modalityFilters = [
+  { value: 'all', label: 'All', icon: LayoutGrid },
+  { value: 'text', label: 'Text', icon: MessageSquare },
+  { value: 'image', label: 'Vision', icon: Target },
+  { value: 'voice', label: 'Voice', icon: Users },
+  { value: 'multimodal', label: 'Multimodal', icon: Building2 },
 ];
 
 const moodOptions = ['happy', 'neutral', 'stressed', 'frustrated', 'excited', 'tired', 'anxious', 'calm'];
@@ -128,25 +116,19 @@ const responseStyleOptions = ['concise', 'detailed', 'conversational', 'formal',
 export default function Home() {
   const [showStatus, setShowStatus] = useState(false);
   const [prompt, setPrompt] = useState('');
-  const [modality, setModality] = useState('text');
+  const [activeFilter, setActiveFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<RouteResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedJson, setCopiedJson] = useState(false);
-
-  const [showHumanContext, setShowHumanContext] = useState(false);
-  const [showConstraints, setShowConstraints] = useState(false);
-  const [showJsonView, setShowJsonView] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState<'recommendation' | 'factors' | 'raw'>('recommendation');
 
   const [humanContext, setHumanContext] = useState<HumanContext>({});
   const [useHumanContext, setUseHumanContext] = useState(false);
-
   const [constraints, setConstraints] = useState<Constraints>({});
   const [useConstraints, setUseConstraints] = useState(false);
-
   const [lastRequest, setLastRequest] = useState<object | null>(null);
-  const [requestCount, setRequestCount] = useState(0);
-  const [routingHistory, setRoutingHistory] = useState<Array<{ id: string; prompt: string; model: string; time: string }>>([]);
 
   const handleRoute = useCallback(async () => {
     if (!prompt.trim()) {
@@ -157,6 +139,9 @@ export default function Home() {
     setError(null);
     setResult(null);
     setIsLoading(true);
+
+    const modality = activeFilter === 'all' ? 'text' :
+                     activeFilter === 'multimodal' ? 'text+image' : activeFilter;
 
     const requestBody: Record<string, unknown> = {
       prompt: prompt.trim(),
@@ -187,31 +172,16 @@ export default function Home() {
 
       const data = await response.json();
       setResult(data);
-      setRequestCount(prev => prev + 1);
-
-      // Add to history
-      setRoutingHistory(prev => [{
-        id: data.decisionId,
-        prompt: prompt.trim().substring(0, 40) + (prompt.length > 40 ? '...' : ''),
-        model: data.primaryModel.name,
-        time: new Date().toLocaleTimeString()
-      }, ...prev.slice(0, 4)]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to route prompt. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to route prompt');
     } finally {
       setIsLoading(false);
     }
-  }, [prompt, modality, humanContext, constraints, useHumanContext, useConstraints]);
-
-  const handleReset = () => {
-    setPrompt('');
-    setResult(null);
-    setError(null);
-    setLastRequest(null);
-  };
+  }, [prompt, activeFilter, humanContext, constraints, useHumanContext, useConstraints]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleRoute();
     }
   };
@@ -248,674 +218,1133 @@ export default function Home() {
 
   const getProviderColor = (provider: string) => {
     switch (provider.toLowerCase()) {
-      case 'anthropic': return 'bg-amber-500';
-      case 'openai': return 'bg-emerald-500';
-      case 'google': return 'bg-blue-500';
-      default: return 'bg-gray-500';
+      case 'anthropic': return '#D97706';
+      case 'openai': return '#10B981';
+      case 'google': return '#3B82F6';
+      default: return '#6B7280';
     }
   };
 
+  const getProviderBg = (provider: string) => {
+    switch (provider.toLowerCase()) {
+      case 'anthropic': return 'rgba(217, 119, 6, 0.1)';
+      case 'openai': return 'rgba(16, 185, 129, 0.1)';
+      case 'google': return 'rgba(59, 130, 246, 0.1)';
+      default: return 'rgba(107, 114, 128, 0.1)';
+    }
+  };
+
+  const scoringFactors = [
+    { name: 'Task Fitness', weight: 40, icon: Brain, color: '#7C3AED' },
+    { name: 'Modality Fit', weight: 15, icon: Layers, color: '#8B5CF6' },
+    { name: 'Cost Efficiency', weight: 15, icon: DollarSign, color: '#10B981' },
+    { name: 'Speed', weight: 10, icon: Zap, color: '#F59E0B' },
+    { name: 'User Preference', weight: 10, icon: Users, color: '#EC4899' },
+    { name: 'Coherence', weight: 10, icon: TrendingUp, color: '#3B82F6' },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#f7f8fa]">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #F5F3FF 0%, #EEF2FF 50%, #F0FDFA 100%)',
+      position: 'relative',
+    }}>
+      {/* Subtle geometric pattern overlay */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415L51.8 0h2.827zM5.373 0l-.83.828L5.96 2.243 8.2 0H5.374zM48.97 0l3.657 3.657-1.414 1.414L46.143 0h2.828zM11.03 0L7.372 3.657 8.787 5.07 13.857 0H11.03zm32.284 0L49.8 6.485 48.384 7.9l-7.9-7.9h2.83zM16.686 0L10.2 6.485 11.616 7.9l7.9-7.9h-2.83zM22.344 0L13.858 8.485 15.272 9.9l9.9-9.9h-2.828zM32 0l-3.486 3.485 1.415 1.415L searching34.142 0H32zm-6.657 0L16.857 8.485 18.27 9.9 28.172 0h-2.83zM.001 0l-.83.83L.586 2.244 2.828 0H.001zm0 2.828L1.414 4.242l1.414-1.414L1.414 1.414.001 2.828zm2.828 0l1.414 1.414L5.657 2.828 4.243 1.414 2.83 2.828zm2.828 0L7.07 4.242 8.485 2.828 7.07 1.414 5.657 2.828z' fill='%238B5CF6' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E")`,
+        pointerEvents: 'none',
+      }} />
+
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-[1400px] mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-[15px] font-semibold text-gray-900">ADE</span>
+      <header style={{
+        position: 'relative',
+        background: 'rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(139, 92, 246, 0.1)',
+      }}>
+        <div style={{
+          maxWidth: 1280,
+          margin: '0 auto',
+          padding: '16px 32px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              background: 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)',
+            }}>
+              <Sparkles style={{ width: 20, height: 20, color: '#fff' }} />
             </div>
-            <nav className="hidden md:flex items-center gap-1">
-              <button className="px-3 py-1.5 text-[13px] font-medium text-gray-900 bg-gray-100 rounded-lg">
-                Router
-              </button>
-              <button className="px-3 py-1.5 text-[13px] text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
-                Models
-              </button>
-              <button className="px-3 py-1.5 text-[13px] text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
-                API
-              </button>
-            </nav>
+            <div>
+              <span style={{ fontSize: 20, fontWeight: 700, color: '#1F2937', letterSpacing: '-0.02em' }}>ADE</span>
+              <span style={{ fontSize: 20, fontWeight: 400, color: '#6B7280', marginLeft: 6 }}>Engine</span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <button
               onClick={() => setShowStatus(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 16px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#6B7280',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 10,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
             >
-              <Activity className="w-4 h-4" />
-              <span className="hidden sm:inline">Status</span>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
+              Status
             </button>
             <a
-              href="https://github.com/samaig-araviel/ade"
+              href="/api/v1/health"
               target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 16px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#fff',
+                background: 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%)',
+                borderRadius: 10,
+                textDecoration: 'none',
+                boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)',
+                transition: 'all 0.2s',
+              }}
             >
-              <Github className="w-4 h-4" />
-              <span className="hidden sm:inline">GitHub</span>
+              API Docs
+              <ExternalLink style={{ width: 14, height: 14 }} />
             </a>
           </div>
         </div>
       </header>
 
-      {/* Page Title */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-[1400px] mx-auto px-6 py-5">
-          <h1 className="text-xl font-semibold text-gray-900">Engine Test Console</h1>
-        </div>
-      </div>
-
       {/* Main Content */}
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="flex gap-6">
-          {/* Left Column */}
-          <div className="flex-1 min-w-0 space-y-5">
-            {/* Stats Card */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-[15px] font-semibold text-gray-900">Engine Stats</h2>
-                <span className="status-online">Online</span>
-              </div>
-              <div className="p-5">
-                <div className="grid grid-cols-4 gap-6">
-                  <div>
-                    <div className="text-[12px] text-gray-500 mb-1">Available Models</div>
-                    <div className="text-[28px] font-bold text-gray-900">10</div>
-                  </div>
-                  <div>
-                    <div className="text-[12px] text-gray-500 mb-1">Target Latency</div>
-                    <div className="text-[28px] font-bold text-gray-900">&lt;50<span className="text-[14px] font-normal text-gray-400">ms</span></div>
-                  </div>
-                  <div>
-                    <div className="text-[12px] text-gray-500 mb-1">Scoring Factors</div>
-                    <div className="text-[28px] font-bold text-gray-900">7</div>
-                  </div>
-                  <div>
-                    <div className="text-[12px] text-gray-500 mb-1">Session Requests</div>
-                    <div className="text-[28px] font-bold text-gray-900">{requestCount}</div>
-                  </div>
-                </div>
-              </div>
+      <main style={{ position: 'relative', maxWidth: 1280, margin: '0 auto', padding: '32px' }}>
+        {/* Search Section */}
+        <div style={{
+          background: '#fff',
+          borderRadius: 16,
+          padding: 24,
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(124, 58, 237, 0.08)',
+          marginBottom: 24,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <span style={{ fontSize: 15, fontWeight: 500, color: '#374151' }}>Ask ADE to route your prompt</span>
+            <span style={{
+              padding: '2px 8px',
+              fontSize: 11,
+              fontWeight: 600,
+              color: '#7C3AED',
+              background: 'rgba(124, 58, 237, 0.1)',
+              borderRadius: 4,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}>BETA</span>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '4px 4px 4px 20px',
+            background: '#F9FAFB',
+            borderRadius: 12,
+            border: '1px solid #E5E7EB',
+          }}>
+            <Search style={{ width: 20, height: 20, color: '#9CA3AF', flexShrink: 0 }} />
+            <input
+              type="text"
+              placeholder="e.g. Write a Python script to analyze sales data and generate a report"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              style={{
+                flex: 1,
+                padding: '14px 0',
+                fontSize: 15,
+                color: '#1F2937',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+              }}
+            />
+            <button
+              onClick={handleRoute}
+              disabled={isLoading || !prompt.trim()}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 48,
+                height: 48,
+                background: isLoading ? '#E5E7EB' : 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%)',
+                borderRadius: 10,
+                border: 'none',
+                cursor: isLoading || !prompt.trim() ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              {isLoading ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                >
+                  <RefreshCw style={{ width: 20, height: 20, color: '#9CA3AF' }} />
+                </motion.div>
+              ) : (
+                <Search style={{ width: 20, height: 20, color: '#fff' }} />
+              )}
+            </button>
+          </div>
+
+          {error && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              marginTop: 12,
+              padding: '10px 14px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              borderRadius: 8,
+              color: '#DC2626',
+              fontSize: 14,
+            }}>
+              <AlertCircle style={{ width: 16, height: 16 }} />
+              {error}
             </div>
+          )}
+        </div>
 
-            {/* Test Prompt Card */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-[15px] font-semibold text-gray-900">Test Prompt</h2>
-                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
-                  {modalityOptions.map((option) => {
-                    const Icon = option.icon;
-                    const isSelected = modality === option.value;
-                    return (
-                      <button
-                        key={option.value}
-                        onClick={() => setModality(option.value)}
-                        title={option.label}
-                        className={`p-1.5 rounded-md transition-colors ${
-                          isSelected
-                            ? 'bg-white text-gray-900 shadow-sm'
-                            : 'text-gray-400 hover:text-gray-600'
-                        }`}
+        {/* Filter Tabs */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          marginBottom: 24,
+        }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: '#6B7280' }}>Route for:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {modalityFilters.map((filter) => {
+              const Icon = filter.icon;
+              const isActive = activeFilter === filter.value;
+              return (
+                <button
+                  key={filter.value}
+                  onClick={() => setActiveFilter(filter.value)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 16px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: isActive ? '#7C3AED' : '#6B7280',
+                    background: isActive ? 'rgba(124, 58, 237, 0.1)' : 'transparent',
+                    border: 'none',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <Icon style={{ width: 16, height: 16 }} />
+                  {filter.label}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 40,
+              background: showSettings ? 'rgba(124, 58, 237, 0.1)' : '#fff',
+              border: '1px solid #E5E7EB',
+              borderRadius: 10,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            <Settings style={{ width: 18, height: 18, color: showSettings ? '#7C3AED' : '#6B7280' }} />
+          </button>
+        </div>
+
+        {/* Settings Panel */}
+        <AnimatePresence>
+          {showSettings && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              style={{ overflow: 'hidden', marginBottom: 24 }}
+            >
+              <div style={{
+                background: '#fff',
+                borderRadius: 16,
+                padding: 24,
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 24,
+              }}>
+                {/* Human Context */}
+                <div>
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    marginBottom: 16,
+                    cursor: 'pointer',
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={useHumanContext}
+                      onChange={(e) => setUseHumanContext(e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: '#7C3AED' }}
+                    />
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>Human Context</span>
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#6B7280', marginBottom: 6 }}>Mood</label>
+                      <select
+                        value={humanContext.emotionalState?.mood || ''}
+                        onChange={(e) => updateHumanContext(['emotionalState', 'mood'], e.target.value)}
+                        disabled={!useHumanContext}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: 14,
+                          border: '1px solid #E5E7EB',
+                          borderRadius: 8,
+                          background: '#fff',
+                          color: '#374151',
+                          cursor: useHumanContext ? 'pointer' : 'not-allowed',
+                          opacity: useHumanContext ? 1 : 0.5,
+                        }}
                       >
-                        <Icon className="w-4 h-4" />
-                      </button>
-                    );
-                  })}
+                        <option value="">Select...</option>
+                        {moodOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#6B7280', marginBottom: 6 }}>Energy</label>
+                      <select
+                        value={humanContext.emotionalState?.energyLevel || ''}
+                        onChange={(e) => updateHumanContext(['emotionalState', 'energyLevel'], e.target.value)}
+                        disabled={!useHumanContext}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: 14,
+                          border: '1px solid #E5E7EB',
+                          borderRadius: 8,
+                          background: '#fff',
+                          color: '#374151',
+                          cursor: useHumanContext ? 'pointer' : 'not-allowed',
+                          opacity: useHumanContext ? 1 : 0.5,
+                        }}
+                      >
+                        <option value="">Select...</option>
+                        {energyOptions.map(e => <option key={e} value={e}>{e}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#6B7280', marginBottom: 6 }}>Response Style</label>
+                      <select
+                        value={humanContext.preferences?.preferredResponseStyle || ''}
+                        onChange={(e) => updateHumanContext(['preferences', 'preferredResponseStyle'], e.target.value)}
+                        disabled={!useHumanContext}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: 14,
+                          border: '1px solid #E5E7EB',
+                          borderRadius: 8,
+                          background: '#fff',
+                          color: '#374151',
+                          cursor: useHumanContext ? 'pointer' : 'not-allowed',
+                          opacity: useHumanContext ? 1 : 0.5,
+                        }}
+                      >
+                        <option value="">Select...</option>
+                        {responseStyleOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#6B7280', marginBottom: 6 }}>Working Hours</label>
+                      <select
+                        value={humanContext.temporalContext?.isWorkingHours === undefined ? '' : String(humanContext.temporalContext.isWorkingHours)}
+                        onChange={(e) => updateHumanContext(['temporalContext', 'isWorkingHours'], e.target.value === '' ? undefined : e.target.value === 'true')}
+                        disabled={!useHumanContext}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: 14,
+                          border: '1px solid #E5E7EB',
+                          borderRadius: 8,
+                          background: '#fff',
+                          color: '#374151',
+                          cursor: useHumanContext ? 'pointer' : 'not-allowed',
+                          opacity: useHumanContext ? 1 : 0.5,
+                        }}
+                      >
+                        <option value="">Select...</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Constraints */}
+                <div>
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    marginBottom: 16,
+                    cursor: 'pointer',
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={useConstraints}
+                      onChange={(e) => setUseConstraints(e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: '#7C3AED' }}
+                    />
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>Constraints</span>
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#6B7280', marginBottom: 6 }}>Max Cost/1K Tokens</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        placeholder="0.01"
+                        value={constraints.maxCostPer1kTokens || ''}
+                        onChange={(e) => setConstraints(prev => ({
+                          ...prev,
+                          maxCostPer1kTokens: e.target.value ? parseFloat(e.target.value) : undefined
+                        }))}
+                        disabled={!useConstraints}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: 14,
+                          border: '1px solid #E5E7EB',
+                          borderRadius: 8,
+                          background: '#fff',
+                          color: '#374151',
+                          boxSizing: 'border-box',
+                          cursor: useConstraints ? 'text' : 'not-allowed',
+                          opacity: useConstraints ? 1 : 0.5,
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#6B7280', marginBottom: 6 }}>Max Latency (ms)</label>
+                      <input
+                        type="number"
+                        step="100"
+                        min="0"
+                        placeholder="1000"
+                        value={constraints.maxLatencyMs || ''}
+                        onChange={(e) => setConstraints(prev => ({
+                          ...prev,
+                          maxLatencyMs: e.target.value ? parseInt(e.target.value) : undefined
+                        }))}
+                        disabled={!useConstraints}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: 14,
+                          border: '1px solid #E5E7EB',
+                          borderRadius: 8,
+                          background: '#fff',
+                          color: '#374151',
+                          boxSizing: 'border-box',
+                          cursor: useConstraints ? 'text' : 'not-allowed',
+                          opacity: useConstraints ? 1 : 0.5,
+                        }}
+                      />
+                    </div>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '10px 0',
+                      cursor: useConstraints ? 'pointer' : 'not-allowed',
+                      opacity: useConstraints ? 1 : 0.5,
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={constraints.requireVision || false}
+                        onChange={(e) => setConstraints(prev => ({
+                          ...prev,
+                          requireVision: e.target.checked || undefined
+                        }))}
+                        disabled={!useConstraints}
+                        style={{ width: 16, height: 16, accentColor: '#7C3AED' }}
+                      />
+                      <span style={{ fontSize: 14, color: '#374151' }}>Require Vision</span>
+                    </label>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '10px 0',
+                      cursor: useConstraints ? 'pointer' : 'not-allowed',
+                      opacity: useConstraints ? 1 : 0.5,
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={constraints.requireAudio || false}
+                        onChange={(e) => setConstraints(prev => ({
+                          ...prev,
+                          requireAudio: e.target.checked || undefined
+                        }))}
+                        disabled={!useConstraints}
+                        style={{ width: 16, height: 16, accentColor: '#7C3AED' }}
+                      />
+                      <span style={{ fontSize: 14, color: '#374151' }}>Require Audio</span>
+                    </label>
+                  </div>
                 </div>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-              <div className="p-5">
-                <textarea
-                  placeholder="Enter your prompt to test the routing engine..."
-                  rows={4}
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none text-[14px]"
-                />
-
-                {error && (
-                  <div className="mt-3 flex items-center gap-2 text-[13px] text-red-600">
-                    <AlertCircle className="w-4 h-4" />
-                    {error}
+        {/* Results */}
+        <AnimatePresence mode="wait">
+          {result && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              {/* Result Card Header */}
+              <div style={{
+                background: '#fff',
+                borderRadius: 16,
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(124, 58, 237, 0.08)',
+                overflow: 'hidden',
+              }}>
+                {/* Card Header */}
+                <div style={{
+                  padding: '20px 24px',
+                  borderBottom: '1px solid #F3F4F6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 18, fontWeight: 600, color: '#1F2937' }}>
+                      {result.primaryModel.name}
+                    </span>
+                    <span style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: '#10B981',
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      borderRadius: 100,
+                    }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} />
+                      Recommended
+                    </span>
                   </div>
-                )}
-
-                {/* Quick Examples */}
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {examplePrompts.map((example) => {
-                    const Icon = example.icon;
-                    return (
-                      <button
-                        key={example.label}
-                        onClick={() => setPrompt(example.prompt)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 hover:text-gray-900 border border-gray-200 transition-colors"
-                      >
-                        <Icon className="w-3.5 h-3.5" />
-                        {example.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Advanced Options */}
-                <div className="mt-4 flex gap-2">
-                  <button
-                    onClick={() => setShowHumanContext(!showHumanContext)}
-                    className={`flex items-center gap-2 px-3 py-2 text-[13px] rounded-lg border transition-colors ${
-                      useHumanContext
-                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <User className="w-4 h-4" />
-                    Human Context
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showHumanContext ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  <button
-                    onClick={() => setShowConstraints(!showConstraints)}
-                    className={`flex items-center gap-2 px-3 py-2 text-[13px] rounded-lg border transition-colors ${
-                      useConstraints
-                        ? 'bg-amber-50 border-amber-200 text-amber-700'
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Settings2 className="w-4 h-4" />
-                    Constraints
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showConstraints ? 'rotate-180' : ''}`} />
-                  </button>
-                </div>
-
-                {/* Human Context Panel */}
-                <AnimatePresence>
-                  {showHumanContext && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <label className="flex items-center gap-2 mb-4 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={useHumanContext}
-                            onChange={(e) => setUseHumanContext(e.target.checked)}
-                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <span className="text-[13px] font-medium text-gray-700">Include human context</span>
-                        </label>
-                        <div className="grid grid-cols-4 gap-3">
-                          <div>
-                            <label className="text-[11px] text-gray-500 mb-1 block">Mood</label>
-                            <select
-                              value={humanContext.emotionalState?.mood || ''}
-                              onChange={(e) => updateHumanContext(['emotionalState', 'mood'], e.target.value)}
-                              className="w-full px-2.5 py-1.5 text-[13px] bg-white border border-gray-200 rounded-lg text-gray-900"
-                            >
-                              <option value="">Select...</option>
-                              {moodOptions.map(m => <option key={m} value={m}>{m}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-gray-500 mb-1 block">Energy</label>
-                            <select
-                              value={humanContext.emotionalState?.energyLevel || ''}
-                              onChange={(e) => updateHumanContext(['emotionalState', 'energyLevel'], e.target.value)}
-                              className="w-full px-2.5 py-1.5 text-[13px] bg-white border border-gray-200 rounded-lg text-gray-900"
-                            >
-                              <option value="">Select...</option>
-                              {energyOptions.map(e => <option key={e} value={e}>{e}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-gray-500 mb-1 block">Style</label>
-                            <select
-                              value={humanContext.preferences?.preferredResponseStyle || ''}
-                              onChange={(e) => updateHumanContext(['preferences', 'preferredResponseStyle'], e.target.value)}
-                              className="w-full px-2.5 py-1.5 text-[13px] bg-white border border-gray-200 rounded-lg text-gray-900"
-                            >
-                              <option value="">Select...</option>
-                              {responseStyleOptions.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-gray-500 mb-1 block">Working Hours</label>
-                            <select
-                              value={humanContext.temporalContext?.isWorkingHours === undefined ? '' : String(humanContext.temporalContext.isWorkingHours)}
-                              onChange={(e) => updateHumanContext(['temporalContext', 'isWorkingHours'], e.target.value === '' ? undefined : e.target.value === 'true')}
-                              className="w-full px-2.5 py-1.5 text-[13px] bg-white border border-gray-200 rounded-lg text-gray-900"
-                            >
-                              <option value="">Select...</option>
-                              <option value="true">Yes</option>
-                              <option value="false">No</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Constraints Panel */}
-                <AnimatePresence>
-                  {showConstraints && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <label className="flex items-center gap-2 mb-4 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={useConstraints}
-                            onChange={(e) => setUseConstraints(e.target.checked)}
-                            className="w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                          />
-                          <span className="text-[13px] font-medium text-gray-700">Apply constraints</span>
-                        </label>
-                        <div className="grid grid-cols-4 gap-3">
-                          <div>
-                            <label className="text-[11px] text-gray-500 mb-1 block">Max Cost/1K</label>
-                            <input
-                              type="number"
-                              step="0.001"
-                              min="0"
-                              placeholder="0.01"
-                              value={constraints.maxCostPer1kTokens || ''}
-                              onChange={(e) => setConstraints(prev => ({
-                                ...prev,
-                                maxCostPer1kTokens: e.target.value ? parseFloat(e.target.value) : undefined
-                              }))}
-                              className="w-full px-2.5 py-1.5 text-[13px] bg-white border border-gray-200 rounded-lg text-gray-900"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-gray-500 mb-1 block">Max Latency (ms)</label>
-                            <input
-                              type="number"
-                              step="100"
-                              min="0"
-                              placeholder="1000"
-                              value={constraints.maxLatencyMs || ''}
-                              onChange={(e) => setConstraints(prev => ({
-                                ...prev,
-                                maxLatencyMs: e.target.value ? parseInt(e.target.value) : undefined
-                              }))}
-                              className="w-full px-2.5 py-1.5 text-[13px] bg-white border border-gray-200 rounded-lg text-gray-900"
-                            />
-                          </div>
-                          <label className="flex items-center gap-2 cursor-pointer self-end pb-1.5">
-                            <input
-                              type="checkbox"
-                              checked={constraints.requireVision || false}
-                              onChange={(e) => setConstraints(prev => ({
-                                ...prev,
-                                requireVision: e.target.checked || undefined
-                              }))}
-                              className="w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                            />
-                            <span className="text-[13px] text-gray-700">Vision</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer self-end pb-1.5">
-                            <input
-                              type="checkbox"
-                              checked={constraints.requireAudio || false}
-                              onChange={(e) => setConstraints(prev => ({
-                                ...prev,
-                                requireAudio: e.target.checked || undefined
-                              }))}
-                              className="w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                            />
-                            <span className="text-[13px] text-gray-700">Audio</span>
-                          </label>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Action Buttons */}
-                <div className="mt-5 flex gap-2">
-                  <button
-                    onClick={handleRoute}
-                    disabled={isLoading}
-                    className="flex items-center justify-center gap-2 px-5 py-2.5 text-[13px] font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="spinner" />
-                        Routing...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-4 h-4" />
-                        Route Prompt
-                      </>
-                    )}
-                  </button>
-                  {(result || prompt) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <button
-                      onClick={handleReset}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      onClick={handleRoute}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '8px 14px',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: '#6B7280',
+                        background: 'transparent',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                      }}
                     >
-                      <RotateCcw className="w-4 h-4" />
-                      Reset
+                      <RefreshCw style={{ width: 14, height: 14 }} />
+                      Run again
                     </button>
+                    <button
+                      onClick={handleCopyJson}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '8px 14px',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: '#7C3AED',
+                        background: 'rgba(124, 58, 237, 0.1)',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {copiedJson ? <Check style={{ width: 14, height: 14 }} /> : <Copy style={{ width: 14, height: 14 }} />}
+                      {copiedJson ? 'Copied!' : 'Copy JSON'}
+                    </button>
+                    <button
+                      onClick={() => setResult(null)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 36,
+                        height: 36,
+                        background: 'transparent',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        color: '#9CA3AF',
+                      }}
+                    >
+                      <X style={{ width: 18, height: 18 }} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tabs */}
+                <div style={{
+                  display: 'flex',
+                  gap: 4,
+                  padding: '0 24px',
+                  borderBottom: '1px solid #F3F4F6',
+                }}>
+                  {[
+                    { id: 'recommendation', label: 'Recommendation', icon: Briefcase },
+                    { id: 'factors', label: 'Scoring Factors', icon: Clock },
+                    { id: 'raw', label: 'Raw Response', icon: MessageSquare },
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '14px 16px',
+                          fontSize: 14,
+                          fontWeight: 500,
+                          color: isActive ? '#7C3AED' : '#6B7280',
+                          background: 'transparent',
+                          border: 'none',
+                          borderBottom: isActive ? '2px solid #7C3AED' : '2px solid transparent',
+                          marginBottom: -1,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <Icon style={{ width: 16, height: 16 }} />
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Tab Content */}
+                <div style={{ padding: 24 }}>
+                  {/* Intent Score Bar */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 16,
+                    padding: '16px 20px',
+                    background: '#F9FAFB',
+                    borderRadius: 12,
+                    marginBottom: 24,
+                  }}>
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 10,
+                      background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <Gauge style={{ width: 20, height: 20, color: '#D97706' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: '#374151' }}>Confidence Score</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: '#7C3AED' }}>{Math.round(result.confidence * 100)}%</span>
+                      </div>
+                      <div style={{
+                        height: 8,
+                        background: '#E5E7EB',
+                        borderRadius: 100,
+                        overflow: 'hidden',
+                      }}>
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${result.confidence * 100}%` }}
+                          transition={{ duration: 0.6, ease: 'easeOut' }}
+                          style={{
+                            height: '100%',
+                            background: 'linear-gradient(90deg, #7C3AED 0%, #8B5CF6 100%)',
+                            borderRadius: 100,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {activeTab === 'recommendation' && (
+                    <>
+                      {/* Model Comparison Cards */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                        {/* Primary Model */}
+                        <div style={{
+                          background: '#fff',
+                          border: '1px solid #E5E7EB',
+                          borderRadius: 12,
+                          padding: 20,
+                          position: 'relative',
+                        }}>
+                          <span style={{
+                            position: 'absolute',
+                            top: 16,
+                            right: 16,
+                            padding: '4px 10px',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: '#10B981',
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            borderRadius: 6,
+                          }}>
+                            Primary
+                          </span>
+                          <div style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 12,
+                            background: getProviderBg(result.primaryModel.provider),
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: 16,
+                          }}>
+                            <Sparkles style={{ width: 24, height: 24, color: getProviderColor(result.primaryModel.provider) }} />
+                          </div>
+                          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1F2937', marginBottom: 4 }}>
+                            {result.primaryModel.name}
+                          </h3>
+                          <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 12 }}>
+                            {result.primaryModel.provider}
+                          </p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: '#9CA3AF' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Users style={{ width: 14, height: 14 }} />
+                              Score: {Math.round(result.primaryModel.score * 100)}
+                            </span>
+                          </div>
+                          <p style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #F3F4F6', fontSize: 13, color: '#6B7280', lineHeight: 1.6 }}>
+                            {result.primaryModel.reasoning.summary}
+                          </p>
+                        </div>
+
+                        {/* Backup Model */}
+                        {result.backupModels[0] && (
+                          <div style={{
+                            background: '#fff',
+                            border: '1px solid #E5E7EB',
+                            borderRadius: 12,
+                            padding: 20,
+                            position: 'relative',
+                          }}>
+                            <span style={{
+                              position: 'absolute',
+                              top: 16,
+                              right: 16,
+                              padding: '4px 10px',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: '#F59E0B',
+                              background: 'rgba(245, 158, 11, 0.1)',
+                              borderRadius: 6,
+                            }}>
+                              Backup
+                            </span>
+                            <div style={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: 12,
+                              background: getProviderBg(result.backupModels[0].provider),
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginBottom: 16,
+                            }}>
+                              <Building2 style={{ width: 24, height: 24, color: getProviderColor(result.backupModels[0].provider) }} />
+                            </div>
+                            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1F2937', marginBottom: 4 }}>
+                              {result.backupModels[0].name}
+                            </h3>
+                            <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 12 }}>
+                              {result.backupModels[0].provider}
+                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: '#9CA3AF' }}>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <Users style={{ width: 14, height: 14 }} />
+                                Score: {Math.round(result.backupModels[0].score * 100)}
+                              </span>
+                            </div>
+                            <p style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #F3F4F6', fontSize: 13, color: '#6B7280', lineHeight: 1.6 }}>
+                              {result.backupModels[0].reasoning.summary}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Analysis Summary */}
+                      <div style={{
+                        marginTop: 24,
+                        padding: 20,
+                        background: '#F9FAFB',
+                        borderRadius: 12,
+                      }}>
+                        <h4 style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 16 }}>Prompt Analysis</h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+                          <div>
+                            <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 4 }}>Intent</div>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: '#374151', textTransform: 'capitalize' }}>{result.analysis.intent}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 4 }}>Domain</div>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: '#374151', textTransform: 'capitalize' }}>{result.analysis.domain}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 4 }}>Complexity</div>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: '#374151', textTransform: 'capitalize' }}>{result.analysis.complexity}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 4 }}>Timing</div>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: '#374151' }}>{result.timing.totalMs.toFixed(1)}ms</div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {activeTab === 'factors' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                      {result.primaryModel.reasoning.factors.map((factor, idx) => {
+                        const factorInfo = scoringFactors[idx] || { icon: Brain, color: '#7C3AED' };
+                        const Icon = factorInfo.icon;
+                        return (
+                          <div
+                            key={factor.name}
+                            style={{
+                              padding: 20,
+                              background: '#F9FAFB',
+                              borderRadius: 12,
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                              <div style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 10,
+                                background: `${factorInfo.color}15`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}>
+                                <Icon style={{ width: 18, height: 18, color: factorInfo.color }} />
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>{factor.name}</div>
+                                <div style={{ fontSize: 12, color: '#9CA3AF' }}>Weight: {Math.round(factor.weight * 100)}%</div>
+                              </div>
+                              <div style={{ marginLeft: 'auto', fontSize: 18, fontWeight: 700, color: factorInfo.color }}>
+                                {Math.round(factor.score * 100)}
+                              </div>
+                            </div>
+                            <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.6 }}>{factor.detail}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {activeTab === 'raw' && (
+                    <div style={{
+                      background: '#1F2937',
+                      borderRadius: 12,
+                      padding: 20,
+                      overflow: 'auto',
+                      maxHeight: 500,
+                    }}>
+                      <pre style={{
+                        fontSize: 13,
+                        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
+                        color: '#E5E7EB',
+                        margin: 0,
+                        lineHeight: 1.6,
+                      }}>
+                        {JSON.stringify({ request: lastRequest, response: result }, null, 2)}
+                      </pre>
+                    </div>
                   )}
                 </div>
               </div>
-            </div>
 
-            {/* Routing History Card */}
-            {routingHistory.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                  <h2 className="text-[15px] font-semibold text-gray-900">Recent Routings</h2>
-                  <button
-                    onClick={() => setRoutingHistory([])}
-                    className="text-[12px] text-gray-400 hover:text-gray-600"
-                  >
-                    Clear
-                  </button>
-                </div>
-                <div className="divide-y divide-gray-100">
-                  {routingHistory.map((item, idx) => (
-                    <div key={idx} className="px-5 py-3 flex items-center justify-between">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="text-[13px] text-gray-900 truncate">{item.prompt}</div>
+              {/* All Models Ranking */}
+              <div style={{
+                marginTop: 24,
+                background: '#fff',
+                borderRadius: 16,
+                padding: 24,
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+              }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1F2937', marginBottom: 20 }}>All Models Ranking</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[result.primaryModel, ...result.backupModels].map((model, idx) => (
+                    <div
+                      key={model.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 16,
+                        padding: '14px 16px',
+                        background: idx === 0 ? 'rgba(124, 58, 237, 0.05)' : '#F9FAFB',
+                        borderRadius: 10,
+                        border: idx === 0 ? '1px solid rgba(124, 58, 237, 0.2)' : '1px solid transparent',
+                      }}
+                    >
+                      <div style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        background: idx === 0 ? 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%)' : '#E5E7EB',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: idx === 0 ? '#fff' : '#6B7280',
+                      }}>
+                        {idx + 1}
                       </div>
-                      <div className="flex items-center gap-4 flex-shrink-0">
-                        <span className="text-[12px] text-gray-500">{item.model}</span>
-                        <span className="text-[11px] text-gray-400">{item.time}</span>
+                      <div style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        background: getProviderColor(model.provider),
+                      }} />
+                      <span style={{
+                        flex: 1,
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: idx === 0 ? '#7C3AED' : '#374151',
+                      }}>
+                        {model.name}
+                      </span>
+                      <span style={{ fontSize: 13, color: '#9CA3AF', minWidth: 70 }}>{model.provider}</span>
+                      <div style={{ width: 100, height: 6, background: '#E5E7EB', borderRadius: 100, overflow: 'hidden' }}>
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${model.score * 100}%` }}
+                          transition={{ duration: 0.5, delay: idx * 0.05 }}
+                          style={{
+                            height: '100%',
+                            background: idx === 0 ? 'linear-gradient(90deg, #7C3AED 0%, #8B5CF6 100%)' : '#9CA3AF',
+                            borderRadius: 100,
+                          }}
+                        />
                       </div>
+                      <span style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: idx === 0 ? '#7C3AED' : '#6B7280',
+                        minWidth: 36,
+                        textAlign: 'right',
+                      }}>
+                        {Math.round(model.score * 100)}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            {/* Results Section */}
-            <AnimatePresence mode="wait">
-              {result && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="space-y-5"
-                >
-                  {/* Timing Card */}
-                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                    <div className="px-5 py-4 border-b border-gray-100">
-                      <h3 className="text-[15px] font-semibold text-gray-900">Routing Results</h3>
-                    </div>
-                    <div className="p-5 grid grid-cols-4 gap-4">
-                      <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                        <div className="text-[11px] text-indigo-600 uppercase tracking-wide mb-1">Confidence</div>
-                        <div className="text-2xl font-bold text-indigo-700">{Math.round(result.confidence * 100)}%</div>
-                      </div>
-                      <div className="text-center p-4 bg-emerald-50 rounded-lg">
-                        <div className="text-[11px] text-emerald-600 uppercase tracking-wide mb-1">Total Time</div>
-                        <div className="text-2xl font-bold text-emerald-700">{result.timing.totalMs.toFixed(1)}<span className="text-sm font-normal">ms</span></div>
-                      </div>
-                      <div className="text-center p-4 bg-blue-50 rounded-lg">
-                        <div className="text-[11px] text-blue-600 uppercase tracking-wide mb-1">Analysis</div>
-                        <div className="text-2xl font-bold text-blue-700">{result.timing.analysisMs.toFixed(1)}<span className="text-sm font-normal">ms</span></div>
-                      </div>
-                      <div className="text-center p-4 bg-amber-50 rounded-lg">
-                        <div className="text-[11px] text-amber-600 uppercase tracking-wide mb-1">Scoring</div>
-                        <div className="text-2xl font-bold text-amber-700">{result.timing.scoringMs.toFixed(1)}<span className="text-sm font-normal">ms</span></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Analysis + Rankings Grid */}
-                  <div className="grid grid-cols-2 gap-5">
-                    <AnalysisDisplay analysis={result.analysis} />
-
-                    {/* Model Rankings */}
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <span className="text-[15px] font-semibold text-gray-900">Model Ranking</span>
-                      </div>
-                      <div className="p-4 space-y-2">
-                        {[result.primaryModel, ...result.backupModels].map((model, idx) => {
-                          const isTop = idx === 0;
-                          return (
-                            <div
-                              key={model.id}
-                              className={`flex items-center gap-3 p-3 rounded-lg ${
-                                isTop ? 'bg-indigo-50 border border-indigo-100' : 'bg-gray-50'
-                              }`}
-                            >
-                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold ${
-                                isTop ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'
-                              }`}>
-                                {idx + 1}
-                              </div>
-                              <div className={`w-2 h-2 rounded-full ${getProviderColor(model.provider)}`} />
-                              <span className={`flex-1 text-[13px] font-medium truncate ${
-                                isTop ? 'text-indigo-900' : 'text-gray-700'
-                              }`}>
-                                {model.name}
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                  <motion.div
-                                    className={`h-full rounded-full ${isTop ? 'bg-indigo-500' : 'bg-gray-400'}`}
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${model.score * 100}%` }}
-                                    transition={{ duration: 0.5, delay: idx * 0.1 }}
-                                  />
-                                </div>
-                                <span className={`text-[12px] font-mono w-8 text-right ${
-                                  isTop ? 'text-indigo-600' : 'text-gray-500'
-                                }`}>
-                                  {Math.round(model.score * 100)}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Recommended Model */}
-                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                    <div className="px-5 py-4 border-b border-gray-100">
-                      <h3 className="text-[15px] font-semibold text-gray-900">Recommended Model</h3>
-                    </div>
-                    <div className="p-5">
-                      <ModelCard model={result.primaryModel} rank="primary" />
-                      {result.backupModels.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                          <h4 className="text-[13px] font-medium text-gray-500 mb-3">Alternatives</h4>
-                          <div className="space-y-2">
-                            {result.backupModels.map((model, index) => (
-                              <ModelCard key={model.id} model={model} rank="backup" index={index + 1} />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* JSON Viewer */}
-                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <button
-                      onClick={() => setShowJsonView(!showJsonView)}
-                      className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileJson className="w-4 h-4 text-gray-400" />
-                        <span className="text-[13px] font-medium text-gray-700">Raw JSON Response</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {showJsonView && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleCopyJson(); }}
-                            className="flex items-center gap-1 px-2 py-1 text-[11px] text-gray-500 hover:text-gray-700 bg-gray-100 rounded"
-                          >
-                            {copiedJson ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                            {copiedJson ? 'Copied!' : 'Copy'}
-                          </button>
-                        )}
-                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showJsonView ? 'rotate-180' : ''}`} />
-                      </div>
-                    </button>
-                    <AnimatePresence>
-                      {showJsonView && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="px-5 pb-5 border-t border-gray-100">
-                            <pre className="mt-4 p-4 text-[12px] font-mono bg-gray-50 rounded-lg overflow-x-auto text-gray-700 max-h-80 overflow-y-auto">
-                              {JSON.stringify({ request: lastRequest, response: result }, null, 2)}
-                            </pre>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="hidden lg:block w-80 flex-shrink-0 space-y-5">
-            {/* How To Use */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-              <h3 className="text-[15px] font-semibold text-gray-900 mb-4">How To Use</h3>
-              <div className="space-y-4">
-                <div className="guide-step">
-                  <div className="guide-step-number">1</div>
-                  <div>
-                    <div className="guide-step-title">Enter a Prompt</div>
-                    <div className="guide-step-desc">Type any text prompt to route to the optimal LLM model.</div>
-                  </div>
-                </div>
-                <div className="guide-step">
-                  <div className="guide-step-number">2</div>
-                  <div>
-                    <div className="guide-step-title">Configure Options</div>
-                    <div className="guide-step-desc">Select modality and add context or constraints.</div>
-                  </div>
-                </div>
-                <div className="guide-step">
-                  <div className="guide-step-number">3</div>
-                  <div>
-                    <div className="guide-step-title">Review Results</div>
-                    <div className="guide-step-desc">See the recommended model with scoring breakdown.</div>
-                  </div>
-                </div>
-              </div>
+        {/* Empty State */}
+        {!result && !isLoading && (
+          <div style={{
+            background: '#fff',
+            borderRadius: 16,
+            padding: '60px 40px',
+            textAlign: 'center',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+          }}>
+            <div style={{
+              width: 80,
+              height: 80,
+              borderRadius: 20,
+              background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px',
+            }}>
+              <Sparkles style={{ width: 40, height: 40, color: '#7C3AED' }} />
             </div>
-
-            {/* Scoring Factors */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-              <h3 className="text-[15px] font-semibold text-gray-900 mb-4">Scoring Factors</h3>
-              <div className="space-y-3">
-                {[
-                  { name: 'Task Fitness', weight: '40%', color: 'bg-indigo-500' },
-                  { name: 'Modality Fit', weight: '15%', color: 'bg-purple-500' },
-                  { name: 'Cost Efficiency', weight: '15%', color: 'bg-emerald-500' },
-                  { name: 'Speed', weight: '10%', color: 'bg-amber-500' },
-                  { name: 'User Preference', weight: '10%', color: 'bg-rose-500' },
-                  { name: 'Coherence', weight: '10%', color: 'bg-blue-500' },
-                ].map((factor) => (
-                  <div key={factor.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${factor.color}`} />
-                      <span className="text-[13px] text-gray-700">{factor.name}</span>
+            <h2 style={{ fontSize: 20, fontWeight: 600, color: '#1F2937', marginBottom: 8 }}>
+              Intelligent LLM Routing
+            </h2>
+            <p style={{ fontSize: 15, color: '#6B7280', maxWidth: 480, margin: '0 auto 32px', lineHeight: 1.6 }}>
+              Enter a prompt above and ADE will analyze it to recommend the optimal AI model based on task complexity, cost efficiency, and performance characteristics.
+            </p>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 16,
+              maxWidth: 600,
+              margin: '0 auto',
+            }}>
+              {scoringFactors.slice(0, 3).map((factor) => {
+                const Icon = factor.icon;
+                return (
+                  <div
+                    key={factor.name}
+                    style={{
+                      padding: 20,
+                      background: '#F9FAFB',
+                      borderRadius: 12,
+                    }}
+                  >
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 10,
+                      background: `${factor.color}15`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 12px',
+                    }}>
+                      <Icon style={{ width: 20, height: 20, color: factor.color }} />
                     </div>
-                    <span className="text-[12px] font-medium text-gray-400">{factor.weight}</span>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>{factor.name}</div>
+                    <div style={{ fontSize: 13, color: '#9CA3AF', marginTop: 4 }}>{factor.weight}% weight</div>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Models List */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-              <h3 className="text-[15px] font-semibold text-gray-900 mb-4">Available Models</h3>
-              <div className="space-y-4">
-                {[
-                  { provider: 'Anthropic', color: 'bg-amber-500', models: ['Claude Opus 4.5', 'Claude Sonnet 4', 'Claude Haiku 4.5'] },
-                  { provider: 'OpenAI', color: 'bg-emerald-500', models: ['GPT-4.1', 'GPT-4.1 Mini', 'GPT-4o', 'o4-mini'] },
-                  { provider: 'Google', color: 'bg-blue-500', models: ['Gemini 2.5 Pro', 'Gemini 2.5 Flash', 'Gemini 2.5 Flash Lite'] },
-                ].map((group) => (
-                  <div key={group.provider}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`w-2 h-2 rounded-full ${group.color}`} />
-                      <span className="text-[13px] font-medium text-gray-700">{group.provider}</span>
-                    </div>
-                    <div className="pl-4 space-y-1">
-                      {group.models.map((model) => (
-                        <div key={model} className="text-[12px] text-gray-500">{model}</div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* API Card */}
-            <div className="promo-card">
-              <h3>API Integration</h3>
-              <p>Integrate the routing engine into your application.</p>
-              <code className="block text-[11px] font-mono bg-white/10 px-3 py-2 rounded mb-3">
-                POST /api/v1/route
-              </code>
-              <a
-                href="/api/v1/health"
-                target="_blank"
-                className="inline-flex items-center gap-1.5 text-[12px] text-white/80 hover:text-white"
-              >
-                View API Health
-                <ExternalLink className="w-3 h-3" />
-              </a>
+                );
+              })}
             </div>
           </div>
-        </div>
+        )}
       </main>
 
       {/* Status Modal */}
       <AnimatePresence>
         {showStatus && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(0, 0, 0, 0.5)',
+                backdropFilter: 'blur(4px)',
+              }}
               onClick={() => setShowStatus(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-2xl max-h-[80vh] overflow-auto bg-white rounded-xl shadow-2xl"
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              style={{
+                position: 'relative',
+                width: '100%',
+                maxWidth: 640,
+                maxHeight: '80vh',
+                overflow: 'auto',
+                background: '#fff',
+                borderRadius: 16,
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              }}
             >
-              <div className="sticky top-0 flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-white">
-                <h2 className="text-[15px] font-semibold text-gray-900">System Status</h2>
+              <div style={{
+                position: 'sticky',
+                top: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '20px 24px',
+                borderBottom: '1px solid #F3F4F6',
+                background: '#fff',
+              }}>
+                <h2 style={{ fontSize: 18, fontWeight: 600, color: '#1F2937' }}>System Status</h2>
                 <button
                   onClick={() => setShowStatus(false)}
-                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 36,
+                    height: 36,
+                    background: '#F3F4F6',
+                    border: 'none',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    color: '#6B7280',
+                  }}
                 >
-                  <X className="w-4 h-4" />
+                  <X style={{ width: 18, height: 18 }} />
                 </button>
               </div>
-              <div className="p-5">
+              <div style={{ padding: 24 }}>
                 <StatusPage />
               </div>
             </motion.div>
