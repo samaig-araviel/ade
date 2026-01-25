@@ -31,9 +31,9 @@ export function analyze(
     ? parseModality(modality)
     : modality;
 
-  // Run all detectors
+  // Run all detectors - detect intent first, then use it for domain detection
   const intent = detectIntent(prompt);
-  const domain = detectDomain(prompt);
+  const domain = detectDomain(prompt, intent);  // Pass intent for context-aware domain detection
   const complexity = detectComplexity(prompt);
   const tone = detectTone(prompt);
   const keywords = extractPromptKeywords(prompt);
