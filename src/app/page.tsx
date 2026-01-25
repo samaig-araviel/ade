@@ -147,6 +147,703 @@ const SCORING_FACTORS = [
   { key: 'conversationCoherence', label: 'Coherence', weight: 10, icon: TrendingUp, color: '#3B82F6', desc: 'Consistency with previous model in conversation' },
 ];
 
+// ============ DOCS COMPONENT ============
+function DocsView() {
+  const [activeSection, setActiveSection] = useState('introduction');
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const copyToClipboard = async (code: string, id: string) => {
+    await navigator.clipboard.writeText(code);
+    setCopiedCode(id);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const CodeBlock = ({ code, language = 'bash', id }: { code: string; language?: string; id: string }) => (
+    <div style={{ position: 'relative', background: '#0D0D0D', borderRadius: 8, overflow: 'hidden', marginTop: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#1A1A1A', borderBottom: '1px solid #2D2D2D' }}>
+        <span style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{language}</span>
+        <button
+          onClick={() => copyToClipboard(code, id)}
+          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', fontSize: 11, color: '#888', background: 'transparent', border: '1px solid #333', borderRadius: 4, cursor: 'pointer' }}
+        >
+          {copiedCode === id ? <Check style={{ width: 12, height: 12, color: '#22C55E' }} /> : <Copy style={{ width: 12, height: 12 }} />}
+          {copiedCode === id ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      <pre style={{ margin: 0, padding: 16, fontSize: 13, fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace', color: '#E5E5E5', lineHeight: 1.6, overflowX: 'auto' }}>
+        {code}
+      </pre>
+    </div>
+  );
+
+  const ParamTable = ({ params }: { params: Array<{ name: string; type: string; required: boolean; description: string }> }) => (
+    <div style={{ marginTop: 16, border: '1px solid #E5E5E5', borderRadius: 8, overflow: 'hidden' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <thead>
+          <tr style={{ background: '#F9FAFB' }}>
+            <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E5E5' }}>Parameter</th>
+            <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E5E5' }}>Type</th>
+            <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E5E5' }}>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {params.map((param, idx) => (
+            <tr key={param.name} style={{ background: idx % 2 === 0 ? '#fff' : '#F9FAFB' }}>
+              <td style={{ padding: '10px 12px', borderBottom: '1px solid #E5E5E5' }}>
+                <code style={{ fontSize: 12, color: '#1F2937', background: '#F3F4F6', padding: '2px 6px', borderRadius: 4 }}>{param.name}</code>
+                {param.required && <span style={{ marginLeft: 6, fontSize: 10, color: '#DC2626', fontWeight: 600 }}>REQUIRED</span>}
+              </td>
+              <td style={{ padding: '10px 12px', borderBottom: '1px solid #E5E5E5', color: '#6B7280' }}>{param.type}</td>
+              <td style={{ padding: '10px 12px', borderBottom: '1px solid #E5E5E5', color: '#4B5563' }}>{param.description}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const sections = [
+    { id: 'introduction', label: 'Introduction' },
+    { id: 'authentication', label: 'Authentication' },
+    { id: 'route', label: 'Route Prompt' },
+    { id: 'models', label: 'List Models' },
+    { id: 'model-detail', label: 'Get Model' },
+    { id: 'analyze', label: 'Analyze Prompt' },
+    { id: 'feedback', label: 'Submit Feedback' },
+    { id: 'health', label: 'Health Check' },
+    { id: 'errors', label: 'Error Handling' },
+  ];
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 48, maxWidth: 1100 }}>
+      {/* Sidebar Navigation */}
+      <nav style={{ position: 'sticky', top: 72, alignSelf: 'start' }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>API Reference</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {sections.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              style={{
+                padding: '8px 12px',
+                fontSize: 13,
+                color: activeSection === section.id ? '#000' : '#6B7280',
+                background: activeSection === section.id ? '#F3F4F6' : 'transparent',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                textAlign: 'left',
+                fontWeight: activeSection === section.id ? 500 : 400,
+              }}
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div style={{ minWidth: 0 }}>
+        {/* Introduction */}
+        {activeSection === 'introduction' && (
+          <section>
+            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', margin: '0 0 8px' }}>ADE API Reference</h1>
+            <p style={{ fontSize: 15, color: '#6B7280', margin: '0 0 24px', lineHeight: 1.7 }}>
+              The Araviel Decision Engine (ADE) API enables intelligent LLM routing by analyzing prompts and selecting the optimal model based on task requirements, cost, and performance.
+            </p>
+
+            <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8, padding: 20, marginBottom: 24 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: '#111', margin: '0 0 12px' }}>Base URL</h3>
+              <code style={{ display: 'block', fontSize: 14, fontFamily: 'ui-monospace, monospace', color: '#059669', background: '#ECFDF5', padding: '12px 16px', borderRadius: 6 }}>
+                https://your-domain.com/api/v1
+              </code>
+            </div>
+
+            <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8, padding: 20 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: '#111', margin: '0 0 16px' }}>How It Works</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                {[
+                  { step: '1', title: 'Analyze', desc: 'Engine detects intent, domain, complexity, and tone from your prompt' },
+                  { step: '2', title: 'Score', desc: 'Each model is scored across 6 weighted factors (task fit, cost, speed, etc.)' },
+                  { step: '3', title: 'Select', desc: 'Models are ranked and the optimal choice is returned with backups' },
+                  { step: '4', title: 'Respond', desc: 'Get detailed reasoning, confidence scores, and timing metrics' },
+                ].map((item) => (
+                  <div key={item.step} style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ width: 28, height: 28, background: '#000', color: '#fff', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+                      {item.step}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 2 }}>{item.title}</div>
+                      <div style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.5 }}>{item.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Authentication */}
+        {activeSection === 'authentication' && (
+          <section>
+            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', margin: '0 0 8px' }}>Authentication</h1>
+            <p style={{ fontSize: 15, color: '#6B7280', margin: '0 0 24px', lineHeight: 1.7 }}>
+              ADE uses API keys to authenticate requests. Include your API key in the Authorization header.
+            </p>
+
+            <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 8, padding: 16, marginBottom: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <AlertCircle style={{ width: 18, height: 18, color: '#D97706', flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#92400E', marginBottom: 4 }}>Keep your API key secure</div>
+                  <div style={{ fontSize: 13, color: '#A16207', lineHeight: 1.5 }}>Never expose your API key in client-side code or public repositories. Use environment variables.</div>
+                </div>
+              </div>
+            </div>
+
+            <CodeBlock
+              id="auth-example"
+              language="bash"
+              code={`curl https://your-domain.com/api/v1/route \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"prompt": "Hello, world!"}'`}
+            />
+
+            <div style={{ marginTop: 24, background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8, padding: 20 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: '#111', margin: '0 0 12px' }}>Request Headers</h3>
+              <ParamTable
+                params={[
+                  { name: 'Authorization', type: 'string', required: true, description: 'Bearer token with your API key' },
+                  { name: 'Content-Type', type: 'string', required: true, description: 'Must be application/json for POST requests' },
+                ]}
+              />
+            </div>
+          </section>
+        )}
+
+        {/* Route Prompt */}
+        {activeSection === 'route' && (
+          <section>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600, color: '#059669', background: '#D1FAE5', borderRadius: 4 }}>POST</span>
+              <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', margin: 0 }}>Route Prompt</h1>
+            </div>
+            <code style={{ fontSize: 14, fontFamily: 'ui-monospace, monospace', color: '#6B7280' }}>/api/v1/route</code>
+            <p style={{ fontSize: 15, color: '#6B7280', margin: '16px 0 24px', lineHeight: 1.7 }}>
+              Analyzes a prompt and returns the optimal model recommendation along with backup options, scoring breakdown, and confidence metrics.
+            </p>
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '0 0 12px' }}>Request Body</h3>
+            <ParamTable
+              params={[
+                { name: 'prompt', type: 'string', required: true, description: 'The user prompt to analyze and route' },
+                { name: 'modality', type: 'string', required: false, description: 'Input type: text, image, voice, text+image, text+voice. Defaults to text' },
+                { name: 'humanContext', type: 'object', required: false, description: 'Optional context about user state (mood, time, preferences)' },
+                { name: 'constraints', type: 'object', required: false, description: 'Optional constraints (max cost, latency, required capabilities)' },
+                { name: 'conversationId', type: 'string', required: false, description: 'ID to maintain model coherence across conversation turns' },
+              ]}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Example Request</h3>
+            <CodeBlock
+              id="route-request"
+              language="bash"
+              code={`curl -X POST https://your-domain.com/api/v1/route \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "prompt": "Write a creative short story about a robot learning to paint",
+    "modality": "text",
+    "humanContext": {
+      "emotionalState": { "mood": "relaxed", "energyLevel": "high" },
+      "preferences": { "preferredResponseStyle": "detailed" }
+    },
+    "constraints": {
+      "maxLatencyMs": 3000
+    }
+  }'`}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Example Response</h3>
+            <CodeBlock
+              id="route-response"
+              language="json"
+              code={`{
+  "decisionId": "dec_abc123xyz",
+  "primaryModel": {
+    "id": "claude-sonnet-4-5",
+    "name": "Claude Sonnet 4.5",
+    "provider": "Anthropic",
+    "score": 0.91,
+    "reasoning": {
+      "summary": "Claude Sonnet 4.5 excels at creative writing tasks with nuanced storytelling capabilities",
+      "factors": [
+        { "name": "Task Fitness", "score": 0.95, "weight": 0.50, "weightedScore": 0.475, "detail": "Excellent creative writing and storytelling ability" },
+        { "name": "Modality Fit", "score": 1.0, "weight": 0.15, "weightedScore": 0.15, "detail": "Full text support" },
+        { "name": "Cost Efficiency", "score": 0.75, "weight": 0.10, "weightedScore": 0.075, "detail": "Mid-range pricing at $0.003/1K tokens" },
+        { "name": "Speed", "score": 0.80, "weight": 0.07, "weightedScore": 0.056, "detail": "800ms average latency" },
+        { "name": "User Preference", "score": 0.90, "weight": 0.10, "weightedScore": 0.09, "detail": "Matches preferred detailed style" },
+        { "name": "Coherence", "score": 0.80, "weight": 0.08, "weightedScore": 0.064, "detail": "New conversation" }
+      ]
+    }
+  },
+  "backupModels": [
+    { "id": "claude-opus-4-5", "name": "Claude Opus 4.5", "provider": "Anthropic", "score": 0.88 },
+    { "id": "gpt-5-2", "name": "GPT-5.2", "provider": "OpenAI", "score": 0.85 }
+  ],
+  "confidence": 0.87,
+  "analysis": {
+    "intent": "Creative",
+    "domain": "Creative Arts",
+    "complexity": "Standard",
+    "tone": "Neutral",
+    "modality": "text",
+    "keywords": ["story", "creative", "robot", "painting"],
+    "humanContextUsed": true
+  },
+  "timing": {
+    "totalMs": 23.5,
+    "analysisMs": 8.2,
+    "scoringMs": 12.1,
+    "selectionMs": 3.2
+  }
+}`}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Human Context Object</h3>
+            <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 12px', lineHeight: 1.6 }}>
+              Providing human context shifts scoring weights to include a 15% human context fit factor.
+            </p>
+            <CodeBlock
+              id="human-context"
+              language="json"
+              code={`{
+  "humanContext": {
+    "emotionalState": {
+      "mood": "happy | neutral | stressed | frustrated | excited | tired",
+      "energyLevel": "low | moderate | high"
+    },
+    "temporalContext": {
+      "localTime": "14:30",
+      "timezone": "America/New_York",
+      "dayOfWeek": "Monday",
+      "isWorkingHours": true
+    },
+    "environmentalContext": {
+      "weather": "sunny | cloudy | rainy | stormy",
+      "location": "United States"
+    },
+    "preferences": {
+      "preferredResponseStyle": "concise | detailed | conversational | formal",
+      "preferredResponseLength": "short | medium | long",
+      "preferredModels": ["claude-opus-4-5"],
+      "avoidModels": ["gpt-4-1-mini"]
+    }
+  }
+}`}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Constraints Object</h3>
+            <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 12px', lineHeight: 1.6 }}>
+              Constraints filter out models that don&apos;t meet requirements before scoring.
+            </p>
+            <CodeBlock
+              id="constraints"
+              language="json"
+              code={`{
+  "constraints": {
+    "maxCostPer1kTokens": 0.01,
+    "maxLatencyMs": 2000,
+    "allowedModels": ["claude-sonnet-4-5", "gpt-5-2"],
+    "excludedModels": ["gemini-2-5-flash"],
+    "requireStreaming": true,
+    "requireVision": false,
+    "requireAudio": false
+  }
+}`}
+            />
+          </section>
+        )}
+
+        {/* List Models */}
+        {activeSection === 'models' && (
+          <section>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600, color: '#2563EB', background: '#DBEAFE', borderRadius: 4 }}>GET</span>
+              <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', margin: 0 }}>List Models</h1>
+            </div>
+            <code style={{ fontSize: 14, fontFamily: 'ui-monospace, monospace', color: '#6B7280' }}>/api/v1/models</code>
+            <p style={{ fontSize: 15, color: '#6B7280', margin: '16px 0 24px', lineHeight: 1.7 }}>
+              Returns a list of all available models with their capabilities, pricing, and performance characteristics.
+            </p>
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '0 0 12px' }}>Query Parameters</h3>
+            <ParamTable
+              params={[
+                { name: 'provider', type: 'string', required: false, description: 'Filter by provider: anthropic, openai, google' },
+                { name: 'capability', type: 'string', required: false, description: 'Filter by capability: vision, audio, streaming, functions' },
+                { name: 'limit', type: 'integer', required: false, description: 'Number of models to return (default: 50, max: 100)' },
+                { name: 'offset', type: 'integer', required: false, description: 'Pagination offset (default: 0)' },
+              ]}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Example Request</h3>
+            <CodeBlock
+              id="models-request"
+              language="bash"
+              code={`curl https://your-domain.com/api/v1/models?provider=anthropic \\
+  -H "Authorization: Bearer YOUR_API_KEY"`}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Example Response</h3>
+            <CodeBlock
+              id="models-response"
+              language="json"
+              code={`{
+  "models": [
+    {
+      "id": "claude-opus-4-5",
+      "name": "Claude Opus 4.5",
+      "provider": "Anthropic",
+      "description": "Most capable Claude model for complex reasoning and analysis",
+      "pricing": {
+        "inputPer1k": 0.015,
+        "outputPer1k": 0.075
+      },
+      "capabilities": {
+        "maxInputTokens": 200000,
+        "maxOutputTokens": 32000,
+        "supportsVision": true,
+        "supportsAudio": false,
+        "supportsStreaming": true,
+        "supportsFunctionCalling": true
+      },
+      "performance": {
+        "avgLatencyMs": 2500,
+        "reliabilityPercent": 99.5
+      },
+      "strengths": ["complex_reasoning", "creative_writing", "analysis"]
+    }
+  ],
+  "total": 15,
+  "limit": 50,
+  "offset": 0
+}`}
+            />
+          </section>
+        )}
+
+        {/* Get Model */}
+        {activeSection === 'model-detail' && (
+          <section>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600, color: '#2563EB', background: '#DBEAFE', borderRadius: 4 }}>GET</span>
+              <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', margin: 0 }}>Get Model</h1>
+            </div>
+            <code style={{ fontSize: 14, fontFamily: 'ui-monospace, monospace', color: '#6B7280' }}>/api/v1/models/:id</code>
+            <p style={{ fontSize: 15, color: '#6B7280', margin: '16px 0 24px', lineHeight: 1.7 }}>
+              Returns detailed information about a specific model including full capabilities, pricing tiers, and performance metrics.
+            </p>
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '0 0 12px' }}>Path Parameters</h3>
+            <ParamTable
+              params={[
+                { name: 'id', type: 'string', required: true, description: 'The unique model identifier (e.g., claude-opus-4-5)' },
+              ]}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Example Request</h3>
+            <CodeBlock
+              id="model-detail-request"
+              language="bash"
+              code={`curl https://your-domain.com/api/v1/models/claude-opus-4-5 \\
+  -H "Authorization: Bearer YOUR_API_KEY"`}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Example Response</h3>
+            <CodeBlock
+              id="model-detail-response"
+              language="json"
+              code={`{
+  "id": "claude-opus-4-5",
+  "name": "Claude Opus 4.5",
+  "provider": "Anthropic",
+  "description": "Anthropic's most capable model, excelling at complex reasoning, creative writing, and nuanced analysis",
+  "version": "4.5",
+  "releaseDate": "2025-03-01",
+  "pricing": {
+    "inputPer1k": 0.015,
+    "outputPer1k": 0.075,
+    "cachedInputPer1k": 0.0075
+  },
+  "capabilities": {
+    "maxInputTokens": 200000,
+    "maxOutputTokens": 32000,
+    "supportsVision": true,
+    "supportsAudio": false,
+    "supportsStreaming": true,
+    "supportsFunctionCalling": true,
+    "supportsSystemPrompts": true
+  },
+  "performance": {
+    "avgLatencyMs": 2500,
+    "p95LatencyMs": 4500,
+    "reliabilityPercent": 99.5,
+    "throughputTokensPerSec": 85
+  },
+  "strengths": ["complex_reasoning", "creative_writing", "analysis", "coding", "math"],
+  "bestFor": ["Research tasks", "Long-form content", "Complex problem solving"]
+}`}
+            />
+          </section>
+        )}
+
+        {/* Analyze Prompt */}
+        {activeSection === 'analyze' && (
+          <section>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600, color: '#059669', background: '#D1FAE5', borderRadius: 4 }}>POST</span>
+              <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', margin: 0 }}>Analyze Prompt</h1>
+            </div>
+            <code style={{ fontSize: 14, fontFamily: 'ui-monospace, monospace', color: '#6B7280' }}>/api/v1/analyze</code>
+            <p style={{ fontSize: 15, color: '#6B7280', margin: '16px 0 24px', lineHeight: 1.7 }}>
+              Analyzes a prompt without performing model selection. Useful for understanding how the engine interprets your prompts.
+            </p>
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '0 0 12px' }}>Request Body</h3>
+            <ParamTable
+              params={[
+                { name: 'prompt', type: 'string', required: true, description: 'The prompt to analyze' },
+                { name: 'modality', type: 'string', required: false, description: 'Input modality type (defaults to text)' },
+              ]}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Example Request</h3>
+            <CodeBlock
+              id="analyze-request"
+              language="bash"
+              code={`curl -X POST https://your-domain.com/api/v1/analyze \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"prompt": "Debug this Python function and optimize for performance"}'`}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Example Response</h3>
+            <CodeBlock
+              id="analyze-response"
+              language="json"
+              code={`{
+  "analysis": {
+    "intent": "Coding",
+    "domain": "Technology",
+    "complexity": "Standard",
+    "tone": "Neutral",
+    "modality": "text",
+    "keywords": ["debug", "python", "function", "optimize", "performance"],
+    "estimatedTokens": 12,
+    "language": "en"
+  },
+  "timing": {
+    "analysisMs": 5.3
+  }
+}`}
+            />
+          </section>
+        )}
+
+        {/* Submit Feedback */}
+        {activeSection === 'feedback' && (
+          <section>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600, color: '#059669', background: '#D1FAE5', borderRadius: 4 }}>POST</span>
+              <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', margin: 0 }}>Submit Feedback</h1>
+            </div>
+            <code style={{ fontSize: 14, fontFamily: 'ui-monospace, monospace', color: '#6B7280' }}>/api/v1/feedback</code>
+            <p style={{ fontSize: 15, color: '#6B7280', margin: '16px 0 24px', lineHeight: 1.7 }}>
+              Submit feedback on a routing decision to help improve the engine. Feedback is used to refine scoring weights and model rankings.
+            </p>
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '0 0 12px' }}>Request Body</h3>
+            <ParamTable
+              params={[
+                { name: 'decisionId', type: 'string', required: true, description: 'The decision ID from the route response' },
+                { name: 'rating', type: 'integer', required: true, description: 'Rating from 1-5 (1=poor, 5=excellent)' },
+                { name: 'selectedModel', type: 'string', required: false, description: 'Model ID if user chose a different model' },
+                { name: 'comment', type: 'string', required: false, description: 'Optional feedback comment' },
+              ]}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Example Request</h3>
+            <CodeBlock
+              id="feedback-request"
+              language="bash"
+              code={`curl -X POST https://your-domain.com/api/v1/feedback \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "decisionId": "dec_abc123xyz",
+    "rating": 5,
+    "comment": "Perfect model choice for this creative task"
+  }'`}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Example Response</h3>
+            <CodeBlock
+              id="feedback-response"
+              language="json"
+              code={`{
+  "success": true,
+  "feedbackId": "fb_def456uvw",
+  "message": "Feedback recorded successfully"
+}`}
+            />
+          </section>
+        )}
+
+        {/* Health Check */}
+        {activeSection === 'health' && (
+          <section>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600, color: '#2563EB', background: '#DBEAFE', borderRadius: 4 }}>GET</span>
+              <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', margin: 0 }}>Health Check</h1>
+            </div>
+            <code style={{ fontSize: 14, fontFamily: 'ui-monospace, monospace', color: '#6B7280' }}>/api/v1/health</code>
+            <p style={{ fontSize: 15, color: '#6B7280', margin: '16px 0 24px', lineHeight: 1.7 }}>
+              Returns the current health status of the ADE engine and its dependencies.
+            </p>
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '0 0 12px' }}>Example Request</h3>
+            <CodeBlock
+              id="health-request"
+              language="bash"
+              code={`curl https://your-domain.com/api/v1/health`}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Example Response</h3>
+            <CodeBlock
+              id="health-response"
+              language="json"
+              code={`{
+  "status": "healthy",
+  "version": "1.0.0",
+  "timestamp": "2025-01-25T10:30:00Z",
+  "services": {
+    "kv": "connected",
+    "cache": "connected"
+  },
+  "uptime": 86400,
+  "requestsProcessed": 15420
+}`}
+            />
+
+            <div style={{ marginTop: 24, background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8, padding: 20 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: '#111', margin: '0 0 12px' }}>Status Values</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  { status: 'healthy', color: '#22C55E', desc: 'All systems operational' },
+                  { status: 'degraded', color: '#F59E0B', desc: 'Some services experiencing issues but core functionality works' },
+                  { status: 'unhealthy', color: '#EF4444', desc: 'Critical services are down' },
+                ].map((item) => (
+                  <div key={item.status} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: item.color }} />
+                    <code style={{ fontSize: 12, color: '#374151' }}>{item.status}</code>
+                    <span style={{ fontSize: 13, color: '#6B7280' }}>{item.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Error Handling */}
+        {activeSection === 'errors' && (
+          <section>
+            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', margin: '0 0 8px' }}>Error Handling</h1>
+            <p style={{ fontSize: 15, color: '#6B7280', margin: '0 0 24px', lineHeight: 1.7 }}>
+              ADE uses standard HTTP status codes and returns consistent error objects for all error responses.
+            </p>
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '0 0 12px' }}>Error Response Format</h3>
+            <CodeBlock
+              id="error-format"
+              language="json"
+              code={`{
+  "error": {
+    "code": "invalid_request",
+    "message": "The 'prompt' field is required",
+    "param": "prompt",
+    "type": "validation_error"
+  }
+}`}
+            />
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>HTTP Status Codes</h3>
+            <div style={{ border: '1px solid #E5E5E5', borderRadius: 8, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#F9FAFB' }}>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E5E5', width: 100 }}>Code</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E5E5' }}>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { code: '200', desc: 'Success - Request completed successfully' },
+                    { code: '400', desc: 'Bad Request - Invalid request body or parameters' },
+                    { code: '401', desc: 'Unauthorized - Missing or invalid API key' },
+                    { code: '403', desc: 'Forbidden - API key lacks required permissions' },
+                    { code: '404', desc: 'Not Found - Requested resource does not exist' },
+                    { code: '429', desc: 'Too Many Requests - Rate limit exceeded' },
+                    { code: '500', desc: 'Internal Server Error - Unexpected server error' },
+                    { code: '503', desc: 'Service Unavailable - Engine temporarily unavailable' },
+                  ].map((item, idx) => (
+                    <tr key={item.code} style={{ background: idx % 2 === 0 ? '#fff' : '#F9FAFB' }}>
+                      <td style={{ padding: '10px 12px', borderBottom: '1px solid #E5E5E5' }}>
+                        <code style={{ fontSize: 12, color: item.code.startsWith('2') ? '#059669' : item.code.startsWith('4') ? '#D97706' : '#DC2626', fontWeight: 600 }}>{item.code}</code>
+                      </td>
+                      <td style={{ padding: '10px 12px', borderBottom: '1px solid #E5E5E5', color: '#4B5563' }}>{item.desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '32px 0 12px' }}>Error Codes</h3>
+            <div style={{ border: '1px solid #E5E5E5', borderRadius: 8, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#F9FAFB' }}>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E5E5' }}>Code</th>
+                    <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E5E5' }}>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { code: 'invalid_request', desc: 'Request body is malformed or missing required fields' },
+                    { code: 'invalid_api_key', desc: 'The provided API key is invalid or expired' },
+                    { code: 'model_not_found', desc: 'The specified model ID does not exist' },
+                    { code: 'no_models_available', desc: 'No models match the given constraints' },
+                    { code: 'rate_limit_exceeded', desc: 'Too many requests, please slow down' },
+                    { code: 'internal_error', desc: 'An unexpected error occurred on the server' },
+                  ].map((item, idx) => (
+                    <tr key={item.code} style={{ background: idx % 2 === 0 ? '#fff' : '#F9FAFB' }}>
+                      <td style={{ padding: '10px 12px', borderBottom: '1px solid #E5E5E5' }}>
+                        <code style={{ fontSize: 12, color: '#374151' }}>{item.code}</code>
+                      </td>
+                      <td style={{ padding: '10px 12px', borderBottom: '1px solid #E5E5E5', color: '#4B5563' }}>{item.desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ============ COMPONENT ============
 export default function Home() {
   // Navigation
@@ -978,103 +1675,7 @@ export default function Home() {
 
         {/* ============ DOCS VIEW ============ */}
         {activeView === 'docs' && (
-          <div style={{ maxWidth: 800 }}>
-            <div style={{ marginBottom: 32 }}>
-              <h1 style={{ fontSize: 24, fontWeight: 600, color: '#000', margin: '0 0 8px' }}>ADE Documentation</h1>
-              <p style={{ fontSize: 14, color: '#666', margin: 0, lineHeight: 1.6 }}>
-                The Araviel Decision Engine (ADE) is an intelligent LLM routing system that analyzes prompts and recommends the optimal AI model based on task requirements, cost efficiency, and performance characteristics.
-              </p>
-            </div>
-
-            {/* How It Works */}
-            <section style={{ marginBottom: 32 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#000', margin: '0 0 12px' }}>How It Works</h2>
-              <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8, padding: 20 }}>
-                <ol style={{ margin: 0, paddingLeft: 20 }}>
-                  <li style={{ marginBottom: 12, fontSize: 14, color: '#333', lineHeight: 1.6 }}>
-                    <strong>Analysis:</strong> The engine analyzes your prompt to detect intent (coding, creative, analysis, etc.), domain (technology, business, etc.), and complexity (quick, standard, demanding).
-                  </li>
-                  <li style={{ marginBottom: 12, fontSize: 14, color: '#333', lineHeight: 1.6 }}>
-                    <strong>Scoring:</strong> Each available model is scored across 7 factors: Task Fitness (40%), Modality Fit (15%), Cost Efficiency (15%), Speed (10%), User Preference (10%), Coherence (10%), and optionally Human Context Fit (15%).
-                  </li>
-                  <li style={{ marginBottom: 12, fontSize: 14, color: '#333', lineHeight: 1.6 }}>
-                    <strong>Selection:</strong> Models are ranked by composite score. The top model becomes the primary recommendation, with 2 backups provided.
-                  </li>
-                  <li style={{ fontSize: 14, color: '#333', lineHeight: 1.6 }}>
-                    <strong>Confidence:</strong> A confidence score (50-98%) indicates how strongly the engine recommends the primary model over alternatives.
-                  </li>
-                </ol>
-              </div>
-            </section>
-
-            {/* Why Gemini Flash Often Wins */}
-            <section style={{ marginBottom: 32 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#000', margin: '0 0 12px' }}>Why Gemini 2.5 Flash Often Ranks First</h2>
-              <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 8, padding: 16 }}>
-                <p style={{ margin: '0 0 12px', fontSize: 14, color: '#92400E', lineHeight: 1.6 }}>
-                  This is <strong>intentional and correct</strong>. Gemini 2.5 Flash is the &quot;goldilocks&quot; model that balances capability with efficiency:
-                </p>
-                <ul style={{ margin: 0, paddingLeft: 20 }}>
-                  <li style={{ marginBottom: 6, fontSize: 13, color: '#92400E' }}>200-250x cheaper than Claude Opus ($0.000075 vs $0.015 per 1K input tokens)</li>
-                  <li style={{ marginBottom: 6, fontSize: 13, color: '#92400E' }}>5x faster (500ms vs 2500ms average latency)</li>
-                  <li style={{ marginBottom: 6, fontSize: 13, color: '#92400E' }}>Still highly capable (0.82-0.90 scores on most tasks)</li>
-                  <li style={{ fontSize: 13, color: '#92400E' }}>Cost (15%) + Speed (10%) = 25% of scoring favors efficient models</li>
-                </ul>
-                <p style={{ margin: '12px 0 0', fontSize: 13, color: '#92400E' }}>
-                  To change this behavior, use <strong>Constraints</strong> (exclude cheap models) or <strong>Human Context</strong> (shift weights toward task fit).
-                </p>
-              </div>
-            </section>
-
-            {/* API Reference */}
-            <section style={{ marginBottom: 32 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#000', margin: '0 0 12px' }}>API Reference</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {[
-                  { method: 'POST', path: '/api/v1/route', desc: 'Route a prompt to the optimal model' },
-                  { method: 'GET', path: '/api/v1/models', desc: 'List all available models' },
-                  { method: 'GET', path: '/api/v1/models/:id', desc: 'Get details for a specific model' },
-                  { method: 'POST', path: '/api/v1/analyze', desc: 'Analyze a prompt without routing' },
-                  { method: 'GET', path: '/api/v1/health', desc: 'Check engine health status' },
-                  { method: 'POST', path: '/api/v1/feedback', desc: 'Submit feedback for a routing decision' },
-                ].map((endpoint) => (
-                  <div key={endpoint.path} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: '#fff', border: '1px solid #E5E5E5', borderRadius: 6 }}>
-                    <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 600, color: endpoint.method === 'POST' ? '#059669' : '#2563EB', background: endpoint.method === 'POST' ? '#D1FAE5' : '#DBEAFE', borderRadius: 4 }}>
-                      {endpoint.method}
-                    </span>
-                    <code style={{ fontSize: 13, fontFamily: 'ui-monospace, monospace', color: '#000' }}>{endpoint.path}</code>
-                    <span style={{ flex: 1, fontSize: 13, color: '#666' }}>{endpoint.desc}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Request Format */}
-            <section>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#000', margin: '0 0 12px' }}>Route Request Format</h2>
-              <div style={{ background: '#18181B', borderRadius: 8, padding: 16 }}>
-                <pre style={{ margin: 0, fontSize: 12, fontFamily: 'ui-monospace, monospace', color: '#A1A1AA', lineHeight: 1.6 }}>
-{`{
-  "prompt": "string (required)",
-  "modality": "text | image | voice | text+image | text+voice",
-  "humanContext": {
-    "emotionalState": { "mood": "string", "energyLevel": "string" },
-    "temporalContext": { "localTime": "HH:MM", "isWorkingHours": boolean },
-    "environmentalContext": { "weather": "string", "location": "string" },
-    "preferences": { "preferredResponseStyle": "string" }
-  },
-  "constraints": {
-    "maxCostPer1kTokens": number,
-    "maxLatencyMs": number,
-    "requireVision": boolean,
-    "requireAudio": boolean,
-    "excludedModels": ["model-id-1", "model-id-2"]
-  }
-}`}
-                </pre>
-              </div>
-            </section>
-          </div>
+          <DocsView />
         )}
       </main>
 
