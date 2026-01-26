@@ -20,6 +20,9 @@ export interface ModelCapabilities {
   supportsAudio: boolean;
   supportsFunctionCalling: boolean;
   supportsJsonMode: boolean;
+  supportsExtendedThinking?: boolean;
+  supportsReasoning?: boolean;
+  supportsWebSearch?: boolean;
   visionScore: number; // 0-1
   audioScore: number; // 0-1
 }
