@@ -823,10 +823,10 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
         </div>
       </main>
 
-      {/* Right Code Panel - Dark like Stripe */}
+      {/* Right Code Panel - Light mode */}
       <aside style={{
         width: 480,
-        background: '#1E2432',
+        background: '#F8F9FA',
         flexShrink: 0,
         overflowY: 'auto',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
@@ -836,6 +836,7 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
           display: 'flex',
           alignItems: 'center',
           padding: '16px 24px',
+          borderBottom: '1px solid #E5E7EB',
           gap: 4
         }}>
           {codeLangs.map((lang) => (
@@ -846,8 +847,8 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
                 padding: '8px 14px',
                 fontSize: 13,
                 fontWeight: 500,
-                color: activeCodeLang === lang.id ? '#FFFFFF' : '#8892A6',
-                background: activeCodeLang === lang.id ? '#5469D4' : 'transparent',
+                color: activeCodeLang === lang.id ? '#FFFFFF' : '#4B5563',
+                background: activeCodeLang === lang.id ? '#4F46E5' : 'transparent',
                 border: 'none',
                 borderRadius: 5,
                 cursor: 'pointer',
@@ -859,21 +860,21 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
           ))}
         </div>
 
-        <div style={{ padding: '0 24px 24px' }}>
+        <div style={{ padding: '20px 24px' }}>
           {/* Endpoint badge */}
           {currentEndpoint && (
             <div style={{ marginBottom: 20 }}>
               <span style={{
                 fontSize: 13,
-                fontWeight: 500,
-                color: currentEndpoint.method === 'POST' ? '#7FECAD' : '#7FECAD',
+                fontWeight: 600,
+                color: currentEndpoint.method === 'POST' ? '#16A34A' : '#2563EB',
                 fontFamily: '"SF Mono", Monaco, "Menlo", monospace'
               }}>
                 {currentEndpoint.method}
               </span>
               <span style={{
                 fontSize: 13,
-                color: '#F8F9FA',
+                color: '#374151',
                 marginLeft: 10,
                 fontFamily: '"SF Mono", Monaco, "Menlo", monospace'
               }}>
@@ -884,32 +885,33 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
 
           {/* Example Request */}
           {currentCode && (
-            <div style={{ marginBottom: 28 }}>
+            <div style={{ marginBottom: 24 }}>
               <div style={{
                 fontSize: 13,
-                fontWeight: 500,
-                color: '#A3ACB9',
-                marginBottom: 14
+                fontWeight: 600,
+                color: '#374151',
+                marginBottom: 12
               }}>
                 Example Request
               </div>
               <div style={{
-                background: '#0A0E14',
-                borderRadius: 6,
-                padding: '18px 20px',
+                background: '#FFFFFF',
+                borderRadius: 8,
+                padding: '16px 18px',
+                border: '1px solid #E5E7EB',
                 position: 'relative'
               }}>
                 <button
                   onClick={() => copyToClipboard(currentCode[activeCodeLang] || '', 'request')}
                   style={{
                     position: 'absolute',
-                    top: 14,
-                    right: 14,
+                    top: 12,
+                    right: 12,
                     padding: '5px 10px',
                     fontSize: 11,
-                    color: '#8892A6',
-                    background: 'transparent',
-                    border: '1px solid #2D3748',
+                    color: '#6B7280',
+                    background: '#F3F4F6',
+                    border: '1px solid #E5E7EB',
                     borderRadius: 4,
                     cursor: 'pointer',
                   }}
@@ -921,27 +923,27 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
                   fontSize: 13,
                   lineHeight: 1.7,
                   fontFamily: '"SF Mono", Monaco, "Menlo", "Consolas", monospace',
-                  color: '#F8F9FA',
+                  color: '#1F2937',
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word'
                 }}>
                   <style>{`
-                    .hl-cmd { color: #F8F9FA; font-weight: 400; }
-                    .hl-url { color: #F8F9FA; }
-                    .hl-flag { color: #F8F9FA; }
-                    .hl-key { color: #80CBC4; }
-                    .hl-param { color: #80CBC4; }
-                    .hl-eq { color: #80CBC4; }
-                    .hl-value { color: #80CBC4; }
-                    .hl-quote { color: #ECC48D; }
-                    .hl-string { color: #ECC48D; }
-                    .hl-json-key { color: #80CBC4; }
-                    .hl-json-string { color: #ECC48D; }
-                    .hl-json-number { color: #F78C6C; }
-                    .hl-json-bool { color: #F78C6C; }
-                    .hl-json-null { color: #F78C6C; }
+                    .hl-cmd { color: #1F2937; font-weight: 500; }
+                    .hl-url { color: #1F2937; }
+                    .hl-flag { color: #1F2937; }
+                    .hl-key { color: #0891B2; }
+                    .hl-param { color: #0891B2; }
+                    .hl-eq { color: #6B7280; }
+                    .hl-value { color: #0891B2; }
+                    .hl-quote { color: #059669; }
+                    .hl-string { color: #059669; }
+                    .hl-json-key { color: #7C3AED; }
+                    .hl-json-string { color: #059669; }
+                    .hl-json-number { color: #D97706; }
+                    .hl-json-bool { color: #DC2626; }
+                    .hl-json-null { color: #6B7280; }
                   `}</style>
-                  <span style={{ color: '#8892A6', userSelect: 'none' }}>$ </span>
+                  <span style={{ color: '#9CA3AF', userSelect: 'none' }}>$ </span>
                   {activeCodeLang === 'curl' ? (
                     <span dangerouslySetInnerHTML={{ __html: highlightCurl(currentCode[activeCodeLang] || '') }} />
                   ) : (
@@ -957,16 +959,17 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
             <div>
               <div style={{
                 fontSize: 13,
-                fontWeight: 500,
-                color: '#A3ACB9',
-                marginBottom: 14
+                fontWeight: 600,
+                color: '#374151',
+                marginBottom: 12
               }}>
                 Example Response
               </div>
               <div style={{
-                background: '#0A0E14',
-                borderRadius: 6,
-                padding: '18px 20px',
+                background: '#FFFFFF',
+                borderRadius: 8,
+                padding: '16px 18px',
+                border: '1px solid #E5E7EB',
                 maxHeight: 420,
                 overflowY: 'auto'
               }}>
@@ -975,7 +978,7 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
                   fontSize: 13,
                   lineHeight: 1.7,
                   fontFamily: '"SF Mono", Monaco, "Menlo", "Consolas", monospace',
-                  color: '#F8F9FA',
+                  color: '#1F2937',
                   whiteSpace: 'pre-wrap'
                 }}>
                   <span dangerouslySetInnerHTML={{ __html: highlightJSON(currentResponse) }} />
@@ -986,7 +989,7 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
 
           {/* Placeholder for sections without code */}
           {!currentCode && !currentResponse && (
-            <div style={{ color: '#8B8BA7', fontSize: 14, textAlign: 'center', paddingTop: 60 }}>
+            <div style={{ color: '#6B7280', fontSize: 14, textAlign: 'center', paddingTop: 60 }}>
               Select an endpoint to see code examples
             </div>
           )}
