@@ -13,8 +13,9 @@ import {
   ChevronRight,
   ChevronDown,
   MessageSquare,
-  Image,
+  Image as ImageIcon,
   Mic,
+  MicOff,
   Layers,
   Settings2,
   Zap,
@@ -29,6 +30,12 @@ import {
   XCircle,
   Box,
   BookOpen,
+  Paperclip,
+  MapPin,
+  Cloud,
+  Filter,
+  ChevronLeft,
+  Loader2,
 } from 'lucide-react';
 
 // ============ TYPES ============
@@ -116,7 +123,7 @@ interface HealthResponse {
 // ============ CONSTANTS ============
 const MODALITIES = [
   { id: 'text', label: 'Text', icon: MessageSquare, desc: 'Text-only prompts' },
-  { id: 'image', label: 'Vision', icon: Image, desc: 'Image analysis' },
+  { id: 'image', label: 'Vision', icon: ImageIcon, desc: 'Image analysis' },
   { id: 'voice', label: 'Voice', icon: Mic, desc: 'Audio processing' },
   { id: 'text+image', label: 'Text+Vision', icon: Eye, desc: 'Combined text and image' },
   { id: 'text+voice', label: 'Text+Voice', icon: AudioLines, desc: 'Combined text and audio' },
@@ -127,7 +134,17 @@ const ENERGY_LEVELS = ['low', 'moderate', 'high'];
 const RESPONSE_STYLES = ['concise', 'detailed', 'conversational', 'formal', 'casual'];
 const RESPONSE_LENGTHS = ['short', 'medium', 'long'];
 const WEATHER_OPTIONS = ['sunny', 'cloudy', 'rainy', 'stormy', 'snowy', 'hot', 'cold'];
-const LOCATION_OPTIONS = ['home', 'office', 'commute', 'travel', 'other'];
+
+// Countries list for location selection
+const COUNTRIES = [
+  'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France', 'Japan', 'South Korea',
+  'China', 'India', 'Brazil', 'Mexico', 'Spain', 'Italy', 'Netherlands', 'Sweden', 'Norway', 'Denmark',
+  'Finland', 'Switzerland', 'Austria', 'Belgium', 'Poland', 'Portugal', 'Ireland', 'New Zealand',
+  'Singapore', 'Hong Kong', 'Taiwan', 'Malaysia', 'Indonesia', 'Thailand', 'Vietnam', 'Philippines',
+  'Russia', 'Ukraine', 'Turkey', 'Israel', 'United Arab Emirates', 'Saudi Arabia', 'South Africa',
+  'Egypt', 'Nigeria', 'Kenya', 'Argentina', 'Chile', 'Colombia', 'Peru', 'Czech Republic', 'Romania',
+  'Hungary', 'Greece', 'Other',
+].sort();
 
 const EXAMPLE_PROMPTS = [
   { label: 'Code Review', prompt: 'Review this Python function for performance issues and suggest improvements', category: 'coding' },
@@ -882,9 +899,33 @@ export default function Home() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
 
+  // Voice Input State
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+
+  // Image Attachment State
+  const [attachedImage, setAttachedImage] = useState<{ file: File; preview: string } | null>(null);
+
+  // Weather Auto-detection
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [detectedLocation, setDetectedLocation] = useState<string | null>(null);
+
+  // Models View State
+  const [selectedProvider, setSelectedProvider] = useState<string>('all');
+  const [modelsPage, setModelsPage] = useState(1);
+  const MODELS_PER_PAGE = 8;
+
   // ============ EFFECTS ============
   useEffect(() => {
     fetchHealth();
+    // Check for speech recognition support
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as Window & { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).SpeechRecognition ||
+                                (window as Window & { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).webkitSpeechRecognition;
+      setSpeechSupported(!!SpeechRecognition);
+    }
+    // Auto-detect weather and location
+    autoDetectWeatherAndLocation();
   }, []);
 
   useEffect(() => {
@@ -920,6 +961,116 @@ export default function Home() {
       setModelsError(err instanceof Error ? err.message : 'Failed to load models');
     } finally {
       setModelsLoading(false);
+    }
+  };
+
+  // Auto-detect weather and location from IP
+  const autoDetectWeatherAndLocation = async () => {
+    setWeatherLoading(true);
+    try {
+      // Get location from IP using free API
+      const geoRes = await fetch('https://ipapi.co/json/');
+      if (geoRes.ok) {
+        const geoData = await geoRes.json();
+        const country = geoData.country_name || null;
+        setDetectedLocation(country);
+
+        // Update human context with detected location
+        if (country) {
+          setHumanContext(prev => ({
+            ...prev,
+            environmentalContext: {
+              ...prev.environmentalContext,
+              location: country,
+            },
+          }));
+        }
+
+        // Get weather based on coordinates
+        if (geoData.latitude && geoData.longitude) {
+          try {
+            const weatherRes = await fetch(
+              `https://api.open-meteo.com/v1/forecast?latitude=${geoData.latitude}&longitude=${geoData.longitude}&current_weather=true`
+            );
+            if (weatherRes.ok) {
+              const weatherData = await weatherRes.json();
+              const weatherCode = weatherData.current_weather?.weathercode;
+              const temp = weatherData.current_weather?.temperature;
+
+              // Map weather code to our options
+              let weather = 'sunny';
+              if (weatherCode >= 0 && weatherCode <= 3) weather = temp > 30 ? 'hot' : temp < 5 ? 'cold' : 'sunny';
+              else if (weatherCode >= 45 && weatherCode <= 48) weather = 'cloudy';
+              else if (weatherCode >= 51 && weatherCode <= 67) weather = 'rainy';
+              else if (weatherCode >= 71 && weatherCode <= 77) weather = 'snowy';
+              else if (weatherCode >= 80 && weatherCode <= 99) weather = 'stormy';
+
+              setHumanContext(prev => ({
+                ...prev,
+                environmentalContext: {
+                  ...prev.environmentalContext,
+                  weather,
+                },
+              }));
+            }
+          } catch {
+            // Weather fetch failed silently
+          }
+        }
+      }
+    } catch {
+      // Geo fetch failed silently
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+
+  // Voice input handlers
+  const startListening = () => {
+    if (!speechSupported) return;
+
+    const SpeechRecognition = (window as Window & { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition }).SpeechRecognition ||
+                              (window as Window & { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition }).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0]?.[0]?.transcript || '';
+      setPrompt(prev => prev + (prev ? ' ' : '') + transcript);
+    };
+
+    recognition.start();
+  };
+
+  // Image attachment handlers
+  const handleImageAttach = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const preview = URL.createObjectURL(file);
+      setAttachedImage({ file, preview });
+      // Auto-switch to image modality
+      if (modality === 'text') {
+        setModality('text+image');
+      }
+    }
+  };
+
+  const removeAttachedImage = () => {
+    if (attachedImage) {
+      URL.revokeObjectURL(attachedImage.preview);
+      setAttachedImage(null);
+      if (modality === 'text+image') {
+        setModality('text');
+      }
     }
   };
 
@@ -1094,19 +1245,91 @@ export default function Home() {
       <main style={{ maxWidth: 1200, margin: '0 auto', padding: '24px' }}>
         {/* ============ ROUTER VIEW ============ */}
         {activeView === 'router' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+          <div className="router-grid" style={{ display: 'grid', gap: 24 }}>
             {/* Main Content */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Input Section */}
               <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8 }}>
                 <div style={{ padding: 16 }}>
-                  <textarea
-                    placeholder="Enter a prompt to test the routing engine..."
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && e.metaKey) handleRoute(); }}
-                    style={{ width: '100%', minHeight: 100, padding: 0, fontSize: 14, color: '#000', background: 'transparent', border: 'none', outline: 'none', resize: 'none', lineHeight: 1.6, fontFamily: 'inherit' }}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <textarea
+                      placeholder="Enter a prompt to test the routing engine..."
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && e.metaKey) handleRoute(); }}
+                      style={{ width: '100%', minHeight: 100, padding: 0, paddingRight: 80, fontSize: 14, color: '#000', background: 'transparent', border: 'none', outline: 'none', resize: 'none', lineHeight: 1.6, fontFamily: 'inherit' }}
+                    />
+                    {/* Voice & Attach buttons inside textarea area */}
+                    <div style={{ position: 'absolute', right: 0, top: 0, display: 'flex', gap: 4 }}>
+                      {/* Voice Input Button */}
+                      {speechSupported && (
+                        <button
+                          onClick={startListening}
+                          disabled={isListening}
+                          title={isListening ? 'Listening...' : 'Voice input'}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            width: 32, height: 32, background: isListening ? '#FEE2E2' : '#F5F5F5',
+                            border: isListening ? '1px solid #FCA5A5' : '1px solid #E5E5E5',
+                            borderRadius: 6, cursor: isListening ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {isListening ? (
+                            <MicOff style={{ width: 16, height: 16, color: '#DC2626' }} />
+                          ) : (
+                            <Mic style={{ width: 16, height: 16, color: '#666' }} />
+                          )}
+                        </button>
+                      )}
+                      {/* Image Attach Button */}
+                      <label
+                        title="Attach image (max 1)"
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: 32, height: 32, background: attachedImage ? '#DBEAFE' : '#F5F5F5',
+                          border: attachedImage ? '1px solid #93C5FD' : '1px solid #E5E5E5',
+                          borderRadius: 6, cursor: 'pointer',
+                        }}
+                      >
+                        <Paperclip style={{ width: 16, height: 16, color: attachedImage ? '#2563EB' : '#666' }} />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageAttach}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Attached Image Preview */}
+                  {attachedImage && (
+                    <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, padding: 8, background: '#F5F5F5', borderRadius: 6 }}>
+                      <img
+                        src={attachedImage.preview}
+                        alt="Attached"
+                        style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, fontWeight: 500, color: '#000' }}>{attachedImage.file.name}</div>
+                        <div style={{ fontSize: 11, color: '#666' }}>{(attachedImage.file.size / 1024).toFixed(1)} KB</div>
+                      </div>
+                      <button
+                        onClick={removeAttachedImage}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, background: '#fff', border: '1px solid #E5E5E5', borderRadius: 4, cursor: 'pointer' }}
+                      >
+                        <X style={{ width: 12, height: 12, color: '#666' }} />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Voice recording indicator */}
+                  {isListening && (
+                    <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 6 }}>
+                      <span style={{ width: 8, height: 8, background: '#DC2626', borderRadius: '50%', animation: 'pulse 1s infinite' }} />
+                      <span style={{ fontSize: 12, color: '#DC2626' }}>Listening... Speak now</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Example Prompts */}
@@ -1123,8 +1346,8 @@ export default function Home() {
                 </div>
 
                 {/* Controls */}
-                <div style={{ padding: '12px 16px', borderTop: '1px solid #E5E5E5', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ padding: '12px 16px', borderTop: '1px solid #E5E5E5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     {/* Modality Selector */}
                     <div style={{ display: 'flex', alignItems: 'center', background: '#F5F5F5', borderRadius: 6, padding: 2 }}>
                       {MODALITIES.map((m) => {
@@ -1228,7 +1451,14 @@ export default function Home() {
 
                             {/* Environmental Context */}
                             <div>
-                              <label style={{ display: 'block', fontSize: 11, fontWeight: 500, color: '#666', marginBottom: 4 }}>Weather</label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 500, color: '#666', marginBottom: 4 }}>
+                                <Cloud style={{ width: 12, height: 12 }} />
+                                Weather
+                                {weatherLoading && <Loader2 style={{ width: 10, height: 10, animation: 'spin 1s linear infinite' }} />}
+                                {humanContext.environmentalContext?.weather && !weatherLoading && (
+                                  <span style={{ fontSize: 9, color: '#059669', background: '#D1FAE5', padding: '1px 4px', borderRadius: 3 }}>Auto</span>
+                                )}
+                              </label>
                               <select
                                 value={humanContext.environmentalContext?.weather || ''}
                                 onChange={(e) => updateHumanContext(['environmentalContext', 'weather'], e.target.value)}
@@ -1240,15 +1470,21 @@ export default function Home() {
                               </select>
                             </div>
                             <div>
-                              <label style={{ display: 'block', fontSize: 11, fontWeight: 500, color: '#666', marginBottom: 4 }}>Location</label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 500, color: '#666', marginBottom: 4 }}>
+                                <MapPin style={{ width: 12, height: 12 }} />
+                                Country
+                                {detectedLocation && (
+                                  <span style={{ fontSize: 9, color: '#059669', background: '#D1FAE5', padding: '1px 4px', borderRadius: 3 }}>Auto</span>
+                                )}
+                              </label>
                               <select
                                 value={humanContext.environmentalContext?.location || ''}
                                 onChange={(e) => updateHumanContext(['environmentalContext', 'location'], e.target.value)}
                                 disabled={!useHumanContext}
                                 style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #E5E5E5', borderRadius: 6, background: '#fff' }}
                               >
-                                <option value="">Select location...</option>
-                                {LOCATION_OPTIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                                <option value="">Select country...</option>
+                                {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
                               </select>
                             </div>
 
@@ -1603,75 +1839,208 @@ export default function Home() {
         )}
 
         {/* ============ MODELS VIEW ============ */}
-        {activeView === 'models' && (
-          <div>
-            <div style={{ marginBottom: 24 }}>
-              <h1 style={{ fontSize: 20, fontWeight: 600, color: '#000', margin: '0 0 6px' }}>Available Models</h1>
-              <p style={{ fontSize: 14, color: '#666', margin: 0 }}>
-                ADE supports {models.length || 10} models across 3 providers. Each model has different strengths, costs, and capabilities.
-              </p>
-            </div>
+        {activeView === 'models' && (() => {
+          // Filter and paginate models
+          const providers = ['all', ...Array.from(new Set(models.map(m => m.provider.toLowerCase())))];
+          const filteredModels = selectedProvider === 'all'
+            ? models
+            : models.filter(m => m.provider.toLowerCase() === selectedProvider);
+          const totalPages = Math.ceil(filteredModels.length / MODELS_PER_PAGE);
+          const paginatedModels = filteredModels.slice((modelsPage - 1) * MODELS_PER_PAGE, modelsPage * MODELS_PER_PAGE);
 
-            {modelsLoading && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48 }}>
-                <RefreshCw style={{ width: 20, height: 20, color: '#666', animation: 'spin 1s linear infinite' }} />
-                <span style={{ marginLeft: 8, fontSize: 14, color: '#666' }}>Loading models...</span>
+          return (
+            <div>
+              {/* Header */}
+              <div style={{ marginBottom: 24 }}>
+                <h1 style={{ fontSize: 28, fontWeight: 700, color: '#000', margin: '0 0 8px' }}>Models</h1>
+                <p style={{ fontSize: 15, color: '#6B7280', margin: 0, lineHeight: 1.6 }}>
+                  Explore the {models.length} models available through ADE. Each model has unique strengths, pricing, and capabilities optimized for different use cases.
+                </p>
               </div>
-            )}
 
-            {modelsError && (
-              <div style={{ padding: 16, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, color: '#DC2626' }}>
-                {modelsError}
-                <button onClick={fetchModels} style={{ marginLeft: 8, textDecoration: 'underline', background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer' }}>
-                  Retry
-                </button>
-              </div>
-            )}
-
-            {!modelsLoading && !modelsError && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                {models.map((model) => (
-                  <div key={model.id} style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8, padding: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: getProviderColor(model.provider), marginTop: 6, flexShrink: 0 }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: '#000' }}>{model.name}</div>
-                        <div style={{ fontSize: 12, color: '#666' }}>{model.provider}</div>
-                      </div>
-                    </div>
-                    <p style={{ fontSize: 12, color: '#666', margin: '0 0 12px', lineHeight: 1.5 }}>{model.description}</p>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 12 }}>
-                      <div style={{ padding: 8, background: '#FAFAFA', borderRadius: 4 }}>
-                        <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>INPUT COST</div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#000' }}>${model.pricing.inputPer1k.toFixed(6)}/1K</div>
-                      </div>
-                      <div style={{ padding: 8, background: '#FAFAFA', borderRadius: 4 }}>
-                        <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>OUTPUT COST</div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#000' }}>${model.pricing.outputPer1k.toFixed(6)}/1K</div>
-                      </div>
-                      <div style={{ padding: 8, background: '#FAFAFA', borderRadius: 4 }}>
-                        <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>LATENCY</div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#000' }}>{model.performance.avgLatencyMs}ms</div>
-                      </div>
-                      <div style={{ padding: 8, background: '#FAFAFA', borderRadius: 4 }}>
-                        <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>RELIABILITY</div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#000' }}>{model.performance.reliabilityPercent}%</div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                      {model.capabilities.supportsVision && <span style={{ padding: '2px 6px', fontSize: 10, background: '#DBEAFE', color: '#1D4ED8', borderRadius: 4 }}>Vision</span>}
-                      {model.capabilities.supportsAudio && <span style={{ padding: '2px 6px', fontSize: 10, background: '#FEE2E2', color: '#DC2626', borderRadius: 4 }}>Audio</span>}
-                      {model.capabilities.supportsStreaming && <span style={{ padding: '2px 6px', fontSize: 10, background: '#D1FAE5', color: '#059669', borderRadius: 4 }}>Streaming</span>}
-                      {model.capabilities.supportsFunctionCalling && <span style={{ padding: '2px 6px', fontSize: 10, background: '#FEF3C7', color: '#D97706', borderRadius: 4 }}>Functions</span>}
-                    </div>
+              {/* Filters */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Filter style={{ width: 14, height: 14, color: '#6B7280' }} />
+                  <span style={{ fontSize: 13, color: '#6B7280' }}>Filter by provider:</span>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {providers.map((provider) => (
+                      <button
+                        key={provider}
+                        onClick={() => { setSelectedProvider(provider); setModelsPage(1); }}
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: 12,
+                          fontWeight: selectedProvider === provider ? 600 : 400,
+                          color: selectedProvider === provider ? '#fff' : '#374151',
+                          background: selectedProvider === provider ? '#000' : '#F3F4F6',
+                          border: 'none',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          textTransform: 'capitalize',
+                        }}
+                      >
+                        {provider === 'all' ? 'All Providers' : provider}
+                      </button>
+                    ))}
                   </div>
-                ))}
+                </div>
+                <div style={{ fontSize: 13, color: '#6B7280' }}>
+                  Showing {paginatedModels.length} of {filteredModels.length} models
+                </div>
               </div>
-            )}
-          </div>
-        )}
+
+              {modelsLoading && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48 }}>
+                  <Loader2 style={{ width: 20, height: 20, color: '#666', animation: 'spin 1s linear infinite' }} />
+                  <span style={{ marginLeft: 8, fontSize: 14, color: '#666' }}>Loading models...</span>
+                </div>
+              )}
+
+              {modelsError && (
+                <div style={{ padding: 16, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, color: '#DC2626' }}>
+                  {modelsError}
+                  <button onClick={fetchModels} style={{ marginLeft: 8, textDecoration: 'underline', background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer' }}>
+                    Retry
+                  </button>
+                </div>
+              )}
+
+              {!modelsLoading && !modelsError && (
+                <>
+                  {/* Model Cards Grid */}
+                  <div className="models-grid" style={{ display: 'grid', gap: 16 }}>
+                    {paginatedModels.map((model) => (
+                      <div key={model.id} style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 12, padding: 20, transition: 'box-shadow 0.2s', cursor: 'default' }}>
+                        {/* Model Header */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${getProviderColor(model.provider)}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <span style={{ fontSize: 16, fontWeight: 700, color: getProviderColor(model.provider) }}>
+                                {model.provider.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 16, fontWeight: 600, color: '#111' }}>{model.name}</div>
+                              <div style={{ fontSize: 12, color: '#6B7280' }}>{model.provider}</div>
+                            </div>
+                          </div>
+                          <code style={{ fontSize: 11, color: '#6B7280', background: '#F3F4F6', padding: '4px 8px', borderRadius: 4 }}>
+                            {model.id}
+                          </code>
+                        </div>
+
+                        {/* Description */}
+                        <p style={{ fontSize: 13, color: '#4B5563', margin: '0 0 16px', lineHeight: 1.6 }}>{model.description}</p>
+
+                        {/* Stats Grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
+                          <div style={{ padding: '10px 12px', background: '#F9FAFB', borderRadius: 8 }}>
+                            <div style={{ fontSize: 10, fontWeight: 500, color: '#6B7280', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Input</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>${model.pricing.inputPer1k.toFixed(4)}</div>
+                            <div style={{ fontSize: 10, color: '#9CA3AF' }}>per 1K tokens</div>
+                          </div>
+                          <div style={{ padding: '10px 12px', background: '#F9FAFB', borderRadius: 8 }}>
+                            <div style={{ fontSize: 10, fontWeight: 500, color: '#6B7280', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Output</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>${model.pricing.outputPer1k.toFixed(4)}</div>
+                            <div style={{ fontSize: 10, color: '#9CA3AF' }}>per 1K tokens</div>
+                          </div>
+                          <div style={{ padding: '10px 12px', background: '#F9FAFB', borderRadius: 8 }}>
+                            <div style={{ fontSize: 10, fontWeight: 500, color: '#6B7280', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Latency</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{model.performance.avgLatencyMs}ms</div>
+                            <div style={{ fontSize: 10, color: '#9CA3AF' }}>average</div>
+                          </div>
+                          <div style={{ padding: '10px 12px', background: '#F9FAFB', borderRadius: 8 }}>
+                            <div style={{ fontSize: 10, fontWeight: 500, color: '#6B7280', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Uptime</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{model.performance.reliabilityPercent}%</div>
+                            <div style={{ fontSize: 10, color: '#9CA3AF' }}>reliability</div>
+                          </div>
+                        </div>
+
+                        {/* Context Window */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, padding: '10px 12px', background: '#F9FAFB', borderRadius: 8 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 10, fontWeight: 500, color: '#6B7280', marginBottom: 2, textTransform: 'uppercase' }}>Context Window</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{(model.capabilities.maxInputTokens / 1000).toFixed(0)}K input / {(model.capabilities.maxOutputTokens / 1000).toFixed(0)}K output</div>
+                          </div>
+                        </div>
+
+                        {/* Capabilities */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {model.capabilities.supportsVision && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 11, fontWeight: 500, background: '#DBEAFE', color: '#1D4ED8', borderRadius: 6 }}>
+                              <Eye style={{ width: 12, height: 12 }} /> Vision
+                            </span>
+                          )}
+                          {model.capabilities.supportsAudio && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 11, fontWeight: 500, background: '#FEE2E2', color: '#DC2626', borderRadius: 6 }}>
+                              <AudioLines style={{ width: 12, height: 12 }} /> Audio
+                            </span>
+                          )}
+                          {model.capabilities.supportsStreaming && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 11, fontWeight: 500, background: '#D1FAE5', color: '#059669', borderRadius: 6 }}>
+                              <Zap style={{ width: 12, height: 12 }} /> Streaming
+                            </span>
+                          )}
+                          {model.capabilities.supportsFunctionCalling && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 11, fontWeight: 500, background: '#FEF3C7', color: '#D97706', borderRadius: 6 }}>
+                              <Box style={{ width: 12, height: 12 }} /> Functions
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 24 }}>
+                      <button
+                        onClick={() => setModelsPage(p => Math.max(1, p - 1))}
+                        disabled={modelsPage === 1}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 4, padding: '8px 12px', fontSize: 13,
+                          color: modelsPage === 1 ? '#9CA3AF' : '#374151', background: '#fff',
+                          border: '1px solid #E5E5E5', borderRadius: 6, cursor: modelsPage === 1 ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        <ChevronLeft style={{ width: 14, height: 14 }} /> Previous
+                      </button>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => setModelsPage(page)}
+                            style={{
+                              width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 13, fontWeight: modelsPage === page ? 600 : 400,
+                              color: modelsPage === page ? '#fff' : '#374151',
+                              background: modelsPage === page ? '#000' : '#fff',
+                              border: '1px solid #E5E5E5', borderRadius: 6, cursor: 'pointer',
+                            }}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setModelsPage(p => Math.min(totalPages, p + 1))}
+                        disabled={modelsPage === totalPages}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 4, padding: '8px 12px', fontSize: 13,
+                          color: modelsPage === totalPages ? '#9CA3AF' : '#374151', background: '#fff',
+                          border: '1px solid #E5E5E5', borderRadius: 6, cursor: modelsPage === totalPages ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        Next <ChevronRight style={{ width: 14, height: 14 }} />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ============ DOCS VIEW ============ */}
         {activeView === 'docs' && (
@@ -1716,6 +2085,51 @@ export default function Home() {
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+
+        /* Responsive Grid Layouts */
+        .router-grid {
+          grid-template-columns: 1fr 340px;
+        }
+        .models-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        /* Tablet */
+        @media (max-width: 1024px) {
+          .router-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .models-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+          .router-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .models-grid {
+            grid-template-columns: 1fr !important;
+          }
+          main {
+            padding: 16px !important;
+          }
+          header > div {
+            padding: 0 16px !important;
+          }
+        }
+
+        /* Small Mobile */
+        @media (max-width: 480px) {
+          nav {
+            display: none !important;
+          }
         }
       `}</style>
     </div>
