@@ -167,7 +167,12 @@ const SCORING_FACTORS = [
 // ============ DOCS COMPONENT ============
 function DocsView() {
   const [activeSection, setActiveSection] = useState('introduction');
+  const [activeCodeLang, setActiveCodeLang] = useState('curl');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    'getting-started': true,
+    'endpoints': true,
+  });
 
   const copyToClipboard = async (code: string, id: string) => {
     await navigator.clipboard.writeText(code);
@@ -175,78 +180,870 @@ function DocsView() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const CodeBlock = ({ code, language = 'bash', id }: { code: string; language?: string; id: string }) => (
-    <div style={{ position: 'relative', background: '#0D0D0D', borderRadius: 8, overflow: 'hidden', marginTop: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#1A1A1A', borderBottom: '1px solid #2D2D2D' }}>
-        <span style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{language}</span>
-        <button
-          onClick={() => copyToClipboard(code, id)}
-          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', fontSize: 11, color: '#888', background: 'transparent', border: '1px solid #333', borderRadius: 4, cursor: 'pointer' }}
-        >
-          {copiedCode === id ? <Check style={{ width: 12, height: 12, color: '#22C55E' }} /> : <Copy style={{ width: 12, height: 12 }} />}
-          {copiedCode === id ? 'Copied' : 'Copy'}
-        </button>
-      </div>
-      <pre style={{ margin: 0, padding: 16, fontSize: 13, fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace', color: '#E5E5E5', lineHeight: 1.6, overflowX: 'auto' }}>
-        {code}
-      </pre>
-    </div>
-  );
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
 
-  const ParamTable = ({ params }: { params: Array<{ name: string; type: string; required: boolean; description: string }> }) => (
-    <div style={{ marginTop: 16, border: '1px solid #E5E5E5', borderRadius: 8, overflow: 'hidden' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-        <thead>
-          <tr style={{ background: '#F9FAFB' }}>
-            <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E5E5' }}>Parameter</th>
-            <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E5E5' }}>Type</th>
-            <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '1px solid #E5E5E5' }}>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          {params.map((param, idx) => (
-            <tr key={param.name} style={{ background: idx % 2 === 0 ? '#fff' : '#F9FAFB' }}>
-              <td style={{ padding: '10px 12px', borderBottom: '1px solid #E5E5E5' }}>
-                <code style={{ fontSize: 12, color: '#1F2937', background: '#F3F4F6', padding: '2px 6px', borderRadius: 4 }}>{param.name}</code>
-                {param.required && <span style={{ marginLeft: 6, fontSize: 10, color: '#DC2626', fontWeight: 600 }}>REQUIRED</span>}
-              </td>
-              <td style={{ padding: '10px 12px', borderBottom: '1px solid #E5E5E5', color: '#6B7280' }}>{param.type}</td>
-              <td style={{ padding: '10px 12px', borderBottom: '1px solid #E5E5E5', color: '#4B5563' }}>{param.description}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-
-  const sections = [
-    { id: 'introduction', label: 'Introduction' },
-    { id: 'authentication', label: 'Authentication' },
-    { id: 'route', label: 'Route Prompt' },
-    { id: 'models', label: 'List Models' },
-    { id: 'model-detail', label: 'Get Model' },
-    { id: 'analyze', label: 'Analyze Prompt' },
-    { id: 'feedback', label: 'Submit Feedback' },
-    { id: 'health', label: 'Health Check' },
-    { id: 'errors', label: 'Error Handling' },
+  const codeLangs = [
+    { id: 'curl', label: 'cURL' },
+    { id: 'javascript', label: 'JavaScript' },
+    { id: 'python', label: 'Python' },
   ];
 
+  const navSections = [
+    {
+      id: 'getting-started',
+      label: 'Getting Started',
+      items: [
+        { id: 'introduction', label: 'Introduction' },
+        { id: 'authentication', label: 'Authentication' },
+      ],
+    },
+    {
+      id: 'endpoints',
+      label: 'Endpoints',
+      items: [
+        { id: 'route', label: 'Route Prompt', method: 'POST' },
+        { id: 'models', label: 'List Models', method: 'GET' },
+        { id: 'model-detail', label: 'Get Model', method: 'GET' },
+        { id: 'analyze', label: 'Analyze Prompt', method: 'POST' },
+        { id: 'feedback', label: 'Submit Feedback', method: 'POST' },
+        { id: 'health', label: 'Health Check', method: 'GET' },
+      ],
+    },
+    {
+      id: 'reference',
+      label: 'Reference',
+      items: [
+        { id: 'errors', label: 'Error Handling' },
+        { id: 'objects', label: 'Objects' },
+      ],
+    },
+  ];
+
+  const getMethodColor = (method?: string) => {
+    switch (method) {
+      case 'GET': return { bg: '#DBEAFE', color: '#1D4ED8' };
+      case 'POST': return { bg: '#D1FAE5', color: '#059669' };
+      case 'DELETE': return { bg: '#FEE2E2', color: '#DC2626' };
+      default: return { bg: '#F3F4F6', color: '#6B7280' };
+    }
+  };
+
+  // Code examples for each endpoint
+  const codeExamples: Record<string, Record<string, string>> = {
+    route: {
+      curl: `curl -X POST https://api.ade.dev/v1/route \\
+  -H "Authorization: Bearer $ADE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "prompt": "Write a creative short story about a robot",
+    "modality": "text"
+  }'`,
+      javascript: `const response = await fetch('https://api.ade.dev/v1/route', {
+  method: 'POST',
+  headers: {
+    'Authorization': \`Bearer \${process.env.ADE_API_KEY}\`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    prompt: 'Write a creative short story about a robot',
+    modality: 'text',
+  }),
+});
+
+const data = await response.json();
+console.log(data.primaryModel);`,
+      python: `import requests
+
+response = requests.post(
+    'https://api.ade.dev/v1/route',
+    headers={
+        'Authorization': f'Bearer {ADE_API_KEY}',
+        'Content-Type': 'application/json',
+    },
+    json={
+        'prompt': 'Write a creative short story about a robot',
+        'modality': 'text',
+    }
+)
+
+data = response.json()
+print(data['primaryModel'])`,
+    },
+    models: {
+      curl: `curl https://api.ade.dev/v1/models \\
+  -H "Authorization: Bearer $ADE_API_KEY"`,
+      javascript: `const response = await fetch('https://api.ade.dev/v1/models', {
+  headers: {
+    'Authorization': \`Bearer \${process.env.ADE_API_KEY}\`,
+  },
+});
+
+const data = await response.json();
+console.log(data.models);`,
+      python: `import requests
+
+response = requests.get(
+    'https://api.ade.dev/v1/models',
+    headers={'Authorization': f'Bearer {ADE_API_KEY}'}
+)
+
+data = response.json()
+print(data['models'])`,
+    },
+    'model-detail': {
+      curl: `curl https://api.ade.dev/v1/models/claude-sonnet-4-5 \\
+  -H "Authorization: Bearer $ADE_API_KEY"`,
+      javascript: `const response = await fetch('https://api.ade.dev/v1/models/claude-sonnet-4-5', {
+  headers: {
+    'Authorization': \`Bearer \${process.env.ADE_API_KEY}\`,
+  },
+});
+
+const model = await response.json();
+console.log(model);`,
+      python: `import requests
+
+response = requests.get(
+    'https://api.ade.dev/v1/models/claude-sonnet-4-5',
+    headers={'Authorization': f'Bearer {ADE_API_KEY}'}
+)
+
+model = response.json()
+print(model)`,
+    },
+    analyze: {
+      curl: `curl -X POST https://api.ade.dev/v1/analyze \\
+  -H "Authorization: Bearer $ADE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"prompt": "Debug this Python function"}'`,
+      javascript: `const response = await fetch('https://api.ade.dev/v1/analyze', {
+  method: 'POST',
+  headers: {
+    'Authorization': \`Bearer \${process.env.ADE_API_KEY}\`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    prompt: 'Debug this Python function',
+  }),
+});
+
+const analysis = await response.json();`,
+      python: `import requests
+
+response = requests.post(
+    'https://api.ade.dev/v1/analyze',
+    headers={'Authorization': f'Bearer {ADE_API_KEY}'},
+    json={'prompt': 'Debug this Python function'}
+)
+
+analysis = response.json()`,
+    },
+    feedback: {
+      curl: `curl -X POST https://api.ade.dev/v1/feedback \\
+  -H "Authorization: Bearer $ADE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "decisionId": "dec_abc123",
+    "rating": 5,
+    "comment": "Perfect recommendation"
+  }'`,
+      javascript: `const response = await fetch('https://api.ade.dev/v1/feedback', {
+  method: 'POST',
+  headers: {
+    'Authorization': \`Bearer \${process.env.ADE_API_KEY}\`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    decisionId: 'dec_abc123',
+    rating: 5,
+    comment: 'Perfect recommendation',
+  }),
+});`,
+      python: `import requests
+
+response = requests.post(
+    'https://api.ade.dev/v1/feedback',
+    headers={'Authorization': f'Bearer {ADE_API_KEY}'},
+    json={
+        'decisionId': 'dec_abc123',
+        'rating': 5,
+        'comment': 'Perfect recommendation'
+    }
+)`,
+    },
+    health: {
+      curl: `curl https://api.ade.dev/v1/health`,
+      javascript: `const response = await fetch('https://api.ade.dev/v1/health');
+const health = await response.json();
+console.log(health.status);`,
+      python: `import requests
+
+response = requests.get('https://api.ade.dev/v1/health')
+health = response.json()
+print(health['status'])`,
+    },
+  };
+
+  const responseExamples: Record<string, string> = {
+    route: `{
+  "decisionId": "dec_abc123xyz",
+  "primaryModel": {
+    "id": "claude-sonnet-4-5",
+    "name": "Claude Sonnet 4.5",
+    "provider": "Anthropic",
+    "score": 0.91,
+    "reasoning": {
+      "summary": "Excellent for creative writing",
+      "factors": [...]
+    }
+  },
+  "backupModels": [...],
+  "confidence": 0.87,
+  "analysis": {
+    "intent": "Creative",
+    "domain": "Creative Arts",
+    "complexity": "Standard"
+  }
+}`,
+    models: `{
+  "models": [
+    {
+      "id": "claude-opus-4-5",
+      "name": "Claude Opus 4.5",
+      "provider": "Anthropic",
+      "pricing": {
+        "inputPer1k": 0.015,
+        "outputPer1k": 0.075
+      },
+      "capabilities": {
+        "supportsVision": true,
+        "supportsStreaming": true
+      }
+    },
+    ...
+  ],
+  "total": 15
+}`,
+    'model-detail': `{
+  "id": "claude-sonnet-4-5",
+  "name": "Claude Sonnet 4.5",
+  "provider": "Anthropic",
+  "description": "Balanced model for most tasks",
+  "pricing": {
+    "inputPer1k": 0.003,
+    "outputPer1k": 0.015
+  },
+  "capabilities": {
+    "maxInputTokens": 200000,
+    "maxOutputTokens": 8192,
+    "supportsVision": true
+  }
+}`,
+    analyze: `{
+  "analysis": {
+    "intent": "Coding",
+    "domain": "Technology",
+    "complexity": "Standard",
+    "keywords": ["debug", "python", "function"]
+  }
+}`,
+    feedback: `{
+  "success": true,
+  "feedbackId": "fb_def456"
+}`,
+    health: `{
+  "status": "healthy",
+  "version": "1.0.0",
+  "timestamp": "2025-01-26T10:30:00Z",
+  "services": {
+    "kv": "connected"
+  }
+}`,
+  };
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 48, maxWidth: 1100 }}>
-      {/* Sidebar Navigation */}
-      <nav style={{ position: 'sticky', top: 72, alignSelf: 'start' }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>API Reference</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {sections.map((section) => (
+    <div style={{ display: 'flex', gap: 0, marginLeft: -24, marginRight: -24, minHeight: 'calc(100vh - 96px)' }}>
+      {/* Dark Sidebar */}
+      <aside style={{ width: 260, background: '#18181B', padding: '24px 0', flexShrink: 0, overflowY: 'auto', maxHeight: 'calc(100vh - 96px)', position: 'sticky', top: 72 }}>
+        <div style={{ padding: '0 16px', marginBottom: 24 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.1em' }}>API Reference</div>
+        </div>
+
+        {navSections.map((section) => (
+          <div key={section.id} style={{ marginBottom: 8 }}>
             <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
+              onClick={() => toggleSection(section.id)}
               style={{
-                padding: '8px 12px',
-                fontSize: 13,
-                color: activeSection === section.id ? '#000' : '#6B7280',
-                background: activeSection === section.id ? '#F3F4F6' : 'transparent',
-                border: 'none',
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 16px', background: 'transparent', border: 'none', cursor: 'pointer',
+                fontSize: 12, fontWeight: 500, color: '#A1A1AA', textAlign: 'left',
+              }}
+            >
+              {section.label}
+              <ChevronDown style={{ width: 14, height: 14, transform: expandedSections[section.id] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+
+            {expandedSections[section.id] && (
+              <div style={{ paddingLeft: 8 }}>
+                {section.items.map((item) => {
+                  const methodStyle = getMethodColor(item.method);
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveSection(item.id)}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '8px 16px', background: activeSection === item.id ? '#27272A' : 'transparent',
+                        border: 'none', borderLeft: activeSection === item.id ? '2px solid #fff' : '2px solid transparent',
+                        cursor: 'pointer', fontSize: 13, color: activeSection === item.id ? '#fff' : '#A1A1AA',
+                        textAlign: 'left',
+                      }}
+                    >
+                      {item.method && (
+                        <span style={{
+                          fontSize: 9, fontWeight: 700, padding: '2px 5px', borderRadius: 3,
+                          background: methodStyle.bg, color: methodStyle.color,
+                        }}>
+                          {item.method}
+                        </span>
+                      )}
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </aside>
+
+      {/* Main Content + Code Panel */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 400px', background: '#fff' }}>
+        {/* Documentation Content */}
+        <main style={{ padding: '32px 40px', borderRight: '1px solid #E5E5E5', overflowY: 'auto' }}>
+
+          {/* Introduction */}
+          {activeSection === 'introduction' && (
+            <div>
+              <div style={{ marginBottom: 24 }}>
+                <h1 style={{ fontSize: 32, fontWeight: 700, color: '#18181B', margin: '0 0 12px' }}>ADE API</h1>
+                <p style={{ fontSize: 16, color: '#52525B', lineHeight: 1.7, margin: 0 }}>
+                  The Araviel Decision Engine (ADE) API provides intelligent LLM routing by analyzing prompts
+                  and recommending the optimal model based on task requirements, cost, and performance.
+                </p>
+              </div>
+
+              <div style={{ background: '#F4F4F5', borderRadius: 8, padding: 20, marginBottom: 24 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#52525B', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Base URL</div>
+                <code style={{ fontSize: 14, color: '#18181B', fontFamily: 'ui-monospace, monospace' }}>https://api.ade.dev/v1</code>
+              </div>
+
+              <h2 style={{ fontSize: 20, fontWeight: 600, color: '#18181B', margin: '32px 0 16px' }}>How It Works</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {[
+                  { num: '1', title: 'Analyze', desc: 'Engine detects intent, domain, complexity, and tone from your prompt' },
+                  { num: '2', title: 'Score', desc: 'Each model is scored across 6 weighted factors including task fitness and cost' },
+                  { num: '3', title: 'Select', desc: 'Models are ranked and the optimal choice is returned with backup alternatives' },
+                ].map((step) => (
+                  <div key={step.num} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                    <div style={{ width: 28, height: 28, background: '#18181B', color: '#fff', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+                      {step.num}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: '#18181B', marginBottom: 4 }}>{step.title}</div>
+                      <div style={{ fontSize: 14, color: '#52525B', lineHeight: 1.6 }}>{step.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Authentication */}
+          {activeSection === 'authentication' && (
+            <div>
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#18181B', margin: '0 0 12px' }}>Authentication</h1>
+              <p style={{ fontSize: 16, color: '#52525B', lineHeight: 1.7, margin: '0 0 24px' }}>
+                ADE uses API keys to authenticate requests. Include your API key in the Authorization header.
+              </p>
+
+              <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 8, padding: 16, marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <AlertCircle style={{ width: 18, height: 18, color: '#D97706', flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#92400E', marginBottom: 4 }}>Keep your API key secure</div>
+                    <div style={{ fontSize: 13, color: '#A16207', lineHeight: 1.5 }}>Never expose your API key in client-side code. Use environment variables.</div>
+                  </div>
+                </div>
+              </div>
+
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#18181B', margin: '32px 0 16px' }}>Request Headers</h2>
+              <div style={{ border: '1px solid #E5E5E5', borderRadius: 8, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: '#F9FAFB' }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#52525B', borderBottom: '1px solid #E5E5E5' }}>Header</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#52525B', borderBottom: '1px solid #E5E5E5' }}>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '12px 16px', borderBottom: '1px solid #E5E5E5' }}>
+                        <code style={{ fontSize: 13, color: '#18181B', background: '#F4F4F5', padding: '2px 8px', borderRadius: 4 }}>Authorization</code>
+                      </td>
+                      <td style={{ padding: '12px 16px', borderBottom: '1px solid #E5E5E5', fontSize: 13, color: '#52525B' }}>Bearer YOUR_API_KEY</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '12px 16px' }}>
+                        <code style={{ fontSize: 13, color: '#18181B', background: '#F4F4F5', padding: '2px 8px', borderRadius: 4 }}>Content-Type</code>
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#52525B' }}>application/json</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Route Prompt */}
+          {activeSection === 'route' && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 4, background: '#D1FAE5', color: '#059669' }}>POST</span>
+                <code style={{ fontSize: 14, color: '#52525B', fontFamily: 'ui-monospace, monospace' }}>/v1/route</code>
+              </div>
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#18181B', margin: '0 0 12px' }}>Route Prompt</h1>
+              <p style={{ fontSize: 16, color: '#52525B', lineHeight: 1.7, margin: '0 0 32px' }}>
+                Analyzes a prompt and returns the optimal model recommendation with scoring breakdown and confidence metrics.
+              </p>
+
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#18181B', margin: '0 0 16px' }}>Request Body</h2>
+              <div style={{ border: '1px solid #E5E5E5', borderRadius: 8, overflow: 'hidden', marginBottom: 32 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: '#F9FAFB' }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#52525B', borderBottom: '1px solid #E5E5E5' }}>Parameter</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#52525B', borderBottom: '1px solid #E5E5E5', width: 100 }}>Type</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#52525B', borderBottom: '1px solid #E5E5E5' }}>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { name: 'prompt', type: 'string', required: true, desc: 'The user prompt to analyze and route' },
+                      { name: 'modality', type: 'string', required: false, desc: 'Input type: text, image, voice, text+image, text+voice' },
+                      { name: 'humanContext', type: 'object', required: false, desc: 'User context (mood, time, preferences)' },
+                      { name: 'constraints', type: 'object', required: false, desc: 'Constraints (max cost, latency, capabilities)' },
+                      { name: 'conversationId', type: 'string', required: false, desc: 'ID for conversation coherence' },
+                    ].map((param, idx) => (
+                      <tr key={param.name}>
+                        <td style={{ padding: '12px 16px', borderBottom: idx < 4 ? '1px solid #E5E5E5' : 'none', verticalAlign: 'top' }}>
+                          <code style={{ fontSize: 13, color: '#18181B', background: '#F4F4F5', padding: '2px 8px', borderRadius: 4 }}>{param.name}</code>
+                          {param.required && <span style={{ marginLeft: 8, fontSize: 10, color: '#DC2626', fontWeight: 600 }}>required</span>}
+                        </td>
+                        <td style={{ padding: '12px 16px', borderBottom: idx < 4 ? '1px solid #E5E5E5' : 'none', fontSize: 13, color: '#7C3AED', verticalAlign: 'top' }}>{param.type}</td>
+                        <td style={{ padding: '12px 16px', borderBottom: idx < 4 ? '1px solid #E5E5E5' : 'none', fontSize: 13, color: '#52525B', lineHeight: 1.5, verticalAlign: 'top' }}>{param.desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#18181B', margin: '0 0 16px' }}>Response</h2>
+              <p style={{ fontSize: 14, color: '#52525B', lineHeight: 1.6, margin: '0 0 16px' }}>
+                Returns a <code style={{ background: '#F4F4F5', padding: '2px 6px', borderRadius: 4, fontSize: 13 }}>RouteResponse</code> object containing the recommended model and analysis.
+              </p>
+            </div>
+          )}
+
+          {/* List Models */}
+          {activeSection === 'models' && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 4, background: '#DBEAFE', color: '#1D4ED8' }}>GET</span>
+                <code style={{ fontSize: 14, color: '#52525B', fontFamily: 'ui-monospace, monospace' }}>/v1/models</code>
+              </div>
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#18181B', margin: '0 0 12px' }}>List Models</h1>
+              <p style={{ fontSize: 16, color: '#52525B', lineHeight: 1.7, margin: '0 0 32px' }}>
+                Returns all available models with capabilities, pricing, and performance metrics.
+              </p>
+
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#18181B', margin: '0 0 16px' }}>Query Parameters</h2>
+              <div style={{ border: '1px solid #E5E5E5', borderRadius: 8, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: '#F9FAFB' }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#52525B', borderBottom: '1px solid #E5E5E5' }}>Parameter</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#52525B', borderBottom: '1px solid #E5E5E5', width: 100 }}>Type</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#52525B', borderBottom: '1px solid #E5E5E5' }}>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { name: 'provider', type: 'string', desc: 'Filter by provider: anthropic, openai, google' },
+                      { name: 'capability', type: 'string', desc: 'Filter by capability: vision, audio, streaming' },
+                      { name: 'limit', type: 'integer', desc: 'Results per page (default: 50, max: 100)' },
+                      { name: 'offset', type: 'integer', desc: 'Pagination offset (default: 0)' },
+                    ].map((param, idx) => (
+                      <tr key={param.name}>
+                        <td style={{ padding: '12px 16px', borderBottom: idx < 3 ? '1px solid #E5E5E5' : 'none' }}>
+                          <code style={{ fontSize: 13, color: '#18181B', background: '#F4F4F5', padding: '2px 8px', borderRadius: 4 }}>{param.name}</code>
+                        </td>
+                        <td style={{ padding: '12px 16px', borderBottom: idx < 3 ? '1px solid #E5E5E5' : 'none', fontSize: 13, color: '#7C3AED' }}>{param.type}</td>
+                        <td style={{ padding: '12px 16px', borderBottom: idx < 3 ? '1px solid #E5E5E5' : 'none', fontSize: 13, color: '#52525B' }}>{param.desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Get Model */}
+          {activeSection === 'model-detail' && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 4, background: '#DBEAFE', color: '#1D4ED8' }}>GET</span>
+                <code style={{ fontSize: 14, color: '#52525B', fontFamily: 'ui-monospace, monospace' }}>/v1/models/:id</code>
+              </div>
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#18181B', margin: '0 0 12px' }}>Get Model</h1>
+              <p style={{ fontSize: 16, color: '#52525B', lineHeight: 1.7, margin: '0 0 32px' }}>
+                Retrieves detailed information about a specific model including pricing and capabilities.
+              </p>
+
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#18181B', margin: '0 0 16px' }}>Path Parameters</h2>
+              <div style={{ border: '1px solid #E5E5E5', borderRadius: 8, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '12px 16px', width: 200 }}>
+                        <code style={{ fontSize: 13, color: '#18181B', background: '#F4F4F5', padding: '2px 8px', borderRadius: 4 }}>id</code>
+                        <span style={{ marginLeft: 8, fontSize: 10, color: '#DC2626', fontWeight: 600 }}>required</span>
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#7C3AED', width: 80 }}>string</td>
+                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#52525B' }}>The model ID (e.g., claude-sonnet-4-5)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Analyze */}
+          {activeSection === 'analyze' && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 4, background: '#D1FAE5', color: '#059669' }}>POST</span>
+                <code style={{ fontSize: 14, color: '#52525B', fontFamily: 'ui-monospace, monospace' }}>/v1/analyze</code>
+              </div>
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#18181B', margin: '0 0 12px' }}>Analyze Prompt</h1>
+              <p style={{ fontSize: 16, color: '#52525B', lineHeight: 1.7, margin: '0 0 32px' }}>
+                Analyzes a prompt without model selection. Useful for understanding how the engine interprets prompts.
+              </p>
+
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#18181B', margin: '0 0 16px' }}>Request Body</h2>
+              <div style={{ border: '1px solid #E5E5E5', borderRadius: 8, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: '12px 16px', borderBottom: '1px solid #E5E5E5' }}>
+                        <code style={{ fontSize: 13, color: '#18181B', background: '#F4F4F5', padding: '2px 8px', borderRadius: 4 }}>prompt</code>
+                        <span style={{ marginLeft: 8, fontSize: 10, color: '#DC2626', fontWeight: 600 }}>required</span>
+                      </td>
+                      <td style={{ padding: '12px 16px', borderBottom: '1px solid #E5E5E5', fontSize: 13, color: '#7C3AED', width: 80 }}>string</td>
+                      <td style={{ padding: '12px 16px', borderBottom: '1px solid #E5E5E5', fontSize: 13, color: '#52525B' }}>The prompt to analyze</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '12px 16px' }}>
+                        <code style={{ fontSize: 13, color: '#18181B', background: '#F4F4F5', padding: '2px 8px', borderRadius: 4 }}>modality</code>
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#7C3AED' }}>string</td>
+                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#52525B' }}>Input modality type (defaults to text)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Feedback */}
+          {activeSection === 'feedback' && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 4, background: '#D1FAE5', color: '#059669' }}>POST</span>
+                <code style={{ fontSize: 14, color: '#52525B', fontFamily: 'ui-monospace, monospace' }}>/v1/feedback</code>
+              </div>
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#18181B', margin: '0 0 12px' }}>Submit Feedback</h1>
+              <p style={{ fontSize: 16, color: '#52525B', lineHeight: 1.7, margin: '0 0 32px' }}>
+                Submit feedback on routing decisions to improve the engine&apos;s recommendations.
+              </p>
+
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#18181B', margin: '0 0 16px' }}>Request Body</h2>
+              <div style={{ border: '1px solid #E5E5E5', borderRadius: 8, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <tbody>
+                    {[
+                      { name: 'decisionId', type: 'string', required: true, desc: 'The decision ID from route response' },
+                      { name: 'rating', type: 'integer', required: true, desc: 'Rating from 1-5' },
+                      { name: 'selectedModel', type: 'string', required: false, desc: 'Model ID if user chose different' },
+                      { name: 'comment', type: 'string', required: false, desc: 'Optional feedback comment' },
+                    ].map((param, idx) => (
+                      <tr key={param.name}>
+                        <td style={{ padding: '12px 16px', borderBottom: idx < 3 ? '1px solid #E5E5E5' : 'none' }}>
+                          <code style={{ fontSize: 13, color: '#18181B', background: '#F4F4F5', padding: '2px 8px', borderRadius: 4 }}>{param.name}</code>
+                          {param.required && <span style={{ marginLeft: 8, fontSize: 10, color: '#DC2626', fontWeight: 600 }}>required</span>}
+                        </td>
+                        <td style={{ padding: '12px 16px', borderBottom: idx < 3 ? '1px solid #E5E5E5' : 'none', fontSize: 13, color: '#7C3AED', width: 80 }}>{param.type}</td>
+                        <td style={{ padding: '12px 16px', borderBottom: idx < 3 ? '1px solid #E5E5E5' : 'none', fontSize: 13, color: '#52525B' }}>{param.desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Health */}
+          {activeSection === 'health' && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 4, background: '#DBEAFE', color: '#1D4ED8' }}>GET</span>
+                <code style={{ fontSize: 14, color: '#52525B', fontFamily: 'ui-monospace, monospace' }}>/v1/health</code>
+              </div>
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#18181B', margin: '0 0 12px' }}>Health Check</h1>
+              <p style={{ fontSize: 16, color: '#52525B', lineHeight: 1.7, margin: '0 0 32px' }}>
+                Returns the health status of the ADE engine and its dependencies.
+              </p>
+
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#18181B', margin: '0 0 16px' }}>Status Values</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  { status: 'healthy', color: '#22C55E', desc: 'All systems operational' },
+                  { status: 'degraded', color: '#F59E0B', desc: 'Some services experiencing issues' },
+                  { status: 'unhealthy', color: '#EF4444', desc: 'Critical services are down' },
+                ].map((item) => (
+                  <div key={item.status} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#F9FAFB', borderRadius: 6 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color }} />
+                    <code style={{ fontSize: 13, color: '#18181B' }}>{item.status}</code>
+                    <span style={{ fontSize: 13, color: '#52525B' }}>— {item.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Errors */}
+          {activeSection === 'errors' && (
+            <div>
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#18181B', margin: '0 0 12px' }}>Error Handling</h1>
+              <p style={{ fontSize: 16, color: '#52525B', lineHeight: 1.7, margin: '0 0 32px' }}>
+                ADE uses standard HTTP status codes and returns consistent error responses.
+              </p>
+
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#18181B', margin: '0 0 16px' }}>HTTP Status Codes</h2>
+              <div style={{ border: '1px solid #E5E5E5', borderRadius: 8, overflow: 'hidden', marginBottom: 32 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: '#F9FAFB' }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#52525B', borderBottom: '1px solid #E5E5E5', width: 100 }}>Code</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#52525B', borderBottom: '1px solid #E5E5E5' }}>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { code: '200', desc: 'Success' },
+                      { code: '400', desc: 'Bad Request — Invalid parameters' },
+                      { code: '401', desc: 'Unauthorized — Invalid API key' },
+                      { code: '404', desc: 'Not Found — Resource doesn\'t exist' },
+                      { code: '429', desc: 'Too Many Requests — Rate limit exceeded' },
+                      { code: '500', desc: 'Internal Server Error' },
+                    ].map((item, idx) => (
+                      <tr key={item.code}>
+                        <td style={{ padding: '12px 16px', borderBottom: idx < 5 ? '1px solid #E5E5E5' : 'none' }}>
+                          <code style={{ fontSize: 13, fontWeight: 600, color: item.code.startsWith('2') ? '#059669' : item.code.startsWith('4') ? '#D97706' : '#DC2626' }}>{item.code}</code>
+                        </td>
+                        <td style={{ padding: '12px 16px', borderBottom: idx < 5 ? '1px solid #E5E5E5' : 'none', fontSize: 13, color: '#52525B' }}>{item.desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#18181B', margin: '0 0 16px' }}>Error Response Format</h2>
+              <div style={{ background: '#18181B', borderRadius: 8, padding: 16 }}>
+                <pre style={{ margin: 0, fontSize: 13, fontFamily: 'ui-monospace, monospace', color: '#E5E5E5', lineHeight: 1.6 }}>{`{
+  "error": {
+    "code": "invalid_request",
+    "message": "The 'prompt' field is required",
+    "type": "validation_error"
+  }
+}`}</pre>
+              </div>
+            </div>
+          )}
+
+          {/* Objects */}
+          {activeSection === 'objects' && (
+            <div>
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#18181B', margin: '0 0 12px' }}>Objects</h1>
+              <p style={{ fontSize: 16, color: '#52525B', lineHeight: 1.7, margin: '0 0 32px' }}>
+                Reference documentation for API object schemas.
+              </p>
+
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#18181B', margin: '0 0 16px' }}>humanContext Object</h2>
+              <div style={{ background: '#18181B', borderRadius: 8, padding: 16, marginBottom: 32 }}>
+                <pre style={{ margin: 0, fontSize: 13, fontFamily: 'ui-monospace, monospace', color: '#E5E5E5', lineHeight: 1.6 }}>{`{
+  "emotionalState": {
+    "mood": "happy | neutral | stressed",
+    "energyLevel": "low | moderate | high"
+  },
+  "temporalContext": {
+    "localTime": "14:30",
+    "isWorkingHours": true
+  },
+  "environmentalContext": {
+    "weather": "sunny | cloudy | rainy",
+    "location": "United States"
+  },
+  "preferences": {
+    "preferredResponseStyle": "concise | detailed",
+    "preferredModels": ["claude-opus-4-5"]
+  }
+}`}</pre>
+              </div>
+
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#18181B', margin: '0 0 16px' }}>constraints Object</h2>
+              <div style={{ background: '#18181B', borderRadius: 8, padding: 16 }}>
+                <pre style={{ margin: 0, fontSize: 13, fontFamily: 'ui-monospace, monospace', color: '#E5E5E5', lineHeight: 1.6 }}>{`{
+  "maxCostPer1kTokens": 0.01,
+  "maxLatencyMs": 2000,
+  "requireVision": true,
+  "requireAudio": false,
+  "excludedModels": ["model-id"]
+}`}</pre>
+              </div>
+            </div>
+          )}
+        </main>
+
+        {/* Code Examples Panel */}
+        <aside style={{ background: '#18181B', padding: '32px 24px', overflowY: 'auto' }}>
+          {(activeSection !== 'introduction' && activeSection !== 'authentication' && activeSection !== 'errors' && activeSection !== 'objects') && codeExamples[activeSection] && (
+            <>
+              {/* Language Tabs */}
+              <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+                {codeLangs.map((lang) => (
+                  <button
+                    key={lang.id}
+                    onClick={() => setActiveCodeLang(lang.id)}
+                    style={{
+                      padding: '6px 12px', fontSize: 12, fontWeight: activeCodeLang === lang.id ? 500 : 400,
+                      color: activeCodeLang === lang.id ? '#fff' : '#71717A',
+                      background: activeCodeLang === lang.id ? '#27272A' : 'transparent',
+                      border: 'none', borderRadius: 6, cursor: 'pointer',
+                    }}
+                  >
+                    {lang.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Request Example */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: '#A1A1AA' }}>Request</span>
+                  <button
+                    onClick={() => copyToClipboard(codeExamples[activeSection]?.[activeCodeLang] || '', `${activeSection}-request`)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', fontSize: 11, color: '#71717A', background: '#27272A', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                  >
+                    {copiedCode === `${activeSection}-request` ? <Check style={{ width: 12, height: 12, color: '#22C55E' }} /> : <Copy style={{ width: 12, height: 12 }} />}
+                  </button>
+                </div>
+                <div style={{ background: '#0D0D0D', borderRadius: 8, padding: 16, overflowX: 'auto' }}>
+                  <pre style={{ margin: 0, fontSize: 12, fontFamily: 'ui-monospace, monospace', color: '#E5E5E5', lineHeight: 1.7 }}>
+                    {codeExamples[activeSection]?.[activeCodeLang]}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Response Example */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: '#A1A1AA' }}>Response</span>
+                  <button
+                    onClick={() => copyToClipboard(responseExamples[activeSection] || '', `${activeSection}-response`)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', fontSize: 11, color: '#71717A', background: '#27272A', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                  >
+                    {copiedCode === `${activeSection}-response` ? <Check style={{ width: 12, height: 12, color: '#22C55E' }} /> : <Copy style={{ width: 12, height: 12 }} />}
+                  </button>
+                </div>
+                <div style={{ background: '#0D0D0D', borderRadius: 8, padding: 16, overflowX: 'auto' }}>
+                  <pre style={{ margin: 0, fontSize: 12, fontFamily: 'ui-monospace, monospace', color: '#E5E5E5', lineHeight: 1.7 }}>
+                    {responseExamples[activeSection]}
+                  </pre>
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeSection === 'introduction' && (
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#A1A1AA', marginBottom: 8 }}>Quick Start</div>
+              <div style={{ background: '#0D0D0D', borderRadius: 8, padding: 16 }}>
+                <pre style={{ margin: 0, fontSize: 12, fontFamily: 'ui-monospace, monospace', color: '#E5E5E5', lineHeight: 1.7 }}>{`curl -X POST https://api.ade.dev/v1/route \\
+  -H "Authorization: Bearer $API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"prompt": "Hello, world!"}'`}</pre>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'authentication' && (
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#A1A1AA', marginBottom: 8 }}>Example Header</div>
+              <div style={{ background: '#0D0D0D', borderRadius: 8, padding: 16 }}>
+                <pre style={{ margin: 0, fontSize: 12, fontFamily: 'ui-monospace, monospace', color: '#E5E5E5', lineHeight: 1.7 }}>{`Authorization: Bearer sk_live_abc123...`}</pre>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'errors' && (
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#A1A1AA', marginBottom: 8 }}>Error Response</div>
+              <div style={{ background: '#0D0D0D', borderRadius: 8, padding: 16 }}>
+                <pre style={{ margin: 0, fontSize: 12, fontFamily: 'ui-monospace, monospace', color: '#E5E5E5', lineHeight: 1.7 }}>{`{
+  "error": {
+    "code": "rate_limit_exceeded",
+    "message": "Too many requests",
+    "type": "rate_limit_error"
+  }
+}`}</pre>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'objects' && (
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#A1A1AA', marginBottom: 8 }}>Model Object</div>
+              <div style={{ background: '#0D0D0D', borderRadius: 8, padding: 16 }}>
+                <pre style={{ margin: 0, fontSize: 12, fontFamily: 'ui-monospace, monospace', color: '#E5E5E5', lineHeight: 1.7 }}>{`{
+  "id": "claude-sonnet-4-5",
+  "name": "Claude Sonnet 4.5",
+  "provider": "Anthropic",
+  "capabilities": {
+    "supportsVision": true,
+    "supportsStreaming": true
+  }
+}`}</pre>
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>
+    </div>
+  );
+}
                 borderRadius: 6,
                 cursor: 'pointer',
                 textAlign: 'left',
