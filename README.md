@@ -1,19 +1,326 @@
 # ADE - Araviel Decision Engine
 
-An intelligent LLM routing engine that analyzes user prompts and recommends the optimal model based on task requirements, user context, and constraints.
+<div align="center">
+
+**Intelligent LLM Routing for Optimal Model Selection**
+
+[![Next.js](https://img.shields.io/badge/Next.js-16.1-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
+[Overview](#overview) • [Features](#features) • [Quick Start](#quick-start) • [API Reference](#api-reference) • [Architecture](#architecture) • [Contributing](#contributing)
+
+</div>
+
+---
 
 ## Overview
 
-ADE (Araviel Decision Engine) receives a user's prompt along with optional context, analyzes the request, scores all available models against multiple factors, and returns a recommendation with clear, human-readable reasoning.
+ADE (Araviel Decision Engine) is a sophisticated LLM routing engine that analyzes user prompts and automatically selects the optimal model based on task requirements, cost efficiency, and performance characteristics. With sub-50ms routing decisions and support for 10+ models from Anthropic, OpenAI, and Google, ADE ensures your requests are always handled by the best model for the job.
 
-**Key Features:**
-- Sub-50ms routing decisions
-- Multi-modal support (text, image, voice, combined)
-- Human context awareness (mood, energy, time, preferences)
-- Natural language reasoning for every recommendation
-- 10 models from Anthropic, OpenAI, and Google
+### Why ADE?
+
+- **Cost Optimization**: Automatically route simple queries to cost-effective models and complex tasks to capable ones
+- **Performance Matching**: Match task requirements (coding, creative, analysis) to model strengths
+- **Multi-Modal Support**: Seamlessly handle text, image, voice, and combined inputs
+- **Human Context Awareness**: Factor in user mood, energy level, and preferences for better recommendations
+
+---
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **Sub-50ms Routing** | Lightning-fast routing decisions with intelligent caching |
+| **10+ Models** | Support for Anthropic, OpenAI, and Google models |
+| **Multi-Modal** | Text, vision, audio, and combined modality support |
+| **6 Scoring Factors** | Task fitness, modality, cost, speed, preference, coherence |
+| **Human Context** | Mood, energy, time, and preference-aware routing |
+| **Natural Language Reasoning** | Human-readable explanations for every recommendation |
+| **Interactive UI** | Beautiful routing interface for testing and exploration |
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** 18.0 or higher ([Download](https://nodejs.org/))
+- **npm** or **yarn** package manager
+- **Git** for cloning the repository
+
+### Installation
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/your-org/ade.git
+   cd ade
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   Edit `.env.local` and add your configuration:
+
+   ```env
+   # API Authentication Keys (comma-separated for multiple keys)
+   ADE_API_KEYS=sk_live_your_api_key_here
+
+   # Vercel KV Storage (Optional - for context persistence)
+   KV_REST_API_URL=https://your-kv.kv.vercel-storage.com
+   KV_REST_API_TOKEN=your-kv-token
+   ```
+
+4. **Start the development server**
+
+   ```bash
+   npm run dev
+   ```
+
+   The application will be available at `http://localhost:3000`
+
+---
+
+## Running Locally
+
+### Development Mode
+
+Start the development server with hot-reload:
+
+```bash
+npm run dev
+```
+
+This will start:
+- Next.js development server on port 3000
+- API routes at `/api/v1/*`
+- Interactive UI at the root URL
+
+### Production Build
+
+Build and run the production version:
+
+```bash
+# Build the application
+npm run build
+
+# Start the production server
+npm start
+```
+
+### Running Tests
+
+Execute the test suite:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+### Type Checking
+
+Verify TypeScript types:
+
+```bash
+npm run typecheck
+```
+
+### Linting
+
+Check code quality:
+
+```bash
+npm run lint
+```
+
+---
+
+## Using the Route UI
+
+The ADE interface provides an interactive way to test and explore routing decisions.
+
+### Accessing the UI
+
+1. Start the development server: `npm run dev`
+2. Open `http://localhost:3000` in your browser
+
+### Router Interface
+
+The main Router view allows you to:
+
+1. **Enter a Prompt**: Type or paste your prompt in the input field
+2. **Select Modality**: Choose from Text, Vision, Voice, or combined modes
+3. **Set Human Context** (Optional): Configure mood, energy level, and preferences
+4. **Set Constraints** (Optional): Add cost limits, latency requirements, or model restrictions
+5. **Route**: Click "Route Prompt" to get model recommendations
+
+### Understanding Results
+
+After routing, you'll see:
+
+- **Primary Recommendation**: The optimal model with score and reasoning
+- **Backup Models**: Alternative recommendations ranked by score
+- **Analysis**: Detected intent, domain, complexity, and keywords
+- **Timing**: Breakdown of analysis, scoring, and selection time
+- **Factor Scores**: Detailed view of how each scoring factor contributed
+
+### API Documentation
+
+Navigate to the **Docs** tab for comprehensive API documentation with:
+
+- Interactive endpoint reference
+- Code examples in Shell, JavaScript, and Python
+- Request/response schemas
+- Error handling guide
+
+### Models Browser
+
+The **Models** tab displays all available models with:
+
+- Provider information (Anthropic, OpenAI, Google)
+- Pricing details
+- Capability indicators (vision, audio, streaming, functions)
+- Performance metrics
+
+---
+
+## API Reference
+
+### Base URL
+
+```
+https://api.ade.dev/v1
+```
+
+For local development: `http://localhost:3000/api/v1`
+
+### Authentication
+
+All API requests (except health check) require authentication:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" https://api.ade.dev/v1/route
+```
+
+### Endpoints
+
+#### POST /v1/route
+
+Analyze a prompt and get model recommendations.
+
+```bash
+curl -X POST https://api.ade.dev/v1/route \
+  -H "Authorization: Bearer $ADE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Write a Python function to sort an array",
+    "modality": "text"
+  }'
+```
+
+**Response:**
+```json
+{
+  "decisionId": "dec_abc123",
+  "primaryModel": {
+    "id": "claude-sonnet-4-20250514",
+    "name": "Claude Sonnet 4",
+    "provider": "Anthropic",
+    "score": 0.912,
+    "reasoning": {
+      "summary": "Excellent match for coding tasks with strong performance",
+      "factors": [...]
+    }
+  },
+  "backupModels": [...],
+  "confidence": 0.87,
+  "analysis": {
+    "intent": "coding",
+    "domain": "technology",
+    "complexity": "standard"
+  },
+  "timing": {
+    "totalMs": 24.5
+  }
+}
+```
+
+#### POST /v1/analyze
+
+Analyze a prompt without model selection.
+
+```bash
+curl -X POST https://api.ade.dev/v1/analyze \
+  -H "Authorization: Bearer $ADE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Explain quantum computing"}'
+```
+
+#### GET /v1/models
+
+List all available models.
+
+```bash
+curl https://api.ade.dev/v1/models \
+  -H "Authorization: Bearer $ADE_API_KEY"
+```
+
+#### GET /v1/models/:id
+
+Get details for a specific model.
+
+```bash
+curl https://api.ade.dev/v1/models/claude-sonnet-4-20250514 \
+  -H "Authorization: Bearer $ADE_API_KEY"
+```
+
+#### POST /v1/feedback
+
+Submit feedback for a routing decision.
+
+```bash
+curl -X POST https://api.ade.dev/v1/feedback \
+  -H "Authorization: Bearer $ADE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "decisionId": "dec_abc123",
+    "rating": 5,
+    "comment": "Perfect recommendation!"
+  }'
+```
+
+#### GET /v1/health
+
+Health check endpoint (no authentication required).
+
+```bash
+curl https://api.ade.dev/v1/health
+```
+
+---
 
 ## Architecture
+
+### System Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -34,328 +341,168 @@ ADE (Araviel Decision Engine) receives a user's prompt along with optional conte
 │                        Data Layer                                │
 │      ┌─────────────────┐         ┌─────────────────────┐        │
 │      │  Model Registry │         │     Vercel KV       │        │
-│      │  (10 models)    │         │  (Context Storage)  │        │
+│      │  (10+ models)   │         │  (Context Storage)  │        │
 │      └─────────────────┘         └─────────────────────┘        │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Request Flow
+### Request Flow
 
-```
-Request → Auth Middleware → Analyze Prompt → Score Models → Select Best → Generate Reasoning → Response
-                                  │              │              │
-                                  ▼              ▼              ▼
-                            Intent/Domain   All Factors    Primary +
-                            Complexity      Weighted       2 Backups
-                            Tone/Keywords   Combined       w/Reasoning
-```
+1. **Request** → Incoming prompt with optional context and constraints
+2. **Analysis** → Intent detection, domain classification, complexity scoring
+3. **Scoring** → Each model scored across 6 weighted factors
+4. **Selection** → Top model selected with backup alternatives
+5. **Reasoning** → Natural language explanation generated
+6. **Response** → Full recommendation returned
 
-## Quick Start
+### Scoring Factors
 
-### Prerequisites
+| Factor | Weight | Description |
+|--------|--------|-------------|
+| Task Fitness | 40% | Match between detected intent/domain and model strengths |
+| Modality Fitness | 15% | Capability match for vision/audio requirements |
+| Cost Efficiency | 15% | Normalized cost comparison |
+| Speed | 10% | Latency comparison |
+| User Preference | 10% | Boost/penalty based on user preferences |
+| Conversation Coherence | 10% | Consistency with previous model in conversation |
 
-- Node.js 18+
-- npm or yarn
-- Vercel account (for KV storage)
-
-### Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd ade
-
-# Install dependencies
-npm install
-
-# Copy environment template
-cp .env.example .env.local
-
-# Add your API keys and KV credentials to .env.local
-```
-
-### Environment Variables
-
-```env
-# API Keys (comma-separated)
-ADE_API_KEYS=your-api-key-1,your-api-key-2
-
-# Vercel KV
-KV_REST_API_URL=https://your-kv.kv.vercel-storage.com
-KV_REST_API_TOKEN=your-kv-token
-```
-
-### Running Locally
-
-```bash
-# Development mode
-npm run dev
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
-```
-
-## API Reference
-
-### POST /v1/route
-
-Main routing endpoint. Analyzes the prompt and returns model recommendations.
-
-**Request:**
-```json
-{
-  "prompt": "Write a Python function to sort an array",
-  "modality": "text",
-  "context": {
-    "userId": "user_123",
-    "conversationId": "conv_456",
-    "previousModelUsed": "claude-sonnet-4-20250514",
-    "messageCount": 5
-  },
-  "humanContext": {
-    "emotionalState": {
-      "mood": "focused",
-      "energyLevel": "high"
-    },
-    "temporalContext": {
-      "localTime": "14:30",
-      "isWorkingHours": true
-    },
-    "preferences": {
-      "preferredResponseStyle": "detailed",
-      "preferredModels": ["claude-opus-4-5-20251101"]
-    }
-  },
-  "constraints": {
-    "maxCostPer1kTokens": 0.01,
-    "maxLatencyMs": 2000,
-    "requireVision": false
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "decisionId": "dec_abc123def456",
-  "primaryModel": {
-    "id": "claude-sonnet-4-20250514",
-    "name": "Claude Sonnet 4",
-    "provider": "anthropic",
-    "score": 0.892,
-    "reasoning": {
-      "summary": "Claude Sonnet 4 excels at coding tasks with strong technology domain knowledge.",
-      "factors": [
-        {
-          "name": "Task Fitness",
-          "impact": "positive",
-          "weight": 0.4,
-          "detail": "Excels at coding tasks (95%) with strong technology domain knowledge (95%)"
-        }
-      ]
-    }
-  },
-  "backupModels": [...],
-  "confidence": 0.87,
-  "analysis": {
-    "intent": "coding",
-    "domain": "technology",
-    "complexity": "standard",
-    "tone": "focused",
-    "modality": "text",
-    "keywords": ["python", "function", "sort", "array"],
-    "humanContextUsed": true
-  },
-  "timing": {
-    "totalMs": 23.45,
-    "analysisMs": 5.12,
-    "scoringMs": 14.33,
-    "selectionMs": 4.00
-  }
-}
-```
-
-### POST /v1/analyze
-
-Analyze-only endpoint (no model selection).
-
-**Request:**
-```json
-{
-  "prompt": "Explain quantum computing",
-  "modality": "text"
-}
-```
-
-### POST /v1/feedback
-
-Submit feedback on a routing decision.
-
-**Request:**
-```json
-{
-  "decisionId": "dec_abc123def456",
-  "signal": "positive",
-  "comment": "Great recommendation!"
-}
-```
-
-### GET /v1/models
-
-List all available models.
-
-### GET /v1/models/:id
-
-Get details for a specific model.
-
-### GET /v1/decisions/:id
-
-Retrieve a past decision.
-
-### GET /v1/health
-
-Health check (no authentication required).
-
-## Scoring System
-
-### Factors & Weights
-
-**Without Human Context:**
-| Factor | Weight |
-|--------|--------|
-| Task Fitness | 40% |
-| Modality Fitness | 15% |
-| Cost Efficiency | 15% |
-| User Preference | 10% |
-| Conversation Coherence | 10% |
-| Speed | 10% |
-
-**With Human Context:**
-| Factor | Weight |
-|--------|--------|
-| Task Fitness | 32% |
-| Human Context Fit | 15% |
-| Modality Fitness | 12% |
-| Cost Efficiency | 12% |
-| User Preference | 10% |
-| Conversation Coherence | 10% |
-| Speed | 9% |
-
-### Human Context Influence
-
-- **Mood**: Frustrated/stressed favors empathetic models; playful favors playful models
-- **Energy**: Low energy favors concise responses; high energy handles verbose
-- **Time**: Late night favors lighter models; work hours favor professional
-- **Style**: Matches preferred response style and length
-
-## Supported Models
-
-| Provider | Model | Best For |
-|----------|-------|----------|
-| Anthropic | Claude Opus 4.5 | Complex reasoning, analysis |
-| Anthropic | Claude Sonnet 4 | Balanced tasks, coding |
-| Anthropic | Claude Haiku 4.5 | Quick responses, high volume |
-| OpenAI | GPT-4.1 | Coding, long context |
-| OpenAI | GPT-4.1 Mini | Cost-effective coding |
-| OpenAI | GPT-4o | Multi-modal, conversation |
-| OpenAI | o4-mini | Complex reasoning |
-| Google | Gemini 2.5 Pro | Multi-modal, analysis |
-| Google | Gemini 2.5 Flash | Fast responses |
-| Google | Gemini 2.5 Flash-Lite | High volume, budget |
-
-## Multi-Modal Routing
-
-### Text-Only
-Full analysis and scoring pipeline.
-
-### Pure Image/Voice
-Fast-path selection (< 10ms) based on modality capability scores.
-
-### Combined (Text + Image/Voice)
-Reconciliation approach:
-- 60% weight on modality capability
-- 40% weight on text analysis
-- Edge case handling for close matches
+---
 
 ## Project Structure
 
 ```
-src/
-├── app/
-│   └── api/v1/           # API routes
-│       ├── route/        # Main routing endpoint
-│       ├── analyze/      # Analysis-only endpoint
-│       ├── feedback/     # Feedback endpoint
-│       ├── models/       # Model listing
-│       ├── decisions/    # Decision retrieval
-│       └── health/       # Health check
-├── core/
-│   ├── analyzer/         # Intent, domain, complexity detection
-│   ├── scorer/           # Factor calculators
-│   ├── selector/         # Model selection logic
-│   ├── reasoning/        # Natural language generation
-│   └── engine/           # Main orchestrator
-├── models/               # Model registry (10 models)
-├── context/              # KV context managers
-├── lib/                  # Utilities (auth, errors, helpers)
-├── types/                # TypeScript definitions
-└── __tests__/            # Test files
+ade/
+├── src/
+│   ├── app/                      # Next.js App Router
+│   │   ├── api/v1/               # API Routes
+│   │   │   ├── route/            # Main routing endpoint
+│   │   │   ├── analyze/          # Analysis-only endpoint
+│   │   │   ├── models/           # Model listing
+│   │   │   ├── feedback/         # Feedback submission
+│   │   │   ├── decisions/        # Decision retrieval
+│   │   │   └── health/           # Health check
+│   │   ├── page.tsx              # Main UI (Router, Models, Docs)
+│   │   ├── layout.tsx            # Root layout
+│   │   └── globals.css           # Global styles
+│   │
+│   ├── core/                     # Core Engine Logic
+│   │   ├── analyzer/             # Intent & domain analysis
+│   │   ├── scorer/               # Factor scoring
+│   │   ├── selector/             # Model selection
+│   │   ├── reasoning/            # Reasoning generation
+│   │   └── engine/               # Main orchestrator
+│   │
+│   ├── components/               # React Components
+│   │   ├── ui/                   # Base UI components
+│   │   ├── routing/              # Routing-specific components
+│   │   └── status/               # Status page component
+│   │
+│   ├── models/                   # Model Registry
+│   ├── context/                  # Context managers
+│   ├── lib/                      # Utilities
+│   ├── types/                    # TypeScript definitions
+│   └── __tests__/                # Test files
+│
+├── public/                       # Static assets
+├── package.json                  # Dependencies
+├── tsconfig.json                 # TypeScript config
+└── README.md                     # This file
 ```
 
-## Development
+---
 
-### Running Tests
+## Supported Models
 
-```bash
-# Run all tests
-npm test
+### Anthropic
 
-# Watch mode
-npm test:watch
+| Model | Best For |
+|-------|----------|
+| Claude Opus 4.5 | Complex reasoning, analysis, long-form content |
+| Claude Sonnet 4 | Balanced tasks, coding, general-purpose |
+| Claude Haiku 3.5 | Quick responses, high volume, cost-sensitive |
 
-# With coverage
-npm test:coverage
-```
+### OpenAI
 
-### Type Checking
+| Model | Best For |
+|-------|----------|
+| GPT-4.1 | Coding, long context, complex tasks |
+| GPT-4.1 Mini | Cost-effective coding, moderate complexity |
+| GPT-4o | Multi-modal, conversation, creative tasks |
+| o4-mini | Complex reasoning, chain-of-thought |
 
-```bash
-# Check types
-npx tsc --noEmit
-```
+### Google
 
-### Linting
+| Model | Best For |
+|-------|----------|
+| Gemini 2.5 Pro | Multi-modal analysis, complex reasoning |
+| Gemini 2.5 Flash | Fast responses, balanced performance |
+| Gemini 2.5 Flash-Lite | High volume, budget-conscious |
 
-```bash
-npm run lint
-```
-
-## Deployment
-
-### Vercel Deployment
-
-1. Connect your repository to Vercel
-2. Add environment variables in Vercel dashboard
-3. Deploy
-
-### Environment Setup
-
-1. Create a Vercel KV store
-2. Copy the connection details to your environment variables
-3. Add your API keys
+---
 
 ## Performance
 
-- **Target**: < 50ms for 99th percentile
-- **Analysis**: < 10ms
-- **Scoring**: < 20ms
-- **Selection + Reasoning**: < 20ms
+| Metric | Target | Typical |
+|--------|--------|---------|
+| Total Routing Time | < 50ms | ~25ms |
+| Analysis Phase | < 10ms | ~6ms |
+| Scoring Phase | < 20ms | ~14ms |
+| Selection Phase | < 20ms | ~5ms |
 
-All routing is done in-memory with no external API calls.
+All routing is performed in-memory with no external API calls during the decision process.
+
+---
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Import the project in Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy
+
+### Docker
+
+```bash
+# Build the image
+docker build -t ade .
+
+# Run the container
+docker run -p 3000:3000 -e ADE_API_KEYS=your_key ade
+```
+
+### Manual
+
+```bash
+npm run build
+npm start
+```
+
+---
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+**Built with the Araviel Philosophy**
+
+*Clean • Modern • Professional • Billion Dollar Tech Company Standards*
+
+</div>
