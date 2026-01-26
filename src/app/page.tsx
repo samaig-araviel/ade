@@ -190,6 +190,193 @@ function DocsView() {
     setExpandedResponses(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // Syntax highlighting for code blocks
+  const highlightCode = (code: string, lang: string): React.ReactNode[] => {
+    const lines = code.split('\n');
+    return lines.map((line, lineIdx) => {
+      const parts: React.ReactNode[] = [];
+      let remaining = line;
+      let keyIdx = 0;
+
+      if (lang === 'shell') {
+        // Shell/cURL highlighting
+        remaining = remaining.replace(/(curl|wget|httpie|http)(\s)/g, (_, cmd, space) => {
+          parts.push(<span key={`cmd-${lineIdx}-${keyIdx++}`} style={{ color: '#C792EA' }}>{cmd}</span>);
+          parts.push(space);
+          return '\x00'.repeat(cmd.length + space.length);
+        });
+        remaining = remaining.replace(/(-X\s+)(GET|POST|PUT|DELETE|PATCH)/g, (_, flag, method) => {
+          parts.push(<span key={`flag-${lineIdx}-${keyIdx++}`} style={{ color: '#82AAFF' }}>{flag}</span>);
+          parts.push(<span key={`method-${lineIdx}-${keyIdx++}`} style={{ color: '#FFCB6B' }}>{method}</span>);
+          return '\x00'.repeat(flag.length + method.length);
+        });
+        remaining = remaining.replace(/(-H\s+|-d\s+|--header\s+|--data\s+)/g, (_, flag) => {
+          parts.push(<span key={`hflag-${lineIdx}-${keyIdx++}`} style={{ color: '#82AAFF' }}>{flag}</span>);
+          return '\x00'.repeat(flag.length);
+        });
+        remaining = remaining.replace(/(https?:\/\/[^\s'"]+)/g, (_, url) => {
+          parts.push(<span key={`url-${lineIdx}-${keyIdx++}`} style={{ color: '#89DDFF' }}>{url}</span>);
+          return '\x00'.repeat(url.length);
+        });
+        remaining = remaining.replace(/"([^"]*)"/g, (match, content) => {
+          parts.push(<span key={`str-${lineIdx}-${keyIdx++}`} style={{ color: '#C3E88D' }}>&quot;{content}&quot;</span>);
+          return '\x00'.repeat(match.length);
+        });
+        remaining = remaining.replace(/'([^']*)'/g, (match, content) => {
+          parts.push(<span key={`str2-${lineIdx}-${keyIdx++}`} style={{ color: '#C3E88D' }}>&apos;{content}&apos;</span>);
+          return '\x00'.repeat(match.length);
+        });
+        remaining = remaining.replace(/(\$[A-Z_]+)/g, (_, varName) => {
+          parts.push(<span key={`var-${lineIdx}-${keyIdx++}`} style={{ color: '#F78C6C' }}>{varName}</span>);
+          return '\x00'.repeat(varName.length);
+        });
+      } else if (lang === 'javascript') {
+        // JavaScript highlighting
+        remaining = remaining.replace(/\b(const|let|var|function|async|await|return|import|from|export|if|else|try|catch|throw|new)\b/g, (keyword) => {
+          parts.push(<span key={`kw-${lineIdx}-${keyIdx++}`} style={{ color: '#C792EA' }}>{keyword}</span>);
+          return '\x00'.repeat(keyword.length);
+        });
+        remaining = remaining.replace(/\b(fetch|console|process|JSON|Object|Array|Promise)\b/g, (builtin) => {
+          parts.push(<span key={`bi-${lineIdx}-${keyIdx++}`} style={{ color: '#82AAFF' }}>{builtin}</span>);
+          return '\x00'.repeat(builtin.length);
+        });
+        remaining = remaining.replace(/\.(log|stringify|parse|json|env|then|catch)\b/g, (_, method) => {
+          parts.push(<span key={`dot-${lineIdx}-${keyIdx++}`} style={{ color: '#E0E0E0' }}>.</span>);
+          parts.push(<span key={`meth-${lineIdx}-${keyIdx++}`} style={{ color: '#82AAFF' }}>{method}</span>);
+          return '\x00'.repeat(method.length + 1);
+        });
+        remaining = remaining.replace(/(https?:\/\/[^\s'"]+)/g, (_, url) => {
+          parts.push(<span key={`url-${lineIdx}-${keyIdx++}`} style={{ color: '#89DDFF' }}>{url}</span>);
+          return '\x00'.repeat(url.length);
+        });
+        remaining = remaining.replace(/'([^']*)'/g, (match, content) => {
+          parts.push(<span key={`str-${lineIdx}-${keyIdx++}`} style={{ color: '#C3E88D' }}>&apos;{content}&apos;</span>);
+          return '\x00'.repeat(match.length);
+        });
+        remaining = remaining.replace(/`([^`]*)`/g, (match, content) => {
+          parts.push(<span key={`tpl-${lineIdx}-${keyIdx++}`} style={{ color: '#C3E88D' }}>`{content}`</span>);
+          return '\x00'.repeat(match.length);
+        });
+        remaining = remaining.replace(/\/\/.*$/g, (comment) => {
+          parts.push(<span key={`cmt-${lineIdx}-${keyIdx++}`} style={{ color: '#546E7A' }}>{comment}</span>);
+          return '\x00'.repeat(comment.length);
+        });
+      } else if (lang === 'python') {
+        // Python highlighting
+        remaining = remaining.replace(/\b(import|from|def|class|return|if|else|elif|try|except|raise|with|as|for|in|True|False|None)\b/g, (keyword) => {
+          parts.push(<span key={`kw-${lineIdx}-${keyIdx++}`} style={{ color: '#C792EA' }}>{keyword}</span>);
+          return '\x00'.repeat(keyword.length);
+        });
+        remaining = remaining.replace(/\b(print|requests|json|os|open|len|str|int|dict|list)\b/g, (builtin) => {
+          parts.push(<span key={`bi-${lineIdx}-${keyIdx++}`} style={{ color: '#82AAFF' }}>{builtin}</span>);
+          return '\x00'.repeat(builtin.length);
+        });
+        remaining = remaining.replace(/\.(get|post|put|delete|json|environ)\b/g, (_, method) => {
+          parts.push(<span key={`dot-${lineIdx}-${keyIdx++}`} style={{ color: '#E0E0E0' }}>.</span>);
+          parts.push(<span key={`meth-${lineIdx}-${keyIdx++}`} style={{ color: '#82AAFF' }}>{method}</span>);
+          return '\x00'.repeat(method.length + 1);
+        });
+        remaining = remaining.replace(/(https?:\/\/[^\s'"]+)/g, (_, url) => {
+          parts.push(<span key={`url-${lineIdx}-${keyIdx++}`} style={{ color: '#89DDFF' }}>{url}</span>);
+          return '\x00'.repeat(url.length);
+        });
+        remaining = remaining.replace(/(f?)'([^']*)'/g, (match, prefix, content) => {
+          parts.push(<span key={`str-${lineIdx}-${keyIdx++}`} style={{ color: '#C3E88D' }}>{prefix}&apos;{content}&apos;</span>);
+          return '\x00'.repeat(match.length);
+        });
+        remaining = remaining.replace(/(f?)"([^"]*)"/g, (match, prefix, content) => {
+          parts.push(<span key={`str2-${lineIdx}-${keyIdx++}`} style={{ color: '#C3E88D' }}>{prefix}&quot;{content}&quot;</span>);
+          return '\x00'.repeat(match.length);
+        });
+        remaining = remaining.replace(/#.*$/g, (comment) => {
+          parts.push(<span key={`cmt-${lineIdx}-${keyIdx++}`} style={{ color: '#546E7A' }}>{comment}</span>);
+          return '\x00'.repeat(comment.length);
+        });
+      }
+
+      // Handle remaining text (not highlighted)
+      let lastIdx = 0;
+      for (let i = 0; i < remaining.length; i++) {
+        if (remaining[i] === '\x00') {
+          if (i > lastIdx) {
+            parts.splice(parts.length - (remaining.length - i), 0,
+              <span key={`txt-${lineIdx}-${keyIdx++}`} style={{ color: '#E0E0E0' }}>{remaining.slice(lastIdx, i)}</span>
+            );
+          }
+          while (i < remaining.length && remaining[i] === '\x00') i++;
+          lastIdx = i;
+        }
+      }
+      if (lastIdx < remaining.length) {
+        const remainingText = remaining.slice(lastIdx).replace(/\x00/g, '');
+        if (remainingText) {
+          parts.push(<span key={`txt-end-${lineIdx}-${keyIdx++}`} style={{ color: '#E0E0E0' }}>{remainingText}</span>);
+        }
+      }
+
+      return (
+        <div key={`line-${lineIdx}`} style={{ display: 'flex' }}>
+          <span style={{ color: '#4A5568', minWidth: 32, paddingRight: 12, textAlign: 'right', userSelect: 'none' }}>{lineIdx + 1}</span>
+          <span>{parts.length > 0 ? parts : <span style={{ color: '#E0E0E0' }}>{line}</span>}</span>
+        </div>
+      );
+    });
+  };
+
+  // JSON syntax highlighting
+  const highlightJSON = (json: string): React.ReactNode[] => {
+    const lines = json.split('\n');
+    return lines.map((line, lineIdx) => {
+      const parts: React.ReactNode[] = [];
+      let remaining = line;
+      let keyIdx = 0;
+
+      // Keys
+      remaining = remaining.replace(/"([^"]+)":/g, (match, key) => {
+        parts.push(<span key={`key-${lineIdx}-${keyIdx++}`} style={{ color: '#82AAFF' }}>&quot;{key}&quot;</span>);
+        parts.push(<span key={`colon-${lineIdx}-${keyIdx++}`} style={{ color: '#89DDFF' }}>:</span>);
+        return '\x00'.repeat(match.length);
+      });
+
+      // String values
+      remaining = remaining.replace(/:\s*"([^"]*)"/g, (match, value) => {
+        parts.push(<span key={`strval-${lineIdx}-${keyIdx++}`} style={{ color: '#C3E88D' }}>&quot;{value}&quot;</span>);
+        return '\x00'.repeat(match.length);
+      });
+
+      // Numbers
+      remaining = remaining.replace(/:\s*(\d+\.?\d*)/g, (match, num) => {
+        parts.push(<span key={`num-${lineIdx}-${keyIdx++}`} style={{ color: '#F78C6C' }}>{num}</span>);
+        return '\x00'.repeat(match.length);
+      });
+
+      // Booleans and null
+      remaining = remaining.replace(/\b(true|false|null)\b/g, (match) => {
+        parts.push(<span key={`bool-${lineIdx}-${keyIdx++}`} style={{ color: '#F78C6C' }}>{match}</span>);
+        return '\x00'.repeat(match.length);
+      });
+
+      // Brackets and braces
+      remaining = remaining.replace(/([{}\[\],])/g, (match) => {
+        parts.push(<span key={`brace-${lineIdx}-${keyIdx++}`} style={{ color: '#89DDFF' }}>{match}</span>);
+        return '\x00'.repeat(match.length);
+      });
+
+      // Handle remaining text
+      const remainingText = remaining.replace(/\x00/g, '');
+      if (remainingText.trim()) {
+        parts.push(<span key={`txt-${lineIdx}-${keyIdx++}`} style={{ color: '#E0E0E0' }}>{remainingText}</span>);
+      }
+
+      return (
+        <div key={`line-${lineIdx}`} style={{ display: 'flex' }}>
+          <span style={{ color: '#4A5568', minWidth: 32, paddingRight: 12, textAlign: 'right', userSelect: 'none' }}>{lineIdx + 1}</span>
+          <span>{parts.length > 0 ? parts : <span style={{ color: '#E0E0E0' }}>{line}</span>}</span>
+        </div>
+      );
+    });
+  };
+
   const codeLangs = [
     { id: 'shell', label: 'Shell' },
     { id: 'javascript', label: 'JavaScript' },
@@ -642,34 +829,34 @@ response = requests.post(
 
   return (
     <div style={{ display: 'flex', marginLeft: -24, marginRight: -24, minHeight: 'calc(100vh - 96px)', background: '#fff' }}>
-      {/* Left Sidebar - Light Theme */}
-      <aside style={{ width: 280, background: '#FAFAFA', borderRight: '1px solid #E5E5E5', padding: '24px 0', flexShrink: 0, overflowY: 'auto' }}>
+      {/* Left Sidebar - Dark Theme */}
+      <aside style={{ width: 280, background: '#18181B', borderRight: '1px solid #27272A', padding: '24px 0', flexShrink: 0, overflowY: 'auto' }}>
         {/* Search */}
         <div style={{ padding: '0 16px', marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8 }}>
-            <Search style={{ width: 16, height: 16, color: '#9CA3AF' }} />
-            <span style={{ fontSize: 14, color: '#9CA3AF' }}>Search</span>
-            <span style={{ marginLeft: 'auto', fontSize: 11, color: '#9CA3AF', background: '#F3F4F6', padding: '2px 6px', borderRadius: 4 }}>⌘K</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#27272A', border: '1px solid #3F3F46', borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s ease' }}>
+            <Search style={{ width: 16, height: 16, color: '#71717A' }} />
+            <span style={{ fontSize: 14, color: '#71717A', flex: 1 }}>Search</span>
+            <span style={{ fontSize: 11, color: '#52525B', background: '#3F3F46', padding: '3px 8px', borderRadius: 5, fontWeight: 500 }}>⌘K</span>
           </div>
         </div>
 
         {/* Navigation */}
         {navSections.map((section) => (
-          <div key={section.id} style={{ marginBottom: 8 }}>
+          <div key={section.id} style={{ marginBottom: 4 }}>
             <button
               onClick={() => toggleSection(section.id)}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 16px', background: 'transparent', border: 'none', cursor: 'pointer',
-                fontSize: 13, fontWeight: 600, color: '#374151', textAlign: 'left',
+                padding: '12px 20px', background: 'transparent', border: 'none', cursor: 'pointer',
+                fontSize: 12, fontWeight: 600, color: '#A1A1AA', textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.05em',
               }}
             >
               {section.label}
-              <ChevronDown style={{ width: 16, height: 16, color: '#9CA3AF', transform: expandedSections[section.id] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              <ChevronDown style={{ width: 14, height: 14, color: '#52525B', transform: expandedSections[section.id] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
 
             {expandedSections[section.id] && (
-              <div style={{ paddingLeft: 8 }}>
+              <div style={{ paddingLeft: 8, paddingRight: 8 }}>
                 {section.items.map((item: { id: string; label: string; method?: string }) => {
                   const methodStyle = getMethodStyle(item.method);
                   const isActive = activeSection === item.id;
@@ -679,20 +866,22 @@ response = requests.post(
                       onClick={() => setActiveSection(item.id)}
                       style={{
                         width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '10px 16px',
-                        background: isActive ? '#fff' : 'transparent',
-                        borderTop: 'none', borderRight: 'none', borderBottom: 'none',
-                        borderLeft: isActive ? '3px solid #000' : '3px solid transparent',
+                        padding: '10px 12px', marginBottom: 2,
+                        background: isActive ? '#27272A' : 'transparent',
+                        border: 'none', borderRadius: 8,
                         cursor: 'pointer',
-                        fontSize: 14, color: isActive ? '#111' : '#6B7280',
+                        fontSize: 14, color: isActive ? '#FAFAFA' : '#A1A1AA',
                         fontWeight: isActive ? 500 : 400, textAlign: 'left',
+                        transition: 'all 0.15s ease',
                       }}
+                      onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = '#27272A40'; e.currentTarget.style.color = '#E4E4E7'; }}
+                      onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#A1A1AA'; }}
                     >
                       {item.method && (
                         <span style={{
-                          fontSize: 10, fontWeight: 700, padding: '3px 6px', borderRadius: 4,
+                          fontSize: 9, fontWeight: 700, padding: '4px 6px', borderRadius: 4,
                           background: methodStyle.bg, color: methodStyle.color,
-                          minWidth: 40, textAlign: 'center',
+                          minWidth: 38, textAlign: 'center', letterSpacing: '0.02em',
                         }}>
                           {item.method}
                         </span>
@@ -715,35 +904,108 @@ response = requests.post(
           {/* Introduction */}
           {activeSection === 'introduction' && (
             <div>
-              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#111', margin: '0 0 16px', lineHeight: 1.2 }}>Introduction</h1>
-              <p style={{ fontSize: 16, color: '#4B5563', lineHeight: 1.7, margin: '0 0 32px' }}>
-                The Araviel Decision Engine (ADE) API provides intelligent LLM routing by analyzing prompts and recommending the optimal model based on task requirements, cost efficiency, and performance characteristics.
-              </p>
+              {/* Hero Section */}
+              <div style={{ marginBottom: 40 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1))', borderRadius: 20, marginBottom: 16 }}>
+                  <Sparkles style={{ width: 14, height: 14, color: '#6366F1' }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#6366F1', letterSpacing: '0.02em' }}>API REFERENCE</span>
+                </div>
+                <h1 style={{ fontSize: 40, fontWeight: 700, color: '#111', margin: '0 0 16px', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
+                  Araviel Decision Engine
+                </h1>
+                <p style={{ fontSize: 18, color: '#4B5563', lineHeight: 1.7, margin: '0 0 24px', maxWidth: 640 }}>
+                  The intelligent LLM routing API that analyzes your prompts and automatically selects the optimal model based on task requirements, cost efficiency, and performance characteristics.
+                </p>
+              </div>
 
-              <div style={{ background: '#F9FAFB', border: '1px solid #E5E5E5', borderRadius: 12, padding: 24, marginBottom: 32 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, color: '#111', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Base URL</h3>
-                <code style={{ fontSize: 15, color: '#111', fontFamily: 'ui-monospace, monospace', background: '#fff', padding: '12px 16px', borderRadius: 8, border: '1px solid #E5E5E5', display: 'block' }}>
+              {/* Quick Info Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 40 }}>
+                <div style={{ background: '#F9FAFB', border: '1px solid #E5E5E5', borderRadius: 12, padding: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <Zap style={{ width: 18, height: 18, color: '#F59E0B' }} />
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>Fast Routing</span>
+                  </div>
+                  <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.5, margin: 0 }}>Sub-50ms routing decisions with intelligent caching</p>
+                </div>
+                <div style={{ background: '#F9FAFB', border: '1px solid #E5E5E5', borderRadius: 12, padding: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <Layers style={{ width: 18, height: 18, color: '#6366F1' }} />
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>Multi-Modal</span>
+                  </div>
+                  <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.5, margin: 0 }}>Supports text, vision, audio, and combined inputs</p>
+                </div>
+                <div style={{ background: '#F9FAFB', border: '1px solid #E5E5E5', borderRadius: 12, padding: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <Brain style={{ width: 18, height: 18, color: '#8B5CF6' }} />
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>10+ Models</span>
+                  </div>
+                  <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.5, margin: 0 }}>Anthropic, OpenAI, and Google models supported</p>
+                </div>
+              </div>
+
+              {/* Base URL */}
+              <div style={{ background: 'linear-gradient(135deg, #18181B, #27272A)', borderRadius: 12, padding: 24, marginBottom: 40 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Base URL</span>
+                  <button
+                    onClick={() => copyToClipboard('https://api.ade.dev/v1', 'base-url')}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', fontSize: 11, color: '#A1A1AA', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                  >
+                    {copiedCode === 'base-url' ? <><Check style={{ width: 12, height: 12, color: '#22C55E' }} /> Copied</> : <><Copy style={{ width: 12, height: 12 }} /> Copy</>}
+                  </button>
+                </div>
+                <code style={{ fontSize: 16, color: '#22C55E', fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace', display: 'block' }}>
                   https://api.ade.dev/v1
                 </code>
               </div>
 
-              <h2 style={{ fontSize: 20, fontWeight: 600, color: '#111', margin: '0 0 20px' }}>How It Works</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* How It Works */}
+              <h2 style={{ fontSize: 24, fontWeight: 600, color: '#111', margin: '0 0 8px', letterSpacing: '-0.01em' }}>How it works</h2>
+              <p style={{ fontSize: 15, color: '#6B7280', lineHeight: 1.6, margin: '0 0 24px' }}>ADE uses a three-step process to select the best model for your request.</p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
+                {/* Vertical line connector */}
+                <div style={{ position: 'absolute', left: 19, top: 40, bottom: 40, width: 2, background: 'linear-gradient(to bottom, #E5E5E5, #E5E5E5)', zIndex: 0 }} />
+
                 {[
-                  { num: '1', title: 'Analyze', desc: 'The engine analyzes your prompt to detect intent (coding, creative, analysis), domain, complexity level, and tone.' },
-                  { num: '2', title: 'Score', desc: 'Each available model is scored across 6 weighted factors: Task Fitness (50%), Modality (15%), Cost (10%), Speed (7%), User Preference (10%), and Coherence (8%).' },
-                  { num: '3', title: 'Select', desc: 'Models are ranked by composite score. The top model is returned as the primary recommendation with 2 backup alternatives.' },
+                  { num: '1', title: 'Analyze', desc: 'The engine parses your prompt to detect intent (coding, creative, analysis), domain context, complexity level, and communication tone.', color: '#3B82F6' },
+                  { num: '2', title: 'Score', desc: 'Each available model is scored across 6 weighted factors: Task Fitness (40%), Modality (15%), Cost (15%), Speed (10%), User Preference (10%), and Coherence (10%).', color: '#8B5CF6' },
+                  { num: '3', title: 'Select', desc: 'Models are ranked by composite score. The top model is returned as the primary recommendation with 2 backup alternatives and full reasoning.', color: '#22C55E' },
                 ].map((step) => (
-                  <div key={step.num} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                    <div style={{ width: 32, height: 32, background: '#111', color: '#fff', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, flexShrink: 0 }}>
+                  <div key={step.num} style={{ display: 'flex', gap: 20, alignItems: 'flex-start', padding: '16px 0', position: 'relative', zIndex: 1 }}>
+                    <div style={{
+                      width: 40, height: 40, background: step.color, color: '#fff', borderRadius: 12,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, flexShrink: 0,
+                      boxShadow: `0 4px 12px ${step.color}40`
+                    }}>
                       {step.num}
                     </div>
-                    <div style={{ paddingTop: 4 }}>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: '#111', marginBottom: 4 }}>{step.title}</div>
-                      <div style={{ fontSize: 15, color: '#4B5563', lineHeight: 1.6 }}>{step.desc}</div>
+                    <div style={{ paddingTop: 8, flex: 1 }}>
+                      <div style={{ fontSize: 17, fontWeight: 600, color: '#111', marginBottom: 6 }}>{step.title}</div>
+                      <div style={{ fontSize: 14, color: '#4B5563', lineHeight: 1.65 }}>{step.desc}</div>
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Supported Providers */}
+              <div style={{ marginTop: 40, padding: 24, background: '#F9FAFB', borderRadius: 12, border: '1px solid #E5E5E5' }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '0 0 16px' }}>Supported Providers</h3>
+                <div style={{ display: 'flex', gap: 24 }}>
+                  {[
+                    { name: 'Anthropic', models: 'Claude Opus 4.5, Sonnet 4, Haiku 3.5', color: '#D97706' },
+                    { name: 'OpenAI', models: 'GPT-4.1, GPT-4.1 Mini, GPT-4o, o4-mini', color: '#10B981' },
+                    { name: 'Google', models: 'Gemini 2.5 Pro, Flash, Flash-Lite', color: '#3B82F6' },
+                  ].map((provider) => (
+                    <div key={provider.name} style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: provider.color }} />
+                        <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{provider.name}</span>
+                      </div>
+                      <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.5, margin: 0 }}>{provider.models}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -1005,54 +1267,68 @@ response = requests.post(
         </div>
 
         {/* Right Code Panel - Dark */}
-        <aside style={{ width: 440, background: '#1E1E1E', padding: '32px 24px', overflowY: 'auto', flexShrink: 0 }}>
-          {/* Language Tabs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 20, borderBottom: '1px solid #333', paddingBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: '#A1A1AA', marginRight: 8 }}>Request</span>
-            {codeLangs.map((lang) => (
-              <button
-                key={lang.id}
-                onClick={() => setActiveCodeLang(lang.id)}
-                style={{
-                  padding: '6px 12px', fontSize: 13, fontWeight: activeCodeLang === lang.id ? 500 : 400,
-                  color: activeCodeLang === lang.id ? '#fff' : '#71717A',
-                  background: activeCodeLang === lang.id ? '#333' : 'transparent',
-                  border: 'none', borderRadius: 6, cursor: 'pointer',
-                }}
-              >
-                {lang.label}
-              </button>
-            ))}
+        <aside style={{ width: 480, background: '#0F0F0F', padding: '0', overflowY: 'auto', flexShrink: 0 }}>
+          {/* Header */}
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid #262626', background: '#141414' }}>
+            {/* Language Tabs */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 0 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#FAFAFA', marginRight: 16 }}>Request</span>
+              <div style={{ display: 'flex', background: '#262626', borderRadius: 8, padding: 3 }}>
+                {codeLangs.map((lang) => (
+                  <button
+                    key={lang.id}
+                    onClick={() => setActiveCodeLang(lang.id)}
+                    style={{
+                      padding: '6px 14px', fontSize: 13, fontWeight: 500,
+                      color: activeCodeLang === lang.id ? '#FAFAFA' : '#71717A',
+                      background: activeCodeLang === lang.id ? '#3F3F46' : 'transparent',
+                      border: 'none', borderRadius: 6, cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {lang.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Shell Variants (when shell selected) */}
-          {activeCodeLang === 'shell' && (
-            <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
-              {shellVariants.map((variant, idx) => (
-                <span
-                  key={variant.id}
-                  style={{
-                    fontSize: 12, color: idx === 0 ? '#fff' : '#71717A',
-                    background: idx === 0 ? '#444' : 'transparent',
-                    padding: '4px 10px', borderRadius: 4,
-                  }}
-                >
-                  {variant.label}
-                </span>
-              ))}
-            </div>
-          )}
+          {/* Code Content */}
+          <div style={{ padding: '24px' }}>
+            {/* Shell Variants (when shell selected) */}
+            {activeCodeLang === 'shell' && (
+              <div style={{ display: 'flex', gap: 2, marginBottom: 20 }}>
+                {shellVariants.map((variant, idx) => (
+                  <span
+                    key={variant.id}
+                    style={{
+                      fontSize: 12, fontWeight: 500, color: idx === 0 ? '#FAFAFA' : '#52525B',
+                      background: idx === 0 ? '#27272A' : 'transparent',
+                      padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
+                      border: idx === 0 ? '1px solid #3F3F46' : '1px solid transparent',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {variant.label}
+                  </span>
+                ))}
+              </div>
+            )}
 
           {/* Code Example */}
           {codeExamples[activeSection] && (
             <div style={{ marginBottom: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <span style={{ fontSize: 12, color: '#71717A', fontWeight: 500 }}>Example request</span>
                 <button
                   onClick={() => copyToClipboard(codeExamples[activeSection]?.[activeCodeLang] || '', `${activeSection}-code`)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', marginLeft: 'auto',
-                    fontSize: 12, color: '#A1A1AA', background: '#2D2D2D', border: 'none', borderRadius: 6, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+                    fontSize: 12, color: '#A1A1AA', background: '#2D2D2D', border: '1px solid #3D3D3D', borderRadius: 6, cursor: 'pointer',
+                    transition: 'all 0.15s ease',
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#3D3D3D'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#2D2D2D'; e.currentTarget.style.color = '#A1A1AA'; }}
                 >
                   {copiedCode === `${activeSection}-code` ? (
                     <><Check style={{ width: 14, height: 14, color: '#22C55E' }} /> Copied</>
@@ -1061,9 +1337,9 @@ response = requests.post(
                   )}
                 </button>
               </div>
-              <div style={{ background: '#111', borderRadius: 8, padding: 16, overflowX: 'auto' }}>
-                <pre style={{ margin: 0, fontSize: 13, fontFamily: 'ui-monospace, SFMono-Regular, monospace', color: '#E5E5E5', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                  {codeExamples[activeSection]?.[activeCodeLang]}
+              <div style={{ background: '#0D0D0D', borderRadius: 10, padding: 16, overflowX: 'auto', border: '1px solid #262626' }}>
+                <pre style={{ margin: 0, fontSize: 13, fontFamily: '"SF Mono", "Monaco", "Inconsolata", "Fira Mono", monospace', lineHeight: 1.8 }}>
+                  {highlightCode(codeExamples[activeSection]?.[activeCodeLang] || '', activeCodeLang)}
                 </pre>
               </div>
             </div>
@@ -1075,13 +1351,19 @@ response = requests.post(
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <span style={{ fontSize: 13, fontWeight: 500, color: '#A1A1AA' }}>Response</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 12, color: '#71717A' }}>200 - Example</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#22C55E', background: 'rgba(34, 197, 94, 0.1)', padding: '4px 8px', borderRadius: 4 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E' }} />
+                    200
+                  </span>
                   <button
                     onClick={() => copyToClipboard(responseExamples[activeSection] || '', `${activeSection}-response`)}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28,
-                      background: '#2D2D2D', border: 'none', borderRadius: 6, cursor: 'pointer',
+                      background: '#2D2D2D', border: '1px solid #3D3D3D', borderRadius: 6, cursor: 'pointer',
+                      transition: 'all 0.15s ease',
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#3D3D3D'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#2D2D2D'; }}
                   >
                     {copiedCode === `${activeSection}-response` ? (
                       <Check style={{ width: 14, height: 14, color: '#22C55E' }} />
@@ -1091,9 +1373,9 @@ response = requests.post(
                   </button>
                 </div>
               </div>
-              <div style={{ background: '#111', borderRadius: 8, padding: 16, overflowX: 'auto', maxHeight: 500 }}>
-                <pre style={{ margin: 0, fontSize: 12, fontFamily: 'ui-monospace, SFMono-Regular, monospace', color: '#E5E5E5', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                  {responseExamples[activeSection]}
+              <div style={{ background: '#0D0D0D', borderRadius: 10, padding: 16, overflowX: 'auto', maxHeight: 500, border: '1px solid #262626' }}>
+                <pre style={{ margin: 0, fontSize: 13, fontFamily: '"SF Mono", "Monaco", "Inconsolata", "Fira Mono", monospace', lineHeight: 1.7 }}>
+                  {highlightJSON(responseExamples[activeSection] || '')}
                 </pre>
               </div>
             </div>
@@ -1101,10 +1383,14 @@ response = requests.post(
 
           {/* Show helpful text for non-endpoint sections */}
           {!codeExamples[activeSection] && activeSection !== 'authentication' && (
-            <div style={{ color: '#71717A', fontSize: 14, textAlign: 'center', paddingTop: 40 }}>
+            <div style={{ color: '#52525B', fontSize: 14, textAlign: 'center', paddingTop: 60 }}>
+              <div style={{ width: 48, height: 48, background: '#1F1F1F', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <BookOpen style={{ width: 24, height: 24, color: '#3F3F46' }} />
+              </div>
               Select an endpoint to see code examples
             </div>
           )}
+          </div>
         </aside>
       </main>
     </div>
