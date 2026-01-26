@@ -54,7 +54,7 @@ export enum Modality {
 }
 
 // LLM provider
-export type Provider = 'anthropic' | 'openai' | 'google';
+export type Provider = 'anthropic' | 'openai' | 'google' | 'perplexity';
 
 // Mood states for human context
 export enum Mood {

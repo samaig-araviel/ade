@@ -166,7 +166,6 @@ export function detectIntent(prompt: string): Intent {
 // Detect domain from prompt with intent-aware context
 export function detectDomain(prompt: string, detectedIntent?: Intent): Domain {
   const tokens = new Set(tokenize(prompt));
-  const lowerPrompt = prompt.toLowerCase();
 
   // Calculate base scores for each domain
   const domainScores = new Map<Domain, number>();
