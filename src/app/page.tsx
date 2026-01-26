@@ -681,8 +681,9 @@ response = requests.post(
                         width: '100%', display: 'flex', alignItems: 'center', gap: 10,
                         padding: '10px 16px',
                         background: isActive ? '#fff' : 'transparent',
+                        borderTop: 'none', borderRight: 'none', borderBottom: 'none',
                         borderLeft: isActive ? '3px solid #000' : '3px solid transparent',
-                        border: 'none', cursor: 'pointer',
+                        cursor: 'pointer',
                         fontSize: 14, color: isActive ? '#111' : '#6B7280',
                         fontWeight: isActive ? 500 : 400, textAlign: 'left',
                       }}
