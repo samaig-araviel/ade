@@ -518,28 +518,30 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
 
   // Syntax highlighting for curl commands (Stripe style)
   const highlightCurl = (code: string) => {
-    return code.split('\n').map((line, i) => {
+    const lines = code.split('\n');
+    return lines.map((line) => {
       let highlighted = line;
 
-      // $ prefix
-      if (i === 0) {
-        highlighted = highlighted.replace(/^(curl)/, '<span class="hl-cmd">$1</span>');
-      }
+      // curl command
+      highlighted = highlighted.replace(/^(curl)(\s)/, '<span class="hl-cmd">$1</span>$2');
 
       // URLs
       highlighted = highlighted.replace(/(https:\/\/[^\s\\]+)/g, '<span class="hl-url">$1</span>');
 
-      // Flags
-      highlighted = highlighted.replace(/(-u|-d|-H|-X)/g, '<span class="hl-flag">$1</span>');
+      // Flags (-u, -d, -H, -X)
+      highlighted = highlighted.replace(/\s(-u|-d|-H|-X)(\s)/g, ' <span class="hl-flag">$1</span>$2');
 
-      // API key
+      // API key (cyan color like Stripe)
       highlighted = highlighted.replace(/(sk_test_[a-zA-Z0-9]+)(:?)/g, '<span class="hl-key">$1</span>$2');
 
-      // Parameter names
-      highlighted = highlighted.replace(/(\s)([a-zA-Z_]+)(=)/g, '$1<span class="hl-param">$2</span>$3');
+      // Parameter names before = (cyan)
+      highlighted = highlighted.replace(/\s([a-zA-Z_\[\]\.]+)(=)/g, ' <span class="hl-param">$1</span><span class="hl-eq">=</span>');
 
-      // String values in quotes
-      highlighted = highlighted.replace(/"([^"]+)"/g, '"<span class="hl-string">$1</span>"');
+      // Values after = (without quotes)
+      highlighted = highlighted.replace(/=([a-zA-Z0-9_]+)(\s|\\|$)/g, '=<span class="hl-value">$1</span>$2');
+
+      // String values in double quotes (yellow/green)
+      highlighted = highlighted.replace(/"([^"]+)"/g, '<span class="hl-quote">"</span><span class="hl-string">$1</span><span class="hl-quote">"</span>');
 
       return highlighted;
     }).join('\n');
@@ -547,11 +549,24 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
 
   // Syntax highlighting for JSON (Stripe style)
   const highlightJSON = (json: string) => {
-    return json
-      .replace(/"([^"]+)":/g, '"<span class="hl-json-key">$1</span>":')
-      .replace(/: "([^"]+)"/g, ': "<span class="hl-json-string">$1</span>"')
-      .replace(/: (\d+\.?\d*)/g, ': <span class="hl-json-number">$1</span>')
-      .replace(/: (true|false|null)/g, ': <span class="hl-json-bool">$1</span>');
+    let result = json;
+
+    // Keys (cyan)
+    result = result.replace(/"([^"]+)"(\s*:)/g, '<span class="hl-quote">"</span><span class="hl-json-key">$1</span><span class="hl-quote">"</span>$2');
+
+    // String values (yellow)
+    result = result.replace(/:(\s*)"([^"]+)"/g, ':$1<span class="hl-quote">"</span><span class="hl-json-string">$2</span><span class="hl-quote">"</span>');
+
+    // Numbers (orange)
+    result = result.replace(/:(\s*)(\d+\.?\d*)(,|\s|\n|}|])/g, ':$1<span class="hl-json-number">$2</span>$3');
+
+    // Booleans (pink)
+    result = result.replace(/:\s*(true|false)/g, ': <span class="hl-json-bool">$1</span>');
+
+    // null
+    result = result.replace(/:\s*(null)/g, ': <span class="hl-json-null">$1</span>');
+
+    return result;
   };
 
   const currentEndpoint = endpoints[activeSection];
@@ -811,7 +826,7 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
       {/* Right Code Panel - Dark like Stripe */}
       <aside style={{
         width: 480,
-        background: '#1a1a2e',
+        background: '#1E2432',
         flexShrink: 0,
         overflowY: 'auto',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
@@ -820,22 +835,21 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          padding: '12px 24px',
-          borderBottom: '1px solid #2D2D44',
-          gap: 0
+          padding: '16px 24px',
+          gap: 4
         }}>
           {codeLangs.map((lang) => (
             <button
               key={lang.id}
               onClick={() => setActiveCodeLang(lang.id)}
               style={{
-                padding: '8px 16px',
+                padding: '8px 14px',
                 fontSize: 13,
                 fontWeight: 500,
-                color: activeCodeLang === lang.id ? '#FFFFFF' : '#8B8BA7',
-                background: activeCodeLang === lang.id ? '#635BFF' : 'transparent',
+                color: activeCodeLang === lang.id ? '#FFFFFF' : '#8892A6',
+                background: activeCodeLang === lang.id ? '#5469D4' : 'transparent',
                 border: 'none',
-                borderRadius: 6,
+                borderRadius: 5,
                 cursor: 'pointer',
                 transition: 'all 0.15s',
               }}
@@ -845,23 +859,23 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
           ))}
         </div>
 
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: '0 24px 24px' }}>
           {/* Endpoint badge */}
           {currentEndpoint && (
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 20 }}>
               <span style={{
                 fontSize: 13,
-                fontWeight: 600,
-                color: currentEndpoint.method === 'POST' ? '#22C55E' : '#3B82F6',
-                fontFamily: 'SF Mono, Monaco, monospace'
+                fontWeight: 500,
+                color: currentEndpoint.method === 'POST' ? '#7FECAD' : '#7FECAD',
+                fontFamily: '"SF Mono", Monaco, "Menlo", monospace'
               }}>
                 {currentEndpoint.method}
               </span>
               <span style={{
                 fontSize: 13,
-                color: '#E5E7EB',
-                marginLeft: 12,
-                fontFamily: 'SF Mono, Monaco, monospace'
+                color: '#F8F9FA',
+                marginLeft: 10,
+                fontFamily: '"SF Mono", Monaco, "Menlo", monospace'
               }}>
                 {currentEndpoint.path}
               </span>
@@ -870,33 +884,32 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
 
           {/* Example Request */}
           {currentCode && (
-            <div style={{ marginBottom: 32 }}>
+            <div style={{ marginBottom: 28 }}>
               <div style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: '#8B8BA7',
-                marginBottom: 12,
-                letterSpacing: '0.02em'
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#A3ACB9',
+                marginBottom: 14
               }}>
                 Example Request
               </div>
               <div style={{
-                background: '#0F0F1A',
-                borderRadius: 8,
-                padding: 20,
+                background: '#0A0E14',
+                borderRadius: 6,
+                padding: '18px 20px',
                 position: 'relative'
               }}>
                 <button
                   onClick={() => copyToClipboard(currentCode[activeCodeLang] || '', 'request')}
                   style={{
                     position: 'absolute',
-                    top: 12,
-                    right: 12,
-                    padding: '4px 8px',
+                    top: 14,
+                    right: 14,
+                    padding: '5px 10px',
                     fontSize: 11,
-                    color: '#8B8BA7',
+                    color: '#8892A6',
                     background: 'transparent',
-                    border: '1px solid #2D2D44',
+                    border: '1px solid #2D3748',
                     borderRadius: 4,
                     cursor: 'pointer',
                   }}
@@ -906,24 +919,29 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
                 <pre style={{
                   margin: 0,
                   fontSize: 13,
-                  lineHeight: 1.6,
-                  fontFamily: '"SF Mono", Monaco, "Inconsolata", monospace',
-                  color: '#E5E7EB',
+                  lineHeight: 1.7,
+                  fontFamily: '"SF Mono", Monaco, "Menlo", "Consolas", monospace',
+                  color: '#F8F9FA',
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word'
                 }}>
                   <style>{`
-                    .hl-cmd { color: #FFFFFF; }
-                    .hl-url { color: #E5E7EB; }
-                    .hl-flag { color: #E5E7EB; }
-                    .hl-key { color: #7DD3FC; }
-                    .hl-param { color: #7DD3FC; }
-                    .hl-string { color: #BEF264; }
-                    .hl-json-key { color: #7DD3FC; }
-                    .hl-json-string { color: #BEF264; }
-                    .hl-json-number { color: #FDBA74; }
-                    .hl-json-bool { color: #F472B6; }
+                    .hl-cmd { color: #F8F9FA; font-weight: 400; }
+                    .hl-url { color: #F8F9FA; }
+                    .hl-flag { color: #F8F9FA; }
+                    .hl-key { color: #80CBC4; }
+                    .hl-param { color: #80CBC4; }
+                    .hl-eq { color: #80CBC4; }
+                    .hl-value { color: #80CBC4; }
+                    .hl-quote { color: #ECC48D; }
+                    .hl-string { color: #ECC48D; }
+                    .hl-json-key { color: #80CBC4; }
+                    .hl-json-string { color: #ECC48D; }
+                    .hl-json-number { color: #F78C6C; }
+                    .hl-json-bool { color: #F78C6C; }
+                    .hl-json-null { color: #F78C6C; }
                   `}</style>
+                  <span style={{ color: '#8892A6', userSelect: 'none' }}>$ </span>
                   {activeCodeLang === 'curl' ? (
                     <span dangerouslySetInnerHTML={{ __html: highlightCurl(currentCode[activeCodeLang] || '') }} />
                   ) : (
@@ -938,27 +956,26 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
           {currentResponse && (
             <div>
               <div style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: '#8B8BA7',
-                marginBottom: 12,
-                letterSpacing: '0.02em'
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#A3ACB9',
+                marginBottom: 14
               }}>
                 Example Response
               </div>
               <div style={{
-                background: '#0F0F1A',
-                borderRadius: 8,
-                padding: 20,
-                maxHeight: 400,
+                background: '#0A0E14',
+                borderRadius: 6,
+                padding: '18px 20px',
+                maxHeight: 420,
                 overflowY: 'auto'
               }}>
                 <pre style={{
                   margin: 0,
                   fontSize: 13,
-                  lineHeight: 1.6,
-                  fontFamily: '"SF Mono", Monaco, "Inconsolata", monospace',
-                  color: '#E5E7EB',
+                  lineHeight: 1.7,
+                  fontFamily: '"SF Mono", Monaco, "Menlo", "Consolas", monospace',
+                  color: '#F8F9FA',
                   whiteSpace: 'pre-wrap'
                 }}>
                   <span dangerouslySetInnerHTML={{ __html: highlightJSON(currentResponse) }} />
