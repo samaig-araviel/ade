@@ -72,16 +72,14 @@ export function validateApiKey(request: NextRequest): AuthResult {
 
 // Check if a path requires authentication
 export function requiresAuth(pathname: string): boolean {
-  // Health endpoint does not require auth
-  if (pathname === '/api/v1/health') {
-    return false;
-  }
-
   // In development mode or when ADE_SKIP_AUTH is set, skip auth for testing
   if (process.env.NODE_ENV === 'development' || process.env.ADE_SKIP_AUTH === 'true') {
     return false;
   }
 
-  // All other v1 API endpoints require auth
-  return pathname.startsWith('/api/v1/');
+  // Only these endpoints require authentication
+  const protectedPaths = ['/api/v1/route', '/api/v1/analyse', '/api/v1/feedback'];
+
+  // Check if the pathname starts with any protected path
+  return protectedPaths.some((path) => pathname.startsWith(path));
 }
