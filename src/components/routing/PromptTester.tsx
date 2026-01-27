@@ -16,6 +16,12 @@ import {
   AudioLines,
   Clock,
   Target,
+  AlertCircle,
+  Key,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 interface RouteResponse {
@@ -91,6 +97,9 @@ export function PromptTester() {
   const [currentStep, setCurrentStep] = useState<RoutingStep>('idle');
   const [result, setResult] = useState<RouteResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthError, setIsAuthError] = useState(false);
+  const [showAuthInstructions, setShowAuthInstructions] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const isLoading = currentStep !== 'idle' && currentStep !== 'complete';
 
@@ -113,10 +122,12 @@ export function PromptTester() {
   const handleRoute = async () => {
     if (!prompt.trim()) {
       setError('Please enter a prompt');
+      setIsAuthError(false);
       return;
     }
 
     setError(null);
+    setIsAuthError(false);
     setResult(null);
     setCurrentStep('analyzing');
 
@@ -131,13 +142,25 @@ export function PromptTester() {
       });
 
       if (!response.ok) {
-        throw new Error('Routing failed');
+        const errorData = await response.json().catch(() => ({}));
+        const errorCode = errorData.code || '';
+        const isUnauthorized = response.status === 401 || errorCode === 'UNAUTHORIZED';
+
+        if (isUnauthorized) {
+          setIsAuthError(true);
+          setError('API key required to use the routing engine');
+        } else {
+          setError(errorData.error || 'Routing failed. Please try again.');
+        }
+        setCurrentStep('idle');
+        return;
       }
 
       const data = await response.json();
       await simulateSteps(data);
     } catch {
-      setError('Failed to route prompt. Please try again.');
+      setError('Failed to connect. Please check your connection and try again.');
+      setIsAuthError(false);
       setCurrentStep('idle');
     }
   };
@@ -147,6 +170,14 @@ export function PromptTester() {
     setCurrentStep('idle');
     setResult(null);
     setError(null);
+    setIsAuthError(false);
+    setShowAuthInstructions(false);
+  };
+
+  const handleCopyExample = () => {
+    navigator.clipboard.writeText('Authorization: Bearer your_api_key_here');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -179,8 +210,88 @@ export function PromptTester() {
                 onKeyDown={handleKeyDown}
                 className="w-full px-0 py-0 bg-transparent border-none text-[var(--text-primary)] placeholder:text-[var(--text-quaternary)] focus:outline-none resize-none text-sm leading-relaxed"
               />
-              {error && (
+              {error && !isAuthError && (
                 <p className="mt-2 text-xs text-red-500">{error}</p>
+              )}
+
+              {/* Auth Error with Instructions */}
+              {isAuthError && (
+                <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 overflow-hidden">
+                  <div className="px-3 py-2.5 flex items-start gap-2">
+                    <Key className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-amber-500">
+                        API Key Required
+                      </p>
+                      <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
+                        You need an API key to access the routing engine.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Expandable Instructions */}
+                  <button
+                    onClick={() => setShowAuthInstructions(!showAuthInstructions)}
+                    className="w-full px-3 py-2 flex items-center justify-between text-xs text-[var(--text-secondary)] bg-[var(--bg-tertiary)]/50 hover:bg-[var(--bg-tertiary)] transition-colors border-t border-amber-500/20"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      How do I get an API key?
+                    </span>
+                    {showAuthInstructions ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
+
+                  <AnimatePresence>
+                    {showAuthInstructions && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-3 py-3 space-y-3 border-t border-amber-500/20 bg-[var(--bg-tertiary)]/30">
+                          <div className="space-y-2">
+                            <p className="text-xs font-medium text-[var(--text-secondary)]">
+                              To use the API:
+                            </p>
+                            <ol className="text-xs text-[var(--text-tertiary)] space-y-1.5 list-decimal list-inside">
+                              <li>Contact the ADE team to request API access</li>
+                              <li>Once approved, you&apos;ll receive your API key</li>
+                              <li>Include the key in your request headers</li>
+                            </ol>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <p className="text-[10px] uppercase tracking-wider text-[var(--text-quaternary)]">
+                              Header Format
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 px-2.5 py-1.5 text-xs bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-md text-[var(--text-secondary)] font-mono">
+                                Authorization: Bearer your_api_key
+                              </code>
+                              <button
+                                onClick={handleCopyExample}
+                                className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] rounded-md transition-colors"
+                                title="Copy to clipboard"
+                              >
+                                {copied ? (
+                                  <Check className="w-4 h-4 text-emerald-500" />
+                                ) : (
+                                  <Copy className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
             </div>
 
