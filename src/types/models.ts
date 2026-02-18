@@ -9,6 +9,7 @@ import {
 export interface ModelPricing {
   inputPer1k: number;
   outputPer1k: number;
+  cachedInputPer1k?: number;
 }
 
 // Model capabilities
