@@ -78,7 +78,7 @@ export function requiresAuth(pathname: string): boolean {
   }
 
   // Only these endpoints require authentication
-  const protectedPaths = ['/api/v1/route', '/api/v1/analyse', '/api/v1/feedback'];
+  const protectedPaths = ['/api/v1/route', '/api/v1/analyze', '/api/v1/feedback'];
 
   // Check if the pathname starts with any protected path
   return protectedPaths.some((path) => pathname.startsWith(path));

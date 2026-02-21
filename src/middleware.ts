@@ -1,32 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { validateApiKey, requiresAuth } from '@/lib/auth';
-import { ErrorResponse } from '@/types';
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Only process API routes
-  if (!pathname.startsWith('/api/')) {
-    return NextResponse.next();
-  }
-
-  // Check if this path requires authentication
-  if (!requiresAuth(pathname)) {
-    return NextResponse.next();
-  }
-
-  // Validate API key
-  const authResult = validateApiKey(request);
-
-  if (!authResult.valid) {
-    const errorBody: ErrorResponse = {
-      error: authResult.error ?? 'Unauthorized',
-      code: 'UNAUTHORIZED',
-    };
-
-    return NextResponse.json(errorBody, { status: 401 });
-  }
-
+export function middleware(_request: NextRequest) {
+  // All endpoints are currently public — no authentication required.
+  // Authentication will be re-added once all endpoints are confirmed working.
   return NextResponse.next();
 }
 
