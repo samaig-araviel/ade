@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AppShell } from '@/components/layout/AppShell';
 import { StatusPage } from '@/components/status/StatusPage';
 import {
   Sparkles,
@@ -118,7 +117,7 @@ interface HealthResponse {
   status: 'healthy' | 'degraded' | 'unhealthy';
   timestamp: string;
   version: string;
-  services: { kv: string };
+  services: { engine: string; store: string };
 }
 
 // ============ CONSTANTS ============
@@ -1332,13 +1331,30 @@ export default function Home() {
 
   // ============ RENDER ============
   return (
-    <AppShell>
-    <div style={{ minHeight: '100vh', background: 'var(--bg-page)' }}>
-      {/* Sub Header - View Navigation */}
-      <header style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-primary)', position: 'sticky', top: 0, zIndex: 40 }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', height: 48, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+    <div style={{ minHeight: '100vh', background: '#FAFAFA' }}>
+      {/* Top Navigation - Premium Branded Header */}
+      <header style={{ background: '#fff', borderBottom: '1px solid #E5E5E5', position: 'sticky', top: 0, zIndex: 40 }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Left: Brand + Navigation */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+            {/* Logo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: 8,
+                background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
+              }}>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>A</span>
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#111', letterSpacing: '-0.02em', lineHeight: 1.1 }}>ADE</div>
+                <div style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 500, letterSpacing: '0.02em' }}>Decision Engine</div>
+              </div>
+            </div>
+
+            {/* Navigation Tabs */}
+            <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               {[
                 { id: 'router', label: 'Router', icon: Search },
                 { id: 'models', label: 'Models', icon: Box },
@@ -1351,46 +1367,68 @@ export default function Home() {
                     key={tab.id}
                     onClick={() => setActiveView(tab.id as typeof activeView)}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', fontSize: 13,
-                      color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)', background: isActive ? 'var(--bg-tertiary)' : 'transparent',
-                      border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: isActive ? 500 : 400,
+                      display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13,
+                      color: isActive ? '#111' : '#6B7280',
+                      background: isActive ? '#F3F4F6' : 'transparent',
+                      border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: isActive ? 600 : 400,
+                      transition: 'all 0.15s ease',
                     }}
                   >
-                    <Icon style={{ width: 14, height: 14 }} />
+                    <Icon style={{ width: 15, height: 15, opacity: isActive ? 1 : 0.6 }} />
                     {tab.label}
                   </button>
                 );
               })}
             </nav>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+          {/* Right: Status + Version */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 11, color: '#9CA3AF', fontFamily: 'ui-monospace, monospace' }}>v1.0.0</span>
             <button
               onClick={() => { fetchHealth(); setShowStatus(true); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', fontSize: 13, color: 'var(--text-secondary)', background: 'transparent', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', fontSize: 12,
+                color: '#374151', background: '#F9FAFB', border: '1px solid #E5E5E5',
+                borderRadius: 8, cursor: 'pointer', fontWeight: 500, transition: 'all 0.15s ease',
+              }}
             >
-              <span style={{ width: 6, height: 6, background: health?.status === 'healthy' ? '#22C55E' : health?.status === 'degraded' ? '#F59E0B' : '#EF4444', borderRadius: '50%' }} />
-              {healthLoading ? 'Checking...' : health?.status || 'Status'}
+              <span style={{
+                width: 7, height: 7,
+                background: health?.status === 'healthy' ? '#22C55E' : health?.status === 'degraded' ? '#F59E0B' : '#EF4444',
+                borderRadius: '50%',
+                boxShadow: health?.status === 'healthy' ? '0 0 6px rgba(34, 197, 94, 0.4)' : 'none',
+              }} />
+              {healthLoading ? 'Checking...' : health?.status === 'healthy' ? 'All Systems Go' : health?.status || 'Status'}
             </button>
           </div>
         </div>
       </header>
 
-      <main style={{ maxWidth: 1200, margin: '0 auto', padding: '24px' }}>
+      <main style={{ maxWidth: 1280, margin: '0 auto', padding: '28px 32px' }}>
         {/* ============ ROUTER VIEW ============ */}
         {activeView === 'router' && (
           <div className="router-grid" style={{ display: 'grid', gap: 24 }}>
             {/* Main Content */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Page Title */}
+              <div>
+                <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', margin: '0 0 6px', letterSpacing: '-0.02em' }}>Route a Prompt</h1>
+                <p style={{ fontSize: 14, color: '#6B7280', margin: 0 }}>
+                  Enter a prompt to analyze and find the optimal AI model. Configure modality, context, and constraints below.
+                </p>
+              </div>
+
               {/* Input Section */}
-              <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8 }}>
-                <div style={{ padding: 16 }}>
+              <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                <div style={{ padding: 20 }}>
                   <div style={{ position: 'relative' }}>
                     <textarea
-                      placeholder="Enter a prompt to test the routing engine..."
+                      placeholder="Describe your task... e.g. &quot;Write a Python function to parse JSON&quot;"
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter' && e.metaKey) handleRoute(); }}
-                      style={{ width: '100%', minHeight: 100, padding: 0, paddingRight: 80, fontSize: 14, color: '#000', background: 'transparent', border: 'none', outline: 'none', resize: 'none', lineHeight: 1.6, fontFamily: 'inherit' }}
+                      style={{ width: '100%', minHeight: 100, padding: 0, paddingRight: 80, fontSize: 15, color: '#111', background: 'transparent', border: 'none', outline: 'none', resize: 'none', lineHeight: 1.7, fontFamily: 'inherit' }}
                     />
                     {/* Voice & Attach buttons inside textarea area */}
                     <div style={{ position: 'absolute', right: 0, top: 0, display: 'flex', gap: 4 }}>
@@ -1466,23 +1504,32 @@ export default function Home() {
                 </div>
 
                 {/* Example Prompts */}
-                <div style={{ padding: '0 16px 12px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {EXAMPLE_PROMPTS.map((ex) => (
-                    <button
-                      key={ex.label}
-                      onClick={() => setPrompt(ex.prompt)}
-                      style={{ padding: '4px 10px', fontSize: 11, color: '#666', background: '#F5F5F5', border: 'none', borderRadius: 4, cursor: 'pointer' }}
-                    >
-                      {ex.label}
-                    </button>
-                  ))}
+                <div style={{ padding: '0 20px 14px' }}>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Try an example</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {EXAMPLE_PROMPTS.map((ex) => (
+                      <button
+                        key={ex.label}
+                        onClick={() => setPrompt(ex.prompt)}
+                        style={{
+                          padding: '5px 12px', fontSize: 12, color: '#4B5563', background: '#F3F4F6',
+                          border: '1px solid transparent', borderRadius: 6, cursor: 'pointer',
+                          transition: 'all 0.15s', fontWeight: 450,
+                        }}
+                        onMouseOver={(e) => { e.currentTarget.style.background = '#E5E7EB'; e.currentTarget.style.borderColor = '#D1D5DB'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.borderColor = 'transparent'; }}
+                      >
+                        {ex.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Controls */}
-                <div style={{ padding: '12px 16px', borderTop: '1px solid #E5E5E5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                {/* Controls Bar */}
+                <div style={{ padding: '14px 20px', borderTop: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     {/* Modality Selector */}
-                    <div style={{ display: 'flex', alignItems: 'center', background: '#F5F5F5', borderRadius: 6, padding: 2 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', background: '#F3F4F6', borderRadius: 8, padding: 3 }}>
                       {MODALITIES.map((m) => {
                         const Icon = m.icon;
                         const isActive = modality === m.id;
@@ -1491,29 +1538,52 @@ export default function Home() {
                             key={m.id}
                             onClick={() => setModality(m.id)}
                             title={`${m.label}: ${m.desc}`}
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, background: isActive ? '#fff' : 'transparent', border: 'none', borderRadius: 4, cursor: 'pointer', boxShadow: isActive ? '0 1px 2px rgba(0,0,0,0.05)' : 'none' }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 5, padding: isActive ? '5px 10px' : '5px 8px',
+                              background: isActive ? '#fff' : 'transparent', border: 'none', borderRadius: 6,
+                              cursor: 'pointer', boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                              fontSize: 12, color: isActive ? '#111' : '#9CA3AF', fontWeight: isActive ? 500 : 400,
+                              transition: 'all 0.15s',
+                            }}
                           >
-                            <Icon style={{ width: 14, height: 14, color: isActive ? '#000' : '#999' }} />
+                            <Icon style={{ width: 14, height: 14 }} />
+                            {isActive && <span>{m.label}</span>}
                           </button>
                         );
                       })}
                     </div>
+                    {/* Options Toggle */}
                     <button
                       onClick={() => setShowOptions(!showOptions)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', fontSize: 12, color: showOptions ? '#000' : '#666', background: showOptions ? '#F5F5F5' : 'transparent', border: '1px solid #E5E5E5', borderRadius: 6, cursor: 'pointer' }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', fontSize: 12,
+                        color: showOptions ? '#4F46E5' : '#6B7280',
+                        background: showOptions ? '#EEF2FF' : 'transparent',
+                        border: showOptions ? '1px solid #C7D2FE' : '1px solid #E5E7EB',
+                        borderRadius: 8, cursor: 'pointer', fontWeight: 500,
+                        transition: 'all 0.15s',
+                      }}
                     >
-                      <Settings2 style={{ width: 12, height: 12 }} />
-                      Options
+                      <Settings2 style={{ width: 13, height: 13 }} />
+                      Routing Options
                       <ChevronDown style={{ width: 12, height: 12, transform: showOptions ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                     </button>
                   </div>
                   <button
                     onClick={handleRoute}
                     disabled={isLoading || !prompt.trim()}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 500, color: '#fff', background: isLoading || !prompt.trim() ? '#999' : '#000', border: 'none', borderRadius: 6, cursor: isLoading || !prompt.trim() ? 'not-allowed' : 'pointer' }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 7, padding: '9px 20px', fontSize: 13, fontWeight: 600,
+                      color: '#fff',
+                      background: isLoading || !prompt.trim() ? '#D1D5DB' : 'linear-gradient(135deg, #111 0%, #374151 100%)',
+                      border: 'none', borderRadius: 8,
+                      cursor: isLoading || !prompt.trim() ? 'not-allowed' : 'pointer',
+                      boxShadow: isLoading || !prompt.trim() ? 'none' : '0 2px 8px rgba(0,0,0,0.15)',
+                      transition: 'all 0.2s',
+                    }}
                   >
-                    {isLoading ? <RefreshCw style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Search style={{ width: 14, height: 14 }} />}
-                    {isLoading ? 'Routing...' : 'Route Prompt'}
+                    {isLoading ? <RefreshCw style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Sparkles style={{ width: 14, height: 14 }} />}
+                    {isLoading ? 'Analyzing...' : 'Route Prompt'}
                   </button>
                 </div>
 
@@ -1521,13 +1591,13 @@ export default function Home() {
                 <AnimatePresence>
                   {showOptions && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}>
-                      <div style={{ padding: 16, borderTop: '1px solid #E5E5E5', background: '#FAFAFA' }}>
+                      <div style={{ padding: 20, borderTop: '1px solid #F3F4F6', background: '#F9FAFB' }}>
                         {/* Human Context Section */}
-                        <div style={{ marginBottom: 20 }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, cursor: 'pointer' }}>
-                            <input type="checkbox" checked={useHumanContext} onChange={(e) => setUseHumanContext(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#000' }} />
-                            <span style={{ fontSize: 13, fontWeight: 600, color: '#000' }}>Human Context</span>
-                            <span style={{ fontSize: 11, color: '#666' }}>(Adds 15% weight to scoring)</span>
+                        <div style={{ marginBottom: 24 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, cursor: 'pointer' }}>
+                            <input type="checkbox" checked={useHumanContext} onChange={(e) => setUseHumanContext(e.target.checked)} style={{ width: 15, height: 15, accentColor: '#4F46E5' }} />
+                            <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>Human Context</span>
+                            <span style={{ fontSize: 11, color: '#6B7280', background: '#EEF2FF', padding: '2px 8px', borderRadius: 4, fontWeight: 500 }}>+15% scoring weight</span>
                           </label>
 
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, opacity: useHumanContext ? 1 : 0.5 }}>
@@ -1651,10 +1721,10 @@ export default function Home() {
 
                         {/* Constraints Section */}
                         <div>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, cursor: 'pointer' }}>
-                            <input type="checkbox" checked={useConstraints} onChange={(e) => setUseConstraints(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#000' }} />
-                            <span style={{ fontSize: 13, fontWeight: 600, color: '#000' }}>Constraints</span>
-                            <span style={{ fontSize: 11, color: '#666' }}>(Filter out models that don&apos;t meet requirements)</span>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, cursor: 'pointer' }}>
+                            <input type="checkbox" checked={useConstraints} onChange={(e) => setUseConstraints(e.target.checked)} style={{ width: 15, height: 15, accentColor: '#4F46E5' }} />
+                            <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>Constraints</span>
+                            <span style={{ fontSize: 11, color: '#6B7280', background: '#FEF3C7', padding: '2px 8px', borderRadius: 4, fontWeight: 500 }}>Filter models</span>
                           </label>
 
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, opacity: useConstraints ? 1 : 0.5 }}>
@@ -1721,13 +1791,14 @@ export default function Home() {
                 {result && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {/* Result Card */}
-                    <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                       {/* Header */}
-                      <div style={{ padding: '12px 16px', borderBottom: '1px solid #E5E5E5', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ padding: '16px 20px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, #FAFAFA 0%, #F3F4F6 100%)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontSize: 14, fontWeight: 600, color: '#000' }}>{result.primaryModel.name}</span>
-                          <span style={{ padding: '2px 6px', fontSize: 11, fontWeight: 500, color: '#059669', background: '#ECFDF5', borderRadius: 4 }}>Recommended</span>
-                          <span style={{ padding: '2px 6px', fontSize: 11, color: '#666', background: '#F5F5F5', borderRadius: 4 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: getProviderColor(result.primaryModel.provider) }} />
+                          <span style={{ fontSize: 16, fontWeight: 700, color: '#111', letterSpacing: '-0.01em' }}>{result.primaryModel.name}</span>
+                          <span style={{ padding: '3px 8px', fontSize: 11, fontWeight: 600, color: '#059669', background: '#ECFDF5', borderRadius: 6, border: '1px solid #D1FAE5' }}>Recommended</span>
+                          <span style={{ padding: '3px 8px', fontSize: 11, fontWeight: 500, color: '#6B7280', background: '#F9FAFB', borderRadius: 6, border: '1px solid #E5E7EB' }}>
                             {Math.round(result.confidence * 100)}% confidence
                           </span>
                         </div>
@@ -1884,14 +1955,39 @@ export default function Home() {
 
               {/* Empty State */}
               {!result && !isLoading && (
-                <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8, padding: '48px 24px', textAlign: 'center' }}>
-                  <div style={{ width: 40, height: 40, background: '#F5F5F5', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                    <Sparkles style={{ width: 20, height: 20, color: '#666' }} />
+                <div style={{ background: 'linear-gradient(135deg, #fff 0%, #F9FAFB 100%)', border: '1px solid #E5E7EB', borderRadius: 12, padding: '56px 32px', textAlign: 'center' }}>
+                  <div style={{
+                    width: 56, height: 56,
+                    background: 'linear-gradient(135deg, #EEF2FF, #E0E7FF)',
+                    borderRadius: 14,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 20px',
+                    boxShadow: '0 2px 8px rgba(99, 102, 241, 0.12)',
+                  }}>
+                    <Sparkles style={{ width: 24, height: 24, color: '#6366F1' }} />
                   </div>
-                  <h3 style={{ fontSize: 14, fontWeight: 600, color: '#000', margin: '0 0 6px' }}>Intelligent LLM Routing</h3>
-                  <p style={{ fontSize: 13, color: '#666', margin: 0, maxWidth: 400, marginLeft: 'auto', marginRight: 'auto' }}>
-                    Enter a prompt and ADE will analyze intent, domain, and complexity to recommend the optimal model.
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: '#111', margin: '0 0 8px', letterSpacing: '-0.01em' }}>Intelligent LLM Routing</h3>
+                  <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 24px', maxWidth: 440, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
+                    Enter a prompt above and ADE will analyze its intent, domain, and complexity to recommend the optimal AI model from 10+ providers.
                   </p>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
+                    {[
+                      { label: 'Analyze', desc: 'Intent & domain detection', icon: Brain },
+                      { label: 'Score', desc: '7-factor model scoring', icon: TrendingUp },
+                      { label: 'Select', desc: 'Optimal model selection', icon: Zap },
+                    ].map((step) => {
+                      const StepIcon = step.icon;
+                      return (
+                        <div key={step.label} style={{ textAlign: 'center' }}>
+                          <div style={{ width: 36, height: 36, background: '#F3F4F6', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                            <StepIcon style={{ width: 16, height: 16, color: '#6B7280' }} />
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{step.label}</div>
+                          <div style={{ fontSize: 11, color: '#9CA3AF' }}>{step.desc}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -1899,53 +1995,63 @@ export default function Home() {
             {/* Sidebar */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Engine Stats */}
-              <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8, padding: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: '#666', marginBottom: 12 }}>Engine Stats</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, padding: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Engine Stats</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   {[
-                    { label: 'Models', value: '10' },
-                    { label: 'Latency', value: '<50ms' },
-                    { label: 'Factors', value: '7' },
-                    { label: 'Providers', value: '3' },
+                    { label: 'Models', value: '10', color: '#6366F1' },
+                    { label: 'Latency', value: '<50ms', color: '#10B981' },
+                    { label: 'Factors', value: '7', color: '#F59E0B' },
+                    { label: 'Providers', value: '3', color: '#3B82F6' },
                   ].map((stat) => (
                     <div key={stat.label}>
-                      <div style={{ fontSize: 20, fontWeight: 600, color: '#000' }}>{stat.value}</div>
-                      <div style={{ fontSize: 11, color: '#666' }}>{stat.label}</div>
+                      <div style={{ fontSize: 24, fontWeight: 700, color: '#111', letterSpacing: '-0.02em' }}>{stat.value}</div>
+                      <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 500 }}>{stat.label}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Scoring Weights */}
-              <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8, padding: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: '#666', marginBottom: 12 }}>Scoring Weights</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, padding: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Scoring Weights</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {SCORING_FACTORS.map((factor) => {
                     const Icon = factor.icon;
                     return (
-                      <div key={factor.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Icon style={{ width: 12, height: 12, color: factor.color }} />
-                        <span style={{ flex: 1, fontSize: 12, color: '#000' }}>{factor.label}</span>
-                        <span style={{ fontSize: 12, color: '#666' }}>{factor.weight}%</span>
+                      <div key={factor.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 6, background: `${factor.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Icon style={{ width: 13, height: 13, color: factor.color }} />
+                        </div>
+                        <span style={{ flex: 1, fontSize: 13, color: '#374151', fontWeight: 450 }}>{factor.label}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 40, height: 4, background: '#F3F4F6', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ width: `${factor.weight * 2.5}%`, height: '100%', background: factor.color, borderRadius: 2 }} />
+                          </div>
+                          <span style={{ fontSize: 12, color: '#6B7280', fontWeight: 600, width: 28, textAlign: 'right' }}>{factor.weight}%</span>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
-                <div style={{ marginTop: 8, padding: 8, background: '#FEF3C7', borderRadius: 4, fontSize: 11, color: '#92400E' }}>
-                  <strong>Note:</strong> With Human Context enabled, weights shift to include a 15% humanContextFit factor.
+                <div style={{ marginTop: 14, padding: '10px 12px', background: '#FEF3C7', borderRadius: 8, fontSize: 12, color: '#92400E', lineHeight: 1.5 }}>
+                  With <strong>Human Context</strong> enabled, weights shift to include a 15% humanContextFit factor.
                 </div>
               </div>
 
               {/* Request History */}
               {requestHistory.length > 0 && (
-                <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 8, padding: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: '#666', marginBottom: 12 }}>Recent Requests</div>
+                <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, padding: 20 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent Requests</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {requestHistory.slice(0, 5).map((req) => (
-                      <div key={req.id} style={{ padding: 8, background: '#FAFAFA', borderRadius: 4 }}>
-                        <div style={{ fontSize: 11, color: '#666', marginBottom: 2 }}>{req.time}</div>
-                        <div style={{ fontSize: 12, color: '#000', marginBottom: 2 }}>{req.prompt}</div>
-                        <div style={{ fontSize: 11, color: '#059669' }}>{req.model} ({Math.round(req.confidence * 100)}%)</div>
+                      <div key={req.id} style={{ padding: '10px 12px', background: '#F9FAFB', borderRadius: 8, border: '1px solid #F3F4F6' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span style={{ fontSize: 11, color: '#9CA3AF' }}>{req.time}</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: '#059669' }}>{Math.round(req.confidence * 100)}%</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: '#374151', marginBottom: 4, fontWeight: 450 }}>{req.prompt}</div>
+                        <div style={{ fontSize: 11, color: '#6366F1', fontWeight: 500 }}>{req.model}</div>
                       </div>
                     ))}
                   </div>
@@ -1953,16 +2059,16 @@ export default function Home() {
               )}
 
               {/* API Card */}
-              <div style={{ background: '#18181B', borderRadius: 8, padding: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: '#fff', marginBottom: 8 }}>API Endpoint</div>
-                <code style={{ display: 'block', fontSize: 11, fontFamily: 'ui-monospace, monospace', color: '#A1A1AA', background: 'rgba(255,255,255,0.1)', padding: '8px 10px', borderRadius: 4, marginBottom: 8 }}>
+              <div style={{ background: 'linear-gradient(135deg, #18181B, #27272A)', borderRadius: 12, padding: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#71717A', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>API Endpoint</div>
+                <code style={{ display: 'block', fontSize: 12, fontFamily: 'ui-monospace, monospace', color: '#A1A1AA', background: 'rgba(255,255,255,0.06)', padding: '10px 12px', borderRadius: 8, marginBottom: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
                   POST /api/v1/route
                 </code>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <a href="/api/v1/health" target="_blank" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#A1A1AA', textDecoration: 'none' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <a href="/api/v1/health" target="_blank" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#A1A1AA', textDecoration: 'none' }}>
                     Health Check <ChevronRight style={{ width: 12, height: 12 }} />
                   </a>
-                  <a href="/api/v1/models" target="_blank" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#A1A1AA', textDecoration: 'none' }}>
+                  <a href="/api/v1/models" target="_blank" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#A1A1AA', textDecoration: 'none' }}>
                     List Models <ChevronRight style={{ width: 12, height: 12 }} />
                   </a>
                 </div>
@@ -1984,9 +2090,9 @@ export default function Home() {
           return (
             <div>
               {/* Header */}
-              <div style={{ marginBottom: 24 }}>
-                <h1 style={{ fontSize: 28, fontWeight: 700, color: '#000', margin: '0 0 8px' }}>Models</h1>
-                <p style={{ fontSize: 15, color: '#6B7280', margin: 0, lineHeight: 1.6 }}>
+              <div style={{ marginBottom: 28 }}>
+                <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', margin: '0 0 8px', letterSpacing: '-0.02em' }}>Models</h1>
+                <p style={{ fontSize: 14, color: '#6B7280', margin: 0, lineHeight: 1.6 }}>
                   Explore the {models.length} models available through ADE. Each model has unique strengths, pricing, and capabilities optimized for different use cases.
                 </p>
               </div>
@@ -2195,15 +2301,15 @@ export default function Home() {
               </div>
               <div style={{ padding: 16 }}>
                 {health && (
-                  <div style={{ marginBottom: 16, padding: 12, background: health.status === 'healthy' ? '#D1FAE5' : '#FEF2F2', borderRadius: 6 }}>
+                  <div style={{ marginBottom: 16, padding: 14, background: health.status === 'healthy' ? '#ECFDF5' : '#FEF2F2', borderRadius: 10, border: `1px solid ${health.status === 'healthy' ? '#D1FAE5' : '#FECACA'}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {health.status === 'healthy' ? <CheckCircle style={{ width: 16, height: 16, color: '#059669' }} /> : <XCircle style={{ width: 16, height: 16, color: '#DC2626' }} />}
                       <span style={{ fontSize: 14, fontWeight: 600, color: health.status === 'healthy' ? '#059669' : '#DC2626', textTransform: 'capitalize' }}>{health.status}</span>
                     </div>
-                    <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
-                      <div>Version: {health.version}</div>
-                      <div>Timestamp: {health.timestamp}</div>
-                      <div>KV Store: {health.services.kv}</div>
+                    <div style={{ marginTop: 10, fontSize: 12, color: '#4B5563', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div><strong>Version:</strong> {health.version}</div>
+                      <div><strong>Engine:</strong> {health.services.engine}</div>
+                      <div><strong>Store:</strong> {health.services.store}</div>
                     </div>
                   </div>
                 )}
@@ -2226,7 +2332,7 @@ export default function Home() {
 
         /* Responsive Grid Layouts */
         .router-grid {
-          grid-template-columns: 1fr 340px;
+          grid-template-columns: 1fr 360px;
         }
         .models-grid {
           grid-template-columns: repeat(2, 1fr);
@@ -2266,6 +2372,5 @@ export default function Home() {
         }
       `}</style>
     </div>
-    </AppShell>
   );
 }
