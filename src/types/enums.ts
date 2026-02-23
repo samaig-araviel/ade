@@ -10,6 +10,13 @@ export enum Intent {
   Translation = 'translation',
   Summarization = 'summarization',
   Extraction = 'extraction',
+  ImageGeneration = 'image_generation',
+  VideoGeneration = 'video_generation',
+  VoiceGeneration = 'voice_generation',
+  MusicGeneration = 'music_generation',
+  Research = 'research',
+  Math = 'math',
+  Planning = 'planning',
 }
 
 // Subject domain
@@ -24,6 +31,12 @@ export enum Domain {
   CreativeArts = 'creative_arts',
   Lifestyle = 'lifestyle',
   General = 'general',
+  Government = 'government',
+  Relationships = 'relationships',
+  Shopping = 'shopping',
+  EventPlanning = 'event_planning',
+  Weather = 'weather',
+  Sports = 'sports',
 }
 
 // Complexity level with user-friendly names
@@ -54,7 +67,7 @@ export enum Modality {
 }
 
 // LLM provider
-export type Provider = 'anthropic' | 'openai' | 'google' | 'perplexity';
+export type Provider = 'anthropic' | 'openai' | 'google' | 'perplexity' | 'xai' | 'mistral' | 'meta' | 'stability' | 'elevenlabs' | 'deepseek';
 
 // Mood states for human context
 export enum Mood {

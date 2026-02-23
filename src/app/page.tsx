@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AppShell } from '@/components/layout/AppShell';
 import { StatusPage } from '@/components/status/StatusPage';
 import {
   Sparkles,
@@ -1331,18 +1332,12 @@ export default function Home() {
 
   // ============ RENDER ============
   return (
-    <div style={{ minHeight: '100vh', background: '#FAFAFA' }}>
-      {/* Header */}
-      <header style={{ background: '#fff', borderBottom: '1px solid #E5E5E5', position: 'sticky', top: 0, zIndex: 40 }}>
+    <AppShell>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-page)' }}>
+      {/* Sub Header - View Navigation */}
+      <header style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-primary)', position: 'sticky', top: 0, zIndex: 40 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', height: 48, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 24, height: 24, background: '#000', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Sparkles style={{ width: 14, height: 14, color: '#fff' }} />
-              </div>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#000' }}>ADE</span>
-              <span style={{ fontSize: 11, color: '#666', background: '#F5F5F5', padding: '2px 6px', borderRadius: 4 }}>v1.0</span>
-            </div>
             <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               {[
                 { id: 'router', label: 'Router', icon: Search },
@@ -1357,7 +1352,7 @@ export default function Home() {
                     onClick={() => setActiveView(tab.id as typeof activeView)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', fontSize: 13,
-                      color: isActive ? '#000' : '#666', background: isActive ? '#F5F5F5' : 'transparent',
+                      color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)', background: isActive ? 'var(--bg-tertiary)' : 'transparent',
                       border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: isActive ? 500 : 400,
                     }}
                   >
@@ -1371,7 +1366,7 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               onClick={() => { fetchHealth(); setShowStatus(true); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', fontSize: 13, color: '#666', background: 'transparent', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', fontSize: 13, color: 'var(--text-secondary)', background: 'transparent', border: 'none', borderRadius: 6, cursor: 'pointer' }}
             >
               <span style={{ width: 6, height: 6, background: health?.status === 'healthy' ? '#22C55E' : health?.status === 'degraded' ? '#F59E0B' : '#EF4444', borderRadius: '50%' }} />
               {healthLoading ? 'Checking...' : health?.status || 'Status'}
@@ -2271,5 +2266,6 @@ export default function Home() {
         }
       `}</style>
     </div>
+    </AppShell>
   );
 }

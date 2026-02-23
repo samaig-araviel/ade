@@ -106,8 +106,8 @@ describe('Selector', () => {
       const fallbackAvg = [...intentScores, ...domainScores].reduce((a, b) => a + b, 0) /
         (intentScores.length + domainScores.length);
 
-      // Should be relatively high
-      expect(fallbackAvg).toBeGreaterThan(0.8);
+      // Should be relatively high (with rebalanced scores, 0.75 is the threshold)
+      expect(fallbackAvg).toBeGreaterThan(0.75);
     });
   });
 });

@@ -1,33 +1,33 @@
 @import "tailwindcss";
 
-/* Fish Audio inspired Design System - Light Theme */
+/* Vercel-inspired Design System - Light Theme */
 :root {
   /* Background Colors */
-  --bg-primary: #f7f8fa;
+  --bg-primary: #fafafa;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f3f4f6;
+  --bg-tertiary: #f5f5f5;
   --bg-elevated: #ffffff;
-  --bg-accent: #f0f1f3;
-  --bg-page: #f7f8fa;
+  --bg-accent: #f0f0f0;
+  --bg-page: #fafafa;
 
   /* Text Colors */
-  --text-primary: #1a1a1a;
-  --text-secondary: #4b5563;
-  --text-tertiary: #6b7280;
-  --text-quaternary: #9ca3af;
+  --text-primary: #171717;
+  --text-secondary: #525252;
+  --text-tertiary: #737373;
+  --text-quaternary: #a3a3a3;
   --text-inverse: #ffffff;
 
   /* Border Colors */
-  --border-primary: #e5e7eb;
-  --border-secondary: #d1d5db;
-  --border-subtle: #f3f4f6;
-  --border-accent: #1a1a1a;
+  --border-primary: #e5e5e5;
+  --border-secondary: #d4d4d4;
+  --border-subtle: #f5f5f5;
+  --border-accent: #171717;
 
   /* Brand Colors */
-  --accent-primary: #1a1a1a;
+  --accent-primary: #171717;
   --accent-secondary: #6366f1;
-  --accent-success: #10b981;
-  --accent-warning: #f59e0b;
+  --accent-success: #22c55e;
+  --accent-warning: #eab308;
   --accent-error: #ef4444;
   --accent-info: #3b82f6;
 
@@ -40,6 +40,13 @@
   --provider-anthropic: #d97706;
   --provider-openai: #10b981;
   --provider-google: #3b82f6;
+  --provider-perplexity: #20808d;
+  --provider-xai: #1d9bf0;
+  --provider-mistral: #f97316;
+  --provider-deepseek: #6366f1;
+  --provider-stability: #a855f7;
+  --provider-elevenlabs: #8b5cf6;
+  --provider-meta: #0668e1;
 
   /* Shadows - Subtle and clean */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -62,6 +69,88 @@
   --radius-xl: 16px;
   --radius-2xl: 20px;
   --radius-full: 9999px;
+}
+
+/* Dark Theme - Vercel-inspired */
+.dark {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #171717;
+  --bg-tertiary: #1c1c1c;
+  --bg-elevated: #1e1e1e;
+  --bg-accent: #252525;
+  --bg-page: #0a0a0a;
+
+  --text-primary: #ededed;
+  --text-secondary: #a1a1a1;
+  --text-tertiary: #737373;
+  --text-quaternary: #525252;
+  --text-inverse: #0a0a0a;
+
+  --border-primary: #2e2e2e;
+  --border-secondary: #3e3e3e;
+  --border-subtle: #1e1e1e;
+  --border-accent: #ededed;
+
+  --accent-primary: #ededed;
+  --accent-secondary: #818cf8;
+  --accent-success: #4ade80;
+  --accent-warning: #facc15;
+  --accent-error: #f87171;
+  --accent-info: #60a5fa;
+
+  --gradient-start: #818cf8;
+  --gradient-mid: #a78bfa;
+  --gradient-end: #c084fc;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* System preference dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #171717;
+    --bg-tertiary: #1c1c1c;
+    --bg-elevated: #1e1e1e;
+    --bg-accent: #252525;
+    --bg-page: #0a0a0a;
+
+    --text-primary: #ededed;
+    --text-secondary: #a1a1a1;
+    --text-tertiary: #737373;
+    --text-quaternary: #525252;
+    --text-inverse: #0a0a0a;
+
+    --border-primary: #2e2e2e;
+    --border-secondary: #3e3e3e;
+    --border-subtle: #1e1e1e;
+    --border-accent: #ededed;
+
+    --accent-primary: #ededed;
+    --accent-secondary: #818cf8;
+    --accent-success: #4ade80;
+    --accent-warning: #facc15;
+    --accent-error: #f87171;
+    --accent-info: #60a5fa;
+
+    --gradient-start: #818cf8;
+    --gradient-mid: #a78bfa;
+    --gradient-end: #c084fc;
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
 }
 
 /* Theme Variables in Tailwind */
@@ -91,6 +180,13 @@
   --color-provider-anthropic: var(--provider-anthropic);
   --color-provider-openai: var(--provider-openai);
   --color-provider-google: var(--provider-google);
+  --color-provider-perplexity: var(--provider-perplexity);
+  --color-provider-xai: var(--provider-xai);
+  --color-provider-mistral: var(--provider-mistral);
+  --color-provider-deepseek: var(--provider-deepseek);
+  --color-provider-stability: var(--provider-stability);
+  --color-provider-elevenlabs: var(--provider-elevenlabs);
+  --color-provider-meta: var(--provider-meta);
 
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace;
@@ -451,6 +547,34 @@ button:disabled {
 
 .provider-dot.google {
   background: var(--provider-google);
+}
+
+.provider-dot.perplexity {
+  background: var(--provider-perplexity);
+}
+
+.provider-dot.xai {
+  background: var(--provider-xai);
+}
+
+.provider-dot.mistral {
+  background: var(--provider-mistral);
+}
+
+.provider-dot.deepseek {
+  background: var(--provider-deepseek);
+}
+
+.provider-dot.stability {
+  background: var(--provider-stability);
+}
+
+.provider-dot.elevenlabs {
+  background: var(--provider-elevenlabs);
+}
+
+.provider-dot.meta {
+  background: var(--provider-meta);
 }
 
 /* Chart Bar */

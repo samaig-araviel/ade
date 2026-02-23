@@ -30,6 +30,7 @@ export interface ScoringContext {
 // Weights configuration
 export interface ScoringWeights {
   taskFitness: number;
+  specialization: number;
   modalityFitness: number;
   costEfficiency: number;
   userPreference: number;
@@ -39,24 +40,25 @@ export interface ScoringWeights {
 }
 
 // Default weights without human context
-// Task fitness is the primary factor - we want the best model for the job
-// Cost and speed are secondary considerations
+// Balanced to prevent single-model dominance while prioritizing task fit
 export const DEFAULT_WEIGHTS: ScoringWeights = {
-  taskFitness: 0.50,      // Increased from 0.40 - quality is paramount
+  taskFitness: 0.38,        // Primary factor but reduced to allow specialization to differentiate
+  specialization: 0.12,     // NEW - gives specialists a clear edge in their domain
   modalityFitness: 0.15,
-  costEfficiency: 0.10,   // Reduced from 0.15 - prioritize quality over cost
-  userPreference: 0.10,
-  conversationCoherence: 0.08,
-  speed: 0.07,            // Reduced from 0.10 - prioritize quality over speed
+  costEfficiency: 0.12,     // Slightly increased - cost matters for enterprise
+  userPreference: 0.08,
+  conversationCoherence: 0.06,
+  speed: 0.09,              // Slightly increased - speed matters for UX
 };
 
 // Weights with human context
 export const HUMAN_CONTEXT_WEIGHTS: ScoringWeights = {
-  taskFitness: 0.40,      // Increased from 0.32 - quality remains important
+  taskFitness: 0.32,
+  specialization: 0.10,     // NEW
   modalityFitness: 0.12,
-  costEfficiency: 0.08,   // Reduced - quality first
-  userPreference: 0.10,
-  conversationCoherence: 0.08,
-  speed: 0.07,            // Reduced - quality first
-  humanContextFit: 0.15,
+  costEfficiency: 0.08,
+  userPreference: 0.08,
+  conversationCoherence: 0.06,
+  speed: 0.07,
+  humanContextFit: 0.17,
 };

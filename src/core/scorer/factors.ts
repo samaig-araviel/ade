@@ -9,6 +9,9 @@ import {
   EnergyLevel,
   ResponseStyle,
   ResponseLength,
+  Intent,
+  Complexity,
+  Specialization,
 } from '@/types';
 import { clamp, normalize, invertScore, parseTimeToHours, isLateNight, isWorkingHours } from '@/lib/helpers';
 
@@ -17,12 +20,21 @@ export function calculateTaskFitness(
   model: ModelDefinition,
   analysis: QueryAnalysis
 ): FactorScore {
-  const intentScore = model.taskStrengths.intents[analysis.intent];
-  const domainScore = model.taskStrengths.domains[analysis.domain];
+  const intentScore = model.taskStrengths.intents[analysis.intent] ?? 0;
+  const domainScore = model.taskStrengths.domains[analysis.domain] ?? 0;
   const complexityScore = model.taskStrengths.complexity[analysis.complexity];
 
   // Weighted combination: 50% intent, 30% domain, 20% complexity
-  const score = (intentScore * 0.5) + (domainScore * 0.3) + (complexityScore * 0.2);
+  let score = (intentScore * 0.5) + (domainScore * 0.3) + (complexityScore * 0.2);
+
+  // Complexity mismatch penalty: heavy models get penalized for simple tasks
+  // and fast/light models get penalized for demanding tasks
+  if (analysis.complexity === Complexity.Quick && complexityScore < 0.80) {
+    score *= 0.88; // Penalty for heavyweight models on simple tasks
+  }
+  if (analysis.complexity === Complexity.Demanding && complexityScore < 0.75) {
+    score *= 0.90; // Penalty for lightweight models on demanding tasks
+  }
 
   const intentPercent = Math.round(intentScore * 100);
   const domainPercent = Math.round(domainScore * 100);
@@ -34,12 +46,85 @@ export function calculateTaskFitness(
     detail = `Strong fit for ${analysis.intent} (${intentPercent}%) and handles ${analysis.domain} topics well (${domainPercent}%)`;
   } else if (score >= 0.7) {
     detail = `Capable at ${analysis.intent} tasks (${intentPercent}%) with decent ${analysis.domain} knowledge (${domainPercent}%)`;
-  } else {
+  } else if (score >= 0.3) {
     detail = `Can handle ${analysis.intent} (${intentPercent}%) though not its strongest area for ${analysis.domain} (${domainPercent}%)`;
+  } else {
+    detail = `Not designed for ${analysis.intent} tasks - limited capability (${intentPercent}%)`;
   }
 
   return {
     name: 'Task Fitness',
+    score,
+    weight: 0,
+    weightedScore: 0,
+    detail,
+  };
+}
+
+// Intent-to-specialization mapping for scoring
+const INTENT_SPECIALIZATION_MAP: Partial<Record<Intent, Specialization[]>> = {
+  [Intent.Coding]: ['coding'],
+  [Intent.Creative]: ['creative_writing'],
+  [Intent.Research]: ['web_search', 'research'],
+  [Intent.Factual]: ['web_search', 'research'],
+  [Intent.Math]: ['math', 'reasoning'],
+  [Intent.ImageGeneration]: ['image_generation'],
+  [Intent.VideoGeneration]: ['video_generation'],
+  [Intent.VoiceGeneration]: ['voice_generation'],
+  [Intent.MusicGeneration]: ['music_generation'],
+  [Intent.Translation]: ['multilingual'],
+  [Intent.Planning]: ['general_purpose'],
+  [Intent.Conversation]: ['general_purpose', 'fast_tasks'],
+  [Intent.Analysis]: ['reasoning', 'research'],
+};
+
+// Calculate specialization bonus score
+export function calculateSpecialization(
+  model: ModelDefinition,
+  analysis: QueryAnalysis
+): FactorScore {
+  const modelSpecs = model.specializations ?? [];
+  if (modelSpecs.length === 0) {
+    return {
+      name: 'Specialization',
+      score: 0.4,
+      weight: 0,
+      weightedScore: 0,
+      detail: 'General-purpose model without specific specializations',
+    };
+  }
+
+  const matchingSpecs = INTENT_SPECIALIZATION_MAP[analysis.intent] ?? [];
+  const hasMatch = modelSpecs.some(s => matchingSpecs.includes(s));
+
+  // Also check complexity-based specializations
+  const isQuickTask = analysis.complexity === Complexity.Quick;
+  const hasFastSpec = modelSpecs.includes('fast_tasks');
+  const quickBonus = isQuickTask && hasFastSpec ? 0.15 : 0;
+
+  let score: number;
+  let detail: string;
+
+  if (hasMatch) {
+    score = clamp(0.95 + quickBonus, 0, 1);
+    const matchedSpec = modelSpecs.find(s => matchingSpecs.includes(s)) ?? modelSpecs[0];
+    detail = `Purpose-built for ${matchedSpec} tasks - specialist advantage`;
+  } else if (quickBonus > 0) {
+    score = 0.75;
+    detail = 'Optimized for quick, lightweight tasks';
+  } else if (modelSpecs.includes('general_purpose')) {
+    score = 0.55;
+    detail = 'Versatile general-purpose model';
+  } else if (modelSpecs.includes('budget')) {
+    score = isQuickTask ? 0.65 : 0.35;
+    detail = isQuickTask ? 'Cost-effective for simple tasks' : 'Budget model - may lack depth for this task';
+  } else {
+    score = 0.35;
+    detail = `Specialized elsewhere (${modelSpecs.join(', ')}) - not optimized for ${analysis.intent}`;
+  }
+
+  return {
+    name: 'Specialization',
     score,
     weight: 0,
     weightedScore: 0,
