@@ -141,7 +141,7 @@ describe('Engine', () => {
         modality: Modality.Text,
         context: {
           conversationId: 'conv_123',
-          previousModelUsed: 'claude-sonnet-4-20250514',
+          previousModelUsed: 'claude-sonnet-4-6',
           messageCount: 5,
         },
       };

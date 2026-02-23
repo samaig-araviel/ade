@@ -8,6 +8,7 @@ import {
 } from '@/types';
 import {
   calculateTaskFitness,
+  calculateSpecialization,
   calculateModalityFitness,
   calculateCostEfficiency,
   calculateSpeed,
@@ -18,6 +19,7 @@ import {
 
 export {
   calculateTaskFitness,
+  calculateSpecialization,
   calculateModalityFitness,
   calculateCostEfficiency,
   calculateSpeed,
@@ -41,6 +43,12 @@ export function scoreModel(
   taskFitness.weight = weights.taskFitness;
   taskFitness.weightedScore = taskFitness.score * taskFitness.weight;
   factors.push(taskFitness);
+
+  // Specialization Bonus
+  const specialization = calculateSpecialization(model, context.analysis);
+  specialization.weight = weights.specialization;
+  specialization.weightedScore = specialization.score * specialization.weight;
+  factors.push(specialization);
 
   // Modality Fitness
   const modalityFitness = calculateModalityFitness(model, context.analysis);
@@ -92,14 +100,46 @@ export function scoreModel(
   };
 }
 
-// Score all models and sort by score
+// Score all models and sort by score, with anti-monopoly diversity enforcement
 export function scoreAllModels(context: ScoringContext): ModelScore[] {
   const scores = context.allModels.map((model) => scoreModel(model, context));
 
   // Sort by composite score descending
   scores.sort((a, b) => b.compositeScore - a.compositeScore);
 
-  return scores;
+  // Apply anti-monopoly diversity enforcement on backup suggestions
+  return enforceProviderDiversity(scores);
+}
+
+// Anti-monopoly: ensure backup models show diverse providers when margins are small
+function enforceProviderDiversity(scores: ModelScore[]): ModelScore[] {
+  if (scores.length < 3) return scores;
+
+  const top3 = scores.slice(0, 3);
+  const top3Providers = top3.map(s => s.model.provider);
+
+  // Check if all top 3 are from the same provider
+  const allSameProvider = top3Providers[0] === top3Providers[1] && top3Providers[1] === top3Providers[2];
+
+  if (!allSameProvider) return scores; // Already diverse
+
+  const primaryProvider = top3Providers[0]!;
+
+  // Find the best model from a different provider
+  const bestOtherProvider = scores.find(s => s.model.provider !== primaryProvider);
+  if (!bestOtherProvider) return scores; // No other providers available
+
+  // Only swap if the margin is small enough (< 0.06) - don't sacrifice quality
+  const margin = top3[2]!.compositeScore - bestOtherProvider.compositeScore;
+  if (margin > 0.06) return scores; // Margin too large, the same-provider models are genuinely better
+
+  // Swap #3 with the best alternative provider model
+  const altIndex = scores.indexOf(bestOtherProvider);
+  const result = [...scores];
+  result[2] = bestOtherProvider;
+  result[altIndex] = top3[2]!;
+
+  return result;
 }
 
 // Quick scoring for fast-path (pure modality)

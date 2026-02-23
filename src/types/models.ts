@@ -24,6 +24,10 @@ export interface ModelCapabilities {
   supportsExtendedThinking?: boolean;
   supportsReasoning?: boolean;
   supportsWebSearch?: boolean;
+  supportsImageGeneration?: boolean;
+  supportsVideoGeneration?: boolean;
+  supportsTTS?: boolean;
+  supportsMusicGeneration?: boolean;
   visionScore: number; // 0-1
   audioScore: number; // 0-1
 }
@@ -54,6 +58,24 @@ export interface HumanFactors {
   workHoursSuitability: number;
 }
 
+// Model specialization categories
+export type Specialization =
+  | 'coding'
+  | 'web_search'
+  | 'multimodal'
+  | 'fast_tasks'
+  | 'reasoning'
+  | 'creative_writing'
+  | 'general_purpose'
+  | 'budget'
+  | 'image_generation'
+  | 'video_generation'
+  | 'voice_generation'
+  | 'music_generation'
+  | 'multilingual'
+  | 'research'
+  | 'math';
+
 // Complete model definition
 export interface ModelDefinition {
   // Identity
@@ -76,6 +98,9 @@ export interface ModelDefinition {
 
   // Human factors
   humanFactors: HumanFactors;
+
+  // Specializations - what this model is purpose-built for
+  specializations?: Specialization[];
 
   // Availability
   available: boolean;

@@ -50,7 +50,7 @@ describe('Performance', () => {
       context: {
         userId: 'user_123',
         conversationId: 'conv_456',
-        previousModelUsed: 'claude-sonnet-4-20250514',
+        previousModelUsed: 'claude-sonnet-4-6',
         messageCount: 10,
       },
     };

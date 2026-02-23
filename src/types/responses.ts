@@ -50,6 +50,14 @@ export interface TimingMetrics {
   selectionMs: number;
 }
 
+// Fallback suggestion when no suitable model exists
+export interface FallbackSuggestion {
+  supported: false;
+  category: string;
+  message: string;
+  suggestedPlatforms: string[];
+}
+
 // Main route response
 export interface RouteResponse {
   decisionId: string;
@@ -58,6 +66,7 @@ export interface RouteResponse {
   confidence: number;
   analysis: QueryAnalysis;
   timing: TimingMetrics;
+  fallback?: FallbackSuggestion;
 }
 
 // Analyze-only response

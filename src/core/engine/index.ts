@@ -5,6 +5,8 @@ import {
   QueryAnalysis,
   Modality,
   ScoringContext,
+  FallbackSuggestion,
+  Intent,
 } from '@/types';
 import {
   analyze,
@@ -208,6 +210,9 @@ function handleStandardRoute(
     console.warn(`Routing exceeded ${MAX_ROUTING_TIME_MS}ms: ${totalMs}ms`);
   }
 
+  // Check if we should attach a fallback suggestion (low confidence or unsupported task)
+  const fallback = detectFallbackNeeded(analysis, selection.confidence);
+
   return {
     decisionId: generateDecisionId(),
     primaryModel: {
@@ -232,6 +237,7 @@ function handleStandardRoute(
       scoringMs: round(scoringMs, 2),
       selectionMs: round(selectionMs, 2),
     },
+    ...(fallback ? { fallback } : {}),
   };
 }
 
@@ -367,3 +373,54 @@ export function analyzeOnly(prompt: string, modality: Modality): AnalyzeResponse
 
 // Import ModelDefinition for type usage
 import type { ModelDefinition } from '@/types';
+
+// Fallback suggestion mappings for unsupported or low-confidence tasks
+const FALLBACK_SUGGESTIONS: Partial<Record<Intent, { category: string; message: string; suggestedPlatforms: string[] }>> = {
+  [Intent.ImageGeneration]: {
+    category: 'Image Generation',
+    message: 'For best results with image generation, we recommend using a specialized image generation platform. The models in our registry that support this are limited - consider using the suggested platforms directly for production-quality image generation.',
+    suggestedPlatforms: ['OpenAI DALL-E 3', 'Google Imagen 3', 'Stability AI (Stable Diffusion)', 'Midjourney'],
+  },
+  [Intent.VideoGeneration]: {
+    category: 'Video Generation',
+    message: 'Video generation requires specialized AI models. While our registry includes some video generation models, this capability is still emerging. For production use, consider the suggested platforms.',
+    suggestedPlatforms: ['OpenAI Sora', 'Google Veo 2', 'Runway ML', 'Pika Labs'],
+  },
+  [Intent.VoiceGeneration]: {
+    category: 'Voice & Speech Generation',
+    message: 'Text-to-speech and voice generation is best handled by specialized voice AI platforms. Our registry includes some TTS models, but for voice cloning and advanced speech synthesis, consider dedicated platforms.',
+    suggestedPlatforms: ['ElevenLabs', 'OpenAI TTS', 'Google Cloud TTS', 'Amazon Polly'],
+  },
+  [Intent.MusicGeneration]: {
+    category: 'Music Generation',
+    message: 'AI music generation is a specialized capability not widely available through standard LLM providers. For creating music, songs, and audio compositions, use a dedicated music AI platform.',
+    suggestedPlatforms: ['Suno AI', 'Udio', 'AIVA', 'Soundraw'],
+  },
+};
+
+// Detect if a fallback suggestion should be attached
+function detectFallbackNeeded(
+  analysis: QueryAnalysis,
+  confidence: number
+): FallbackSuggestion | null {
+  // If confidence is very low, the primary model is probably not great for this task
+  if (confidence < 0.25) {
+    const suggestion = FALLBACK_SUGGESTIONS[analysis.intent];
+    if (suggestion) {
+      return {
+        supported: false,
+        ...suggestion,
+      };
+    }
+
+    // Generic fallback for unknown low-confidence scenarios
+    return {
+      supported: false,
+      category: 'Unsupported Task',
+      message: 'This task type may not be well-supported by the models currently in our registry. The recommended model is a best-effort suggestion. For specialized tasks, consider using a platform that specifically caters to your needs.',
+      suggestedPlatforms: ['OpenAI ChatGPT', 'Google Gemini', 'Anthropic Claude', 'Perplexity AI'],
+    };
+  }
+
+  return null;
+}
