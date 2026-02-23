@@ -36,6 +36,7 @@ import {
   Filter,
   ChevronLeft,
   Loader2,
+  FlaskConical,
 } from 'lucide-react';
 
 // ============ TYPES ============
@@ -154,6 +155,51 @@ const EXAMPLE_PROMPTS = [
   { label: 'Complex Research', prompt: 'Explain the implications of quantum computing on current cryptographic systems and propose mitigation strategies', category: 'analysis' },
   { label: 'Translation', prompt: 'Translate this technical documentation from English to Spanish while maintaining accuracy', category: 'translation' },
 ];
+
+const LONG_EXAMPLE_PROMPTS = [
+  {
+    label: 'Full-Stack App',
+    prompt: 'I need to build a complete full-stack web application for a restaurant reservation system. The app should have a React frontend with a calendar view for available time slots, a Node.js backend with Express, PostgreSQL database for storing reservations, user authentication with JWT tokens, email notifications when a reservation is confirmed or cancelled, and an admin dashboard where restaurant staff can manage tables, view upcoming reservations, and block out dates. Please provide the complete architecture, database schema, API endpoints, and key implementation details for each component.',
+    category: 'coding',
+  },
+  {
+    label: 'Research Paper',
+    prompt: 'Write a comprehensive research analysis comparing the environmental impact of electric vehicles versus traditional internal combustion engine vehicles across their entire lifecycle. Include manufacturing emissions (battery production, rare earth mining), operational emissions across different electricity grid mixes worldwide, end-of-life recycling challenges, infrastructure requirements (charging stations vs gas stations), and projected improvements over the next decade. Consider economic factors for consumers in developing vs developed nations, government subsidies, and the role of hydrogen fuel cells as a potential alternative. Cite specific studies and provide data-backed conclusions.',
+    category: 'analysis',
+  },
+  {
+    label: 'Debug Complex Issue',
+    prompt: 'I have a distributed microservices architecture where intermittent failures are occurring. Service A (user authentication, Node.js) calls Service B (order processing, Python/FastAPI) which calls Service C (inventory management, Go). The issue: approximately 2% of requests fail with a timeout error, but only during peak hours (10am-2pm). The timeout happens between Service B and Service C. Service C health checks always pass. We use Kubernetes with horizontal pod autoscaling, gRPC for inter-service communication, and Redis for caching. Database is PostgreSQL with connection pooling via PgBouncer. What systematic debugging approach should I take, what metrics should I collect, and what are the most likely root causes?',
+    category: 'coding',
+  },
+  {
+    label: 'Business Strategy',
+    prompt: 'Our SaaS startup (B2B project management tool) has 500 paying customers, $80K MRR, and is growing 12% month-over-month. We have $2M in runway. Our churn rate is 4.5% monthly, with most churn happening in the first 30 days. Our acquisition channels are content marketing (40%), paid ads (35%), and referrals (25%). The product has strong engagement among power users but onboarding completion rate is only 35%. We are considering three strategic directions: (1) invest heavily in reducing churn through better onboarding and customer success, (2) expand into the enterprise segment with SOC2 compliance and SSO, or (3) build AI-powered features to differentiate from competitors. Provide a detailed analysis of each option with financial projections, risks, and a recommended prioritization framework.',
+    category: 'analysis',
+  },
+  {
+    label: 'Creative Worldbuilding',
+    prompt: 'Create a detailed science fiction world set 300 years in the future where humanity has colonized three star systems but faster-than-light travel does not exist. Communication between systems takes 4-15 years. Design the political systems, economic models, cultural evolution, and technological landscape. How do these isolated but connected civilizations govern themselves? What new religions or philosophies have emerged? How has language diverged? What are the major conflicts? Include at least three distinct factions with compelling motivations, a brewing interstellar crisis, and three key characters (a diplomat, a scientist, and a smuggler) whose stories intersect.',
+    category: 'creative',
+  },
+  {
+    label: 'Math Problem',
+    prompt: 'Solve the following optimization problem step by step: A manufacturing company produces two products, A and B. Product A requires 3 hours of machining time, 2 hours of assembly time, and yields a profit of $50 per unit. Product B requires 2 hours of machining time, 4 hours of assembly time, and yields a profit of $60 per unit. The company has 240 hours of machining time available per week and 200 hours of assembly time. Additionally, due to market demand, they cannot produce more than 60 units of Product A or 50 units of Product B per week. Formulate this as a linear programming problem, solve it using the simplex method, perform sensitivity analysis on the constraints, and explain what the shadow prices mean in practical business terms.',
+    category: 'analysis',
+  },
+];
+
+// User-friendly reason descriptions mapping
+const FRIENDLY_REASON_MAP: Record<string, string> = {
+  'Task Fitness': 'How well this model understands and handles your type of request',
+  'Specialization': 'Whether this model has specific expertise in your area',
+  'Modality Fitness': 'How capable this model is with your input type (text, images, audio)',
+  'Cost Efficiency': 'How affordable this model is compared to alternatives',
+  'Speed': 'How quickly this model responds to your request',
+  'Conversation Coherence': 'How well this model maintains the flow of your conversation',
+  'User Preference': 'Whether this model matches your personal preferences',
+  'Human Context Fit': 'How well this model adapts to your current mood, time of day, and situation',
+};
 
 const SCORING_FACTORS = [
   { key: 'taskFitness', label: 'Task Fitness', weight: 40, icon: Brain, color: '#8B5CF6', desc: 'How well the model handles the detected intent, domain, and complexity' },
@@ -1001,7 +1047,7 @@ ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
 
 export default function Home() {
   // Navigation
-  const [activeView, setActiveView] = useState<'router' | 'models' | 'docs'>('router');
+  const [activeView, setActiveView] = useState<'router' | 'analyze' | 'models' | 'docs'>('router');
   const [showStatus, setShowStatus] = useState(false);
 
   // Router State
@@ -1047,6 +1093,17 @@ export default function Home() {
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<string | null>(null);
 
+  // Analyze View State
+  const [analyzePrompt, setAnalyzePrompt] = useState('');
+  const [analyzeModality, setAnalyzeModality] = useState('text');
+  const [analyzeResult, setAnalyzeResult] = useState<{ analysis: { intent: string; domain: string; complexity: string; tone: string; modality: string; keywords: string[]; humanContextUsed: boolean }; timing: { analysisMs: number } } | null>(null);
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [analyzeHistory, setAnalyzeHistory] = useState<Array<{ prompt: string; intent: string; domain: string; complexity: string; time: string }>>([]);
+
+  // JSON Modal State for API endpoints
+  const [jsonModal, setJsonModal] = useState<{ title: string; data: unknown } | null>(null);
+
   // Models View State
   const [selectedProvider, setSelectedProvider] = useState<string>('all');
   const [modelsPage, setModelsPage] = useState(1);
@@ -1055,6 +1112,7 @@ export default function Home() {
   // ============ EFFECTS ============
   useEffect(() => {
     fetchHealth();
+    fetchModels();
     // Check for speech recognition support
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as Window & { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).SpeechRecognition ||
@@ -1288,6 +1346,47 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleAnalyze = useCallback(async () => {
+    if (!analyzePrompt.trim()) return;
+    setAnalyzeError(null);
+    setAnalyzeResult(null);
+    setAnalyzeLoading(true);
+    try {
+      const response = await fetch('/api/v1/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: analyzePrompt.trim(), modality: analyzeModality }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Analysis failed: ${response.status}`);
+      }
+      const data = await response.json();
+      setAnalyzeResult(data);
+      setAnalyzeHistory(prev => [{
+        prompt: analyzePrompt.trim().slice(0, 60) + (analyzePrompt.length > 60 ? '...' : ''),
+        intent: data.analysis.intent,
+        domain: data.analysis.domain,
+        complexity: data.analysis.complexity,
+        time: new Date().toLocaleTimeString(),
+      }, ...prev.slice(0, 9)]);
+    } catch (err) {
+      setAnalyzeError(err instanceof Error ? err.message : 'Failed to analyze');
+    } finally {
+      setAnalyzeLoading(false);
+    }
+  }, [analyzePrompt, analyzeModality]);
+
+  const fetchEndpointJson = async (endpoint: string, title: string) => {
+    try {
+      const res = await fetch(endpoint);
+      const data = await res.json();
+      setJsonModal({ title, data });
+    } catch {
+      setJsonModal({ title, data: { error: 'Failed to fetch data' } });
+    }
+  };
+
   // ============ HELPERS ============
   const updateHumanContext = (path: string[], value: unknown) => {
     setHumanContext(prev => {
@@ -1357,6 +1456,7 @@ export default function Home() {
             <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               {[
                 { id: 'router', label: 'Router', icon: Search },
+                { id: 'analyze', label: 'Analyze', icon: FlaskConical },
                 { id: 'models', label: 'Models', icon: Box },
                 { id: 'docs', label: 'Docs', icon: BookOpen },
               ].map(tab => {
@@ -1505,7 +1605,7 @@ export default function Home() {
 
                 {/* Example Prompts */}
                 <div style={{ padding: '0 20px 14px' }}>
-                  <div style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Try an example</div>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quick examples</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {EXAMPLE_PROMPTS.map((ex) => (
                       <button
@@ -1518,6 +1618,24 @@ export default function Home() {
                         }}
                         onMouseOver={(e) => { e.currentTarget.style.background = '#E5E7EB'; e.currentTarget.style.borderColor = '#D1D5DB'; }}
                         onMouseOut={(e) => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.borderColor = 'transparent'; }}
+                      >
+                        {ex.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', marginBottom: 8, marginTop: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Detailed prompts (stress test)</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {LONG_EXAMPLE_PROMPTS.map((ex) => (
+                      <button
+                        key={ex.label}
+                        onClick={() => setPrompt(ex.prompt)}
+                        style={{
+                          padding: '5px 12px', fontSize: 12, color: '#5B21B6', background: '#EDE9FE',
+                          border: '1px solid transparent', borderRadius: 6, cursor: 'pointer',
+                          transition: 'all 0.15s', fontWeight: 450,
+                        }}
+                        onMouseOver={(e) => { e.currentTarget.style.background = '#DDD6FE'; e.currentTarget.style.borderColor = '#C4B5FD'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.background = '#EDE9FE'; e.currentTarget.style.borderColor = 'transparent'; }}
                       >
                         {ex.label}
                       </button>
@@ -1876,6 +1994,10 @@ export default function Home() {
                                         <span style={{ fontSize: 12, fontWeight: 600, color: '#000', width: 28, textAlign: 'right' }}>{formatScore(model.score)}</span>
                                         <ChevronDown style={{ width: 14, height: 14, color: '#666', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                                       </button>
+                                      {/* Summary reason shown below each model */}
+                                      <div style={{ padding: '6px 12px 6px 44px', fontSize: 12, color: '#666', lineHeight: 1.5, fontStyle: 'italic', borderLeft: isExpanded ? 'none' : '1px solid #E5E5E5', borderRight: isExpanded ? 'none' : '1px solid #E5E5E5', borderBottom: isExpanded ? 'none' : '1px solid #E5E5E5', borderRadius: isExpanded ? 0 : '0 0 6px 6px', marginTop: -1 }}>
+                                        {model.reasoning.summary}
+                                      </div>
                                       <AnimatePresence>
                                         {isExpanded && (
                                           <motion.div
@@ -1885,16 +2007,36 @@ export default function Home() {
                                             style={{ overflow: 'hidden' }}
                                           >
                                             <div style={{ padding: 12, background: '#FAFAFA', border: '1px solid #E5E5E5', borderTop: 'none', borderRadius: '0 0 6px 6px' }}>
-                                              <div style={{ fontSize: 12, color: '#666', marginBottom: 12, lineHeight: 1.5 }}>{model.reasoning.summary}</div>
-                                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                                                {model.reasoning.factors.map((factor) => (
-                                                  <div key={factor.name} style={{ padding: 8, background: '#fff', borderRadius: 4, border: '1px solid #E5E5E5' }}>
-                                                    <div style={{ fontSize: 11, fontWeight: 500, color: '#000', marginBottom: 2 }}>{factor.name}</div>
-                                                    <div style={{ fontSize: 12, color: '#666' }}>
-                                                      Score: {formatScore(factor.score)} | Weight: {formatWeight(factor.weight)}
-                                                    </div>
-                                                  </div>
-                                                ))}
+                                              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 10 }}>Why this model was chosen:</div>
+                                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                {model.reasoning.factors
+                                                  .slice()
+                                                  .sort((a, b) => (b.weight ?? 0) * (b.score ?? 0) - (a.weight ?? 0) * (a.score ?? 0))
+                                                  .map((factor, fIdx) => {
+                                                    const friendlyDesc = FRIENDLY_REASON_MAP[factor.name] || factor.name;
+                                                    const scoreNum = typeof factor.score === 'number' ? factor.score : 0;
+                                                    const barColor = scoreNum >= 0.7 ? '#059669' : scoreNum >= 0.4 ? '#D97706' : '#DC2626';
+                                                    return (
+                                                      <div key={factor.name} style={{ padding: '10px 12px', background: '#fff', borderRadius: 8, border: '1px solid #E5E7EB' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                            <span style={{ width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff', background: barColor, borderRadius: 4 }}>
+                                                              {fIdx + 1}
+                                                            </span>
+                                                            <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{factor.name}</span>
+                                                          </div>
+                                                          <span style={{ fontSize: 13, fontWeight: 700, color: barColor }}>{formatScore(factor.score)}</span>
+                                                        </div>
+                                                        <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 6, lineHeight: 1.5 }}>{friendlyDesc}</div>
+                                                        <div style={{ width: '100%', height: 6, background: '#F3F4F6', borderRadius: 3, overflow: 'hidden' }}>
+                                                          <div style={{ width: `${scoreNum * 100}%`, height: '100%', background: barColor, borderRadius: 3, transition: 'width 0.3s' }} />
+                                                        </div>
+                                                        {factor.detail && (
+                                                          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4, lineHeight: 1.4 }}>{factor.detail}</div>
+                                                        )}
+                                                      </div>
+                                                    );
+                                                  })}
                                               </div>
                                             </div>
                                           </motion.div>
@@ -1996,13 +2138,23 @@ export default function Home() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Engine Stats */}
               <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, padding: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Engine Stats</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Engine Stats</div>
+                  <button
+                    onClick={() => { fetchModels(); fetchHealth(); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', fontSize: 10, color: '#6B7280', background: '#F3F4F6', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                    title="Refresh stats"
+                  >
+                    <RefreshCw style={{ width: 10, height: 10 }} />
+                    Refresh
+                  </button>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   {[
-                    { label: 'Models', value: '10', color: '#6366F1' },
-                    { label: 'Latency', value: '<50ms', color: '#10B981' },
-                    { label: 'Factors', value: '7', color: '#F59E0B' },
-                    { label: 'Providers', value: '3', color: '#3B82F6' },
+                    { label: 'Models', value: models.length > 0 ? String(models.length) : '...', color: '#6366F1' },
+                    { label: 'Latency', value: result ? `${result.timing.totalMs.toFixed(1)}ms` : '<50ms', color: '#10B981' },
+                    { label: 'Factors', value: result ? String(result.primaryModel.reasoning.factors.length) : '7', color: '#F59E0B' },
+                    { label: 'Providers', value: models.length > 0 ? String(new Set(models.map(m => m.provider)).size) : '...', color: '#3B82F6' },
                   ].map((stat) => (
                     <div key={stat.label}>
                       <div style={{ fontSize: 24, fontWeight: 700, color: '#111', letterSpacing: '-0.02em' }}>{stat.value}</div>
@@ -2010,6 +2162,11 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
+                {requestHistory.length > 0 && (
+                  <div style={{ marginTop: 12, padding: '8px 10px', background: '#F0FDF4', borderRadius: 6, border: '1px solid #BBF7D0' }}>
+                    <div style={{ fontSize: 11, color: '#166534', fontWeight: 500 }}>{requestHistory.length} request{requestHistory.length !== 1 ? 's' : ''} this session</div>
+                  </div>
+                )}
               </div>
 
               {/* Scoring Weights */}
@@ -2065,12 +2222,288 @@ export default function Home() {
                   POST /api/v1/route
                 </code>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <a href="/api/v1/health" target="_blank" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#A1A1AA', textDecoration: 'none' }}>
+                  <button onClick={() => fetchEndpointJson('/api/v1/health', 'Health Check')} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#A1A1AA', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
                     Health Check <ChevronRight style={{ width: 12, height: 12 }} />
-                  </a>
-                  <a href="/api/v1/models" target="_blank" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#A1A1AA', textDecoration: 'none' }}>
+                  </button>
+                  <button onClick={() => fetchEndpointJson('/api/v1/models', 'List Models')} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#A1A1AA', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
                     List Models <ChevronRight style={{ width: 12, height: 12 }} />
-                  </a>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============ ANALYZE VIEW ============ */}
+        {activeView === 'analyze' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+            {/* Main Content */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Page Title */}
+              <div>
+                <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', margin: '0 0 6px', letterSpacing: '-0.02em' }}>Analyze a Prompt</h1>
+                <p style={{ fontSize: 14, color: '#6B7280', margin: 0 }}>
+                  Test the analysis endpoint to see how ADE breaks down your prompt into intent, domain, complexity, tone, and keywords — without selecting a model.
+                </p>
+              </div>
+
+              {/* Input Section */}
+              <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                <div style={{ padding: 20 }}>
+                  <textarea
+                    placeholder="Enter a prompt to analyze... e.g. &quot;Help me debug this React component that crashes on mount&quot;"
+                    value={analyzePrompt}
+                    onChange={(e) => setAnalyzePrompt(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && e.metaKey) handleAnalyze(); }}
+                    style={{ width: '100%', minHeight: 100, padding: 0, fontSize: 15, color: '#111', background: 'transparent', border: 'none', outline: 'none', resize: 'none', lineHeight: 1.7, fontFamily: 'inherit' }}
+                  />
+                </div>
+
+                {/* Example Prompts */}
+                <div style={{ padding: '0 20px 14px' }}>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Try an example</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {EXAMPLE_PROMPTS.map((ex) => (
+                      <button
+                        key={ex.label}
+                        onClick={() => setAnalyzePrompt(ex.prompt)}
+                        style={{ padding: '5px 12px', fontSize: 12, color: '#4B5563', background: '#F3F4F6', border: '1px solid transparent', borderRadius: 6, cursor: 'pointer', fontWeight: 450 }}
+                        onMouseOver={(e) => { e.currentTarget.style.background = '#E5E7EB'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.background = '#F3F4F6'; }}
+                      >
+                        {ex.label}
+                      </button>
+                    ))}
+                    {LONG_EXAMPLE_PROMPTS.slice(0, 3).map((ex) => (
+                      <button
+                        key={ex.label}
+                        onClick={() => setAnalyzePrompt(ex.prompt)}
+                        style={{ padding: '5px 12px', fontSize: 12, color: '#5B21B6', background: '#EDE9FE', border: '1px solid transparent', borderRadius: 6, cursor: 'pointer', fontWeight: 450 }}
+                        onMouseOver={(e) => { e.currentTarget.style.background = '#DDD6FE'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.background = '#EDE9FE'; }}
+                      >
+                        {ex.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Controls Bar */}
+                <div style={{ padding: '14px 20px', borderTop: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                  {/* Modality Selector */}
+                  <div style={{ display: 'flex', alignItems: 'center', background: '#F3F4F6', borderRadius: 8, padding: 3 }}>
+                    {MODALITIES.map((m) => {
+                      const Icon = m.icon;
+                      const isActive = analyzeModality === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => setAnalyzeModality(m.id)}
+                          title={`${m.label}: ${m.desc}`}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 5, padding: isActive ? '5px 10px' : '5px 8px',
+                            background: isActive ? '#fff' : 'transparent', border: 'none', borderRadius: 6,
+                            cursor: 'pointer', boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                            fontSize: 12, color: isActive ? '#111' : '#9CA3AF', fontWeight: isActive ? 500 : 400,
+                          }}
+                        >
+                          <Icon style={{ width: 14, height: 14 }} />
+                          {isActive && <span>{m.label}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={analyzeLoading || !analyzePrompt.trim()}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 7, padding: '9px 20px', fontSize: 13, fontWeight: 600,
+                      color: '#fff',
+                      background: analyzeLoading || !analyzePrompt.trim() ? '#D1D5DB' : 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+                      border: 'none', borderRadius: 8,
+                      cursor: analyzeLoading || !analyzePrompt.trim() ? 'not-allowed' : 'pointer',
+                      boxShadow: analyzeLoading || !analyzePrompt.trim() ? 'none' : '0 2px 8px rgba(124,58,237,0.3)',
+                    }}
+                  >
+                    {analyzeLoading ? <RefreshCw style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <FlaskConical style={{ width: 14, height: 14 }} />}
+                    {analyzeLoading ? 'Analyzing...' : 'Analyze Prompt'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Error */}
+              {analyzeError && (
+                <div style={{ padding: 14, background: '#FEF2F2', borderRadius: 10, border: '1px solid #FECACA', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <AlertCircle style={{ width: 16, height: 16, color: '#DC2626' }} />
+                  <span style={{ fontSize: 13, color: '#DC2626' }}>{analyzeError}</span>
+                </div>
+              )}
+
+              {/* Results */}
+              <AnimatePresence>
+                {analyzeResult && (
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+                    <div style={{ background: '#fff', border: '1px solid #E5E5E5', borderRadius: 12, overflow: 'hidden' }}>
+                      {/* Header */}
+                      <div style={{ padding: '14px 16px', borderBottom: '1px solid #E5E5E5', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <FlaskConical style={{ width: 16, height: 16, color: '#7C3AED' }} />
+                          <span style={{ fontSize: 14, fontWeight: 600, color: '#000' }}>Analysis Result</span>
+                          <span style={{ padding: '3px 8px', fontSize: 11, fontWeight: 500, color: '#6B7280', background: '#F9FAFB', borderRadius: 6, border: '1px solid #E5E7EB' }}>
+                            {analyzeResult.timing.analysisMs.toFixed(1)}ms
+                          </span>
+                        </div>
+                        <button onClick={() => setAnalyzeResult(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, background: 'transparent', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+                          <X style={{ width: 14, height: 14, color: '#999' }} />
+                        </button>
+                      </div>
+
+                      <div style={{ padding: 16 }}>
+                        {/* Primary Analysis Cards */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+                          {[
+                            { label: 'Intent', value: analyzeResult.analysis.intent, color: '#7C3AED', bg: '#F5F3FF', desc: 'What the user is trying to do' },
+                            { label: 'Domain', value: analyzeResult.analysis.domain, color: '#2563EB', bg: '#EFF6FF', desc: 'The subject area' },
+                            { label: 'Complexity', value: analyzeResult.analysis.complexity, color: '#059669', bg: '#ECFDF5', desc: 'How demanding the task is' },
+                            { label: 'Tone', value: analyzeResult.analysis.tone, color: '#D97706', bg: '#FFFBEB', desc: 'Communication style detected' },
+                          ].map((item) => (
+                            <div key={item.label} style={{ padding: 14, background: item.bg, borderRadius: 10, border: `1px solid ${item.color}20` }}>
+                              <div style={{ fontSize: 10, fontWeight: 600, color: item.color, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{item.label}</div>
+                              <div style={{ fontSize: 18, fontWeight: 700, color: '#111', textTransform: 'capitalize', marginBottom: 2 }}>{item.value}</div>
+                              <div style={{ fontSize: 11, color: '#6B7280' }}>{item.desc}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Modality & Context */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+                          <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8, border: '1px solid #E5E7EB' }}>
+                            <div style={{ fontSize: 11, fontWeight: 500, color: '#666', marginBottom: 4 }}>Modality</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#111', textTransform: 'capitalize' }}>{analyzeResult.analysis.modality}</div>
+                          </div>
+                          <div style={{ padding: 12, background: '#F9FAFB', borderRadius: 8, border: '1px solid #E5E7EB' }}>
+                            <div style={{ fontSize: 11, fontWeight: 500, color: '#666', marginBottom: 4 }}>Human Context</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{analyzeResult.analysis.humanContextUsed ? 'Used' : 'Not used'}</div>
+                          </div>
+                        </div>
+
+                        {/* Keywords */}
+                        {analyzeResult.analysis.keywords.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Detected Keywords</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                              {analyzeResult.analysis.keywords.map((kw, i) => (
+                                <span key={i} style={{ padding: '4px 12px', fontSize: 12, color: '#5B21B6', background: '#EDE9FE', borderRadius: 6, fontWeight: 500 }}>{kw}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Raw JSON */}
+                        <div style={{ marginTop: 16 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Raw Response</div>
+                          <div style={{ background: '#18181B', borderRadius: 8, padding: 14, overflow: 'auto', maxHeight: 300 }}>
+                            <pre style={{ margin: 0, fontSize: 11, fontFamily: 'ui-monospace, monospace', color: '#A1A1AA', lineHeight: 1.6 }}>
+                              {JSON.stringify(analyzeResult, null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Empty State */}
+              {!analyzeResult && !analyzeLoading && (
+                <div style={{ background: 'linear-gradient(135deg, #fff 0%, #F5F3FF 100%)', border: '1px solid #E5E7EB', borderRadius: 12, padding: '56px 32px', textAlign: 'center' }}>
+                  <div style={{
+                    width: 56, height: 56,
+                    background: 'linear-gradient(135deg, #F5F3FF, #EDE9FE)',
+                    borderRadius: 14,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 20px',
+                    boxShadow: '0 2px 8px rgba(124, 58, 237, 0.12)',
+                  }}>
+                    <FlaskConical style={{ width: 24, height: 24, color: '#7C3AED' }} />
+                  </div>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: '#111', margin: '0 0 8px' }}>Prompt Analysis</h3>
+                  <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 24px', maxWidth: 440, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
+                    Enter a prompt to see how ADE detects its intent, domain, complexity, and tone. This is the first step of the routing pipeline — analysis without model selection.
+                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
+                    {[
+                      { label: 'Intent', desc: 'What you want to do' },
+                      { label: 'Domain', desc: 'Subject area detection' },
+                      { label: 'Complexity', desc: 'Task difficulty level' },
+                      { label: 'Keywords', desc: 'Key terms extracted' },
+                    ].map((step) => (
+                      <div key={step.label} style={{ textAlign: 'center' }}>
+                        <div style={{ width: 36, height: 36, background: '#F5F3FF', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: '#7C3AED' }}>{step.label[0]}</span>
+                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{step.label}</div>
+                        <div style={{ fontSize: 11, color: '#9CA3AF' }}>{step.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* How It Works */}
+              <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, padding: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>How Analysis Works</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[
+                    { step: '1', title: 'Keyword Extraction', desc: 'Important terms and phrases are identified from your prompt.' },
+                    { step: '2', title: 'Intent Detection', desc: 'Determines what you want: coding, research, creative writing, etc.' },
+                    { step: '3', title: 'Domain Classification', desc: 'Identifies the subject area: technology, science, business, etc.' },
+                    { step: '4', title: 'Complexity Assessment', desc: 'Rates the task as quick, standard, or demanding.' },
+                  ].map((item) => (
+                    <div key={item.step} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <span style={{ width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#7C3AED', background: '#F5F3FF', borderRadius: 6, flexShrink: 0 }}>{item.step}</span>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 2 }}>{item.title}</div>
+                        <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.4 }}>{item.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Analysis History */}
+              {analyzeHistory.length > 0 && (
+                <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, padding: 20 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent Analyses</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {analyzeHistory.slice(0, 5).map((item, idx) => (
+                      <div key={idx} style={{ padding: '10px 12px', background: '#F9FAFB', borderRadius: 8, border: '1px solid #F3F4F6' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span style={{ fontSize: 11, color: '#9CA3AF' }}>{item.time}</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: '#7C3AED', textTransform: 'capitalize' }}>{item.intent}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: '#374151', marginBottom: 4, fontWeight: 450 }}>{item.prompt}</div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <span style={{ padding: '2px 6px', fontSize: 10, color: '#2563EB', background: '#EFF6FF', borderRadius: 4, textTransform: 'capitalize' }}>{item.domain}</span>
+                          <span style={{ padding: '2px 6px', fontSize: 10, color: '#059669', background: '#ECFDF5', borderRadius: 4, textTransform: 'capitalize' }}>{item.complexity}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* API Card */}
+              <div style={{ background: 'linear-gradient(135deg, #18181B, #27272A)', borderRadius: 12, padding: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#71717A', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>API Endpoint</div>
+                <code style={{ display: 'block', fontSize: 12, fontFamily: 'ui-monospace, monospace', color: '#A1A1AA', background: 'rgba(255,255,255,0.06)', padding: '10px 12px', borderRadius: 8, marginBottom: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
+                  POST /api/v1/analyze
+                </code>
+                <div style={{ fontSize: 12, color: '#71717A', lineHeight: 1.5 }}>
+                  Analyzes a prompt without model selection. Returns intent, domain, complexity, tone, and keywords.
                 </div>
               </div>
             </div>
@@ -2314,6 +2747,54 @@ export default function Home() {
                   </div>
                 )}
                 <StatusPage />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* JSON Modal for API Endpoints */}
+      <AnimatePresence>
+        {jsonModal && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setJsonModal(null)} />
+            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} style={{ position: 'relative', width: '100%', maxWidth: 720, maxHeight: '80vh', overflow: 'hidden', background: '#fff', borderRadius: 12, border: '1px solid #E5E5E5', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #E5E5E5', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: '#000' }}>{jsonModal.title}</span>
+                  <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 600, color: '#059669', background: '#ECFDF5', borderRadius: 4 }}>200 OK</span>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    onClick={async () => { await navigator.clipboard.writeText(JSON.stringify(jsonModal.data, null, 2)); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: 12, color: '#374151', background: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: 6, cursor: 'pointer' }}
+                  >
+                    <Copy style={{ width: 12, height: 12 }} />
+                    Copy
+                  </button>
+                  <button onClick={() => setJsonModal(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, background: '#F5F5F5', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+                    <X style={{ width: 14, height: 14, color: '#666' }} />
+                  </button>
+                </div>
+              </div>
+              <div style={{ overflow: 'auto', flex: 1 }}>
+                <div style={{ background: '#18181B', padding: 20, minHeight: 200 }}>
+                  <pre
+                    style={{ margin: 0, fontSize: 12, fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace', color: '#E4E4E7', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}
+                    dangerouslySetInnerHTML={{
+                      __html: JSON.stringify(jsonModal.data, null, 2)
+                        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                        .replace(/&quot;([^&]+)&quot;:/g, (_: string, key: string) => `<span style="color:#7DD3FC">"${key}"</span>:`)
+                        .replace(/: &quot;([^&]+)&quot;/g, (_: string, val: string) => `: <span style="color:#FDE68A">"${val}"</span>`)
+                        .replace(/: (\d+\.?\d*)/g, (_: string, num: string) => `: <span style="color:#FDA4AF">${num}</span>`)
+                        .replace(/: (true|false)/g, (_: string, bool: string) => `: <span style="color:#A78BFA">${bool}</span>`)
+                        .replace(/: (null)/g, (_: string, n: string) => `: <span style="color:#6B7280">${n}</span>`)
+                        .split('\n')
+                        .map((line: string, i: number) => `<span style="color:#4B5563;user-select:none">${String(i + 1).padStart(3, ' ')} </span>${line}`)
+                        .join('\n'),
+                    }}
+                  />
+                </div>
               </div>
             </motion.div>
           </div>

@@ -23,11 +23,10 @@ function validateRequest(body: unknown): AnalyzeRequest | { error: string; field
     return { error: 'Prompt cannot be empty', field: 'prompt' };
   }
 
-  if (!request.modality || typeof request.modality !== 'string') {
-    return { error: 'Missing or invalid modality', field: 'modality' };
-  }
+  // Modality is optional, defaults to 'text'
+  const modalityValue = request.modality ? String(request.modality).toLowerCase() : 'text';
 
-  if (!VALID_MODALITIES.has(request.modality.toLowerCase())) {
+  if (!VALID_MODALITIES.has(modalityValue)) {
     return {
       error: `Invalid modality. Must be one of: ${Array.from(VALID_MODALITIES).join(', ')}`,
       field: 'modality',
@@ -36,7 +35,7 @@ function validateRequest(body: unknown): AnalyzeRequest | { error: string; field
 
   return {
     prompt: request.prompt,
-    modality: request.modality.toLowerCase() as Modality,
+    modality: modalityValue as Modality,
   };
 }
 
