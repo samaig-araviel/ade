@@ -1,5 +1,8 @@
-import { kv } from '@vercel/kv';
 import { StoredDecision, FeedbackSignal } from '@/types';
+
+// In-memory storage (replaces Vercel KV - no external dependencies needed)
+const memoryStore = new Map<string, unknown>();
+const expiryTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 // Key prefixes for different data types
 const KEYS = {
@@ -8,7 +11,7 @@ const KEYS = {
   decision: (decisionId: string) => `decision:${decisionId}`,
 } as const;
 
-// User context stored in KV
+// User context stored in memory
 interface UserKVData {
   preferredModels: string[];
   avoidModels: string[];
@@ -20,7 +23,7 @@ interface UserKVData {
   lastUpdated: string;
 }
 
-// Conversation context stored in KV
+// Conversation context stored in memory
 interface ConversationKVData {
   previousModelUsed: string | null;
   messageCount: number;
@@ -28,21 +31,16 @@ interface ConversationKVData {
   lastUpdated: string;
 }
 
-// Check if KV is available
+// In-memory store is always available
 async function isKVAvailable(): Promise<boolean> {
-  try {
-    await kv.ping();
-    return true;
-  } catch {
-    return false;
-  }
+  return true;
 }
 
 // Get user context
 export async function getUserContext(userId: string): Promise<UserKVData | null> {
   try {
-    const data = await kv.get<UserKVData>(KEYS.user(userId));
-    return data;
+    const data = memoryStore.get(KEYS.user(userId)) as UserKVData | undefined;
+    return data ?? null;
   } catch (error) {
     console.warn('Failed to get user context:', error);
     return null;
@@ -62,7 +60,7 @@ export async function setUserContext(
       feedbackHistory: data.feedbackHistory ?? existing?.feedbackHistory ?? [],
       lastUpdated: new Date().toISOString(),
     };
-    await kv.set(KEYS.user(userId), updated);
+    memoryStore.set(KEYS.user(userId), updated);
   } catch (error) {
     console.warn('Failed to set user context:', error);
   }
@@ -73,8 +71,8 @@ export async function getConversationContext(
   conversationId: string
 ): Promise<ConversationKVData | null> {
   try {
-    const data = await kv.get<ConversationKVData>(KEYS.conversation(conversationId));
-    return data;
+    const data = memoryStore.get(KEYS.conversation(conversationId)) as ConversationKVData | undefined;
+    return data ?? null;
   } catch (error) {
     console.warn('Failed to get conversation context:', error);
     return null;
@@ -95,7 +93,7 @@ export async function updateConversationContext(
       topics: [...new Set([...(existing?.topics ?? []), ...topics])].slice(-10),
       lastUpdated: new Date().toISOString(),
     };
-    await kv.set(KEYS.conversation(conversationId), updated);
+    memoryStore.set(KEYS.conversation(conversationId), updated);
   } catch (error) {
     console.warn('Failed to update conversation context:', error);
   }
@@ -104,9 +102,18 @@ export async function updateConversationContext(
 // Store a decision
 export async function storeDecision(decision: StoredDecision): Promise<void> {
   try {
-    await kv.set(KEYS.decision(decision.decisionId), decision);
-    // Set TTL of 7 days for decision storage
-    await kv.expire(KEYS.decision(decision.decisionId), 60 * 60 * 24 * 7);
+    const key = KEYS.decision(decision.decisionId);
+    memoryStore.set(key, decision);
+
+    // Set TTL of 7 days - clear any existing timer first
+    const existingTimer = expiryTimers.get(key);
+    if (existingTimer) clearTimeout(existingTimer);
+
+    const timer = setTimeout(() => {
+      memoryStore.delete(key);
+      expiryTimers.delete(key);
+    }, 60 * 60 * 24 * 7 * 1000);
+    expiryTimers.set(key, timer);
   } catch (error) {
     console.warn('Failed to store decision:', error);
   }
@@ -115,8 +122,8 @@ export async function storeDecision(decision: StoredDecision): Promise<void> {
 // Get a stored decision
 export async function getDecision(decisionId: string): Promise<StoredDecision | null> {
   try {
-    const data = await kv.get<StoredDecision>(KEYS.decision(decisionId));
-    return data;
+    const data = memoryStore.get(KEYS.decision(decisionId)) as StoredDecision | undefined;
+    return data ?? null;
   } catch (error) {
     console.warn('Failed to get decision:', error);
     return null;
@@ -141,7 +148,7 @@ export async function addFeedback(
       timestamp: new Date().toISOString(),
     };
 
-    await kv.set(KEYS.decision(decisionId), decision);
+    memoryStore.set(KEYS.decision(decisionId), decision);
     return true;
   } catch (error) {
     console.warn('Failed to add feedback:', error);
@@ -149,5 +156,5 @@ export async function addFeedback(
   }
 }
 
-// Export KV status checker
+// Export status checker
 export { isKVAvailable };

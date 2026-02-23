@@ -90,7 +90,8 @@ export interface HealthResponse {
   timestamp: string;
   version: string;
   services: {
-    kv: 'connected' | 'disconnected' | 'unknown';
+    engine: string;
+    store: string;
   };
 }
 

@@ -24,8 +24,8 @@ interface HealthResponse {
   version: string;
   timestamp: string;
   services: {
-    kv: 'connected' | 'disconnected' | 'unavailable';
-    router: 'ready' | 'not_ready';
+    engine: string;
+    store: string;
   };
 }
 
@@ -45,7 +45,7 @@ export function StatusPage() {
         status: 'unhealthy',
         version: 'unknown',
         timestamp: new Date().toISOString(),
-        services: { kv: 'disconnected', router: 'not_ready' }
+        services: { engine: 'not_ready', store: 'unavailable' }
       });
     }
     setLastCheck(new Date());
@@ -61,7 +61,7 @@ export function StatusPage() {
   const services: ServiceStatus[] = [
     {
       name: 'Routing Engine',
-      status: health?.services.router === 'ready' ? 'operational' : 'outage',
+      status: health?.services.engine === 'ready' ? 'operational' : 'outage',
       latency: 12,
       uptime: 99.99
     },
@@ -72,11 +72,10 @@ export function StatusPage() {
       uptime: 99.99
     },
     {
-      name: 'Data Store',
-      status: health?.services.kv === 'connected' ? 'operational' :
-              health?.services.kv === 'unavailable' ? 'degraded' : 'outage',
-      latency: 8,
-      uptime: health?.services.kv === 'connected' ? 99.95 : 0
+      name: 'In-Memory Store',
+      status: health?.services.store === 'in-memory' ? 'operational' : 'degraded',
+      latency: 1,
+      uptime: 99.99
     },
     {
       name: 'Analysis Pipeline',
@@ -185,13 +184,13 @@ export function StatusPage() {
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-[var(--text-quaternary)]" />
                 <span className="text-[var(--text-tertiary)]">
-                  {service.latency !== undefined ? `${service.latency}ms` : '—'}
+                  {service.latency !== undefined ? `${service.latency}ms` : '\u2014'}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-[var(--text-quaternary)]" />
                 <span className="text-[var(--text-tertiary)]">
-                  {service.uptime !== undefined ? `${service.uptime}%` : '—'}
+                  {service.uptime !== undefined ? `${service.uptime}%` : '\u2014'}
                 </span>
               </div>
             </div>
