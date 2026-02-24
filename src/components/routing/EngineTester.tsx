@@ -32,6 +32,7 @@ import {
   Check,
   Sparkles,
   AlertCircle,
+  Building2,
 } from 'lucide-react';
 
 interface RouteResponse {
@@ -146,6 +147,17 @@ const energyOptions = ['low', 'moderate', 'high'];
 const responseStyleOptions = ['concise', 'detailed', 'conversational', 'formal', 'casual'];
 const responseLengthOptions = ['short', 'medium', 'long'];
 
+const providerOptions = [
+  { value: 'anthropic', label: 'Anthropic', color: 'bg-amber-500' },
+  { value: 'openai', label: 'OpenAI', color: 'bg-emerald-500' },
+  { value: 'google', label: 'Google', color: 'bg-blue-500' },
+  { value: 'perplexity', label: 'Perplexity', color: 'bg-purple-500' },
+  { value: 'xai', label: 'xAI', color: 'bg-red-500' },
+  { value: 'mistral', label: 'Mistral', color: 'bg-orange-500' },
+  { value: 'meta', label: 'Meta', color: 'bg-sky-500' },
+  { value: 'deepseek', label: 'DeepSeek', color: 'bg-teal-500' },
+];
+
 export function EngineTester() {
   const [prompt, setPrompt] = useState('');
   const [modality, setModality] = useState('text');
@@ -157,6 +169,7 @@ export function EngineTester() {
   // Panel states
   const [showHumanContext, setShowHumanContext] = useState(false);
   const [showConstraints, setShowConstraints] = useState(false);
+  const [showProviders, setShowProviders] = useState(false);
   const [showJsonView, setShowJsonView] = useState(false);
   const [activeExampleCategory, setActiveExampleCategory] = useState('Coding');
 
@@ -167,6 +180,10 @@ export function EngineTester() {
   // Constraints state
   const [constraints, setConstraints] = useState<Constraints>({});
   const [useConstraints, setUseConstraints] = useState(false);
+
+  // Available providers state
+  const [availableProviders, setAvailableProviders] = useState<string[]>([]);
+  const [useAvailableProviders, setUseAvailableProviders] = useState(false);
 
   // Request tracking
   const [lastRequest, setLastRequest] = useState<object | null>(null);
@@ -194,6 +211,10 @@ export function EngineTester() {
       requestBody.constraints = constraints;
     }
 
+    if (useAvailableProviders && availableProviders.length > 0) {
+      requestBody.availableProviders = availableProviders;
+    }
+
     setLastRequest(requestBody);
 
     try {
@@ -215,7 +236,7 @@ export function EngineTester() {
     } finally {
       setIsLoading(false);
     }
-  }, [prompt, modality, humanContext, constraints, useHumanContext, useConstraints]);
+  }, [prompt, modality, humanContext, constraints, useHumanContext, useConstraints, availableProviders, useAvailableProviders]);
 
   const handleReset = () => {
     setPrompt('');
@@ -609,6 +630,80 @@ export function EngineTester() {
                           </span>
                         </label>
                       </>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Available Providers Panel */}
+          <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-primary)] overflow-hidden">
+            <button
+              onClick={() => setShowProviders(!showProviders)}
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-[var(--bg-tertiary)]/30 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-blue-500" />
+                <span className="text-xs font-medium text-[var(--text-secondary)]">Available Providers</span>
+                {useAvailableProviders && availableProviders.length > 0 && (
+                  <span className="px-1.5 py-0.5 text-[10px] bg-blue-500/10 text-blue-500 rounded-full font-medium">
+                    {availableProviders.length}
+                  </span>
+                )}
+              </div>
+              <motion.div animate={{ rotate: showProviders ? 180 : 0 }}>
+                <ChevronDown className="w-4 h-4 text-[var(--text-quaternary)]" />
+              </motion.div>
+            </button>
+
+            <AnimatePresence>
+              {showProviders && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-4 pb-4 space-y-3 border-t border-[var(--border-subtle)]">
+                    {/* Enable Toggle */}
+                    <label className="flex items-center gap-2 pt-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useAvailableProviders}
+                        onChange={(e) => setUseAvailableProviders(e.target.checked)}
+                        className="w-4 h-4 rounded border-[var(--border-primary)] text-indigo-500 focus:ring-indigo-500 bg-[var(--bg-primary)]"
+                      />
+                      <span className="text-xs text-[var(--text-secondary)]">Restrict to selected providers</span>
+                    </label>
+
+                    {useAvailableProviders && (
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {providerOptions.map((provider) => {
+                          const isSelected = availableProviders.includes(provider.value);
+                          return (
+                            <button
+                              key={provider.value}
+                              onClick={() => {
+                                setAvailableProviders(prev =>
+                                  isSelected
+                                    ? prev.filter(p => p !== provider.value)
+                                    : [...prev, provider.value]
+                                );
+                              }}
+                              className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border transition-all text-left ${
+                                isSelected
+                                  ? 'bg-blue-500/10 border-blue-500/30 text-blue-500'
+                                  : 'bg-[var(--bg-primary)] border-[var(--border-primary)] text-[var(--text-tertiary)] hover:border-[var(--border-secondary)] hover:text-[var(--text-secondary)]'
+                              }`}
+                            >
+                              <span className={`w-2 h-2 rounded-full ${provider.color}`} />
+                              <span className="text-xs font-medium">{provider.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 </motion.div>
