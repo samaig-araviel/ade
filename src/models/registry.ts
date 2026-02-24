@@ -4,6 +4,7 @@ import {
     Intent,
     Domain,
     Complexity,
+    AccessTier,
 } from '@/types';
 
 const models: ModelDefinition[] = [
@@ -43,6 +44,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.96, lateNightSuitability: 0.86, workHoursSuitability: 0.98,
         },
         specializations: ['creative_writing', 'reasoning'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -80,6 +82,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.94, lateNightSuitability: 0.89, workHoursSuitability: 0.97,
         },
         specializations: ['coding', 'general_purpose'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -117,6 +120,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.96, lateNightSuitability: 0.86, workHoursSuitability: 0.98,
         },
         specializations: ['creative_writing', 'reasoning'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -154,6 +158,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.93, lateNightSuitability: 0.88, workHoursSuitability: 0.96,
         },
         specializations: ['coding'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -190,6 +195,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.85, lateNightSuitability: 0.92, workHoursSuitability: 0.90,
         },
         specializations: ['fast_tasks', 'budget'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -226,6 +232,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.80, lateNightSuitability: 0.92, workHoursSuitability: 0.85,
         },
         specializations: ['fast_tasks', 'budget'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -264,6 +271,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.95, lateNightSuitability: 0.82, workHoursSuitability: 0.96,
         },
         specializations: ['reasoning', 'math'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -300,6 +308,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.97, lateNightSuitability: 0.75, workHoursSuitability: 0.96,
         },
         specializations: ['reasoning', 'math'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -336,6 +345,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.94, lateNightSuitability: 0.80, workHoursSuitability: 0.94,
         },
         specializations: ['general_purpose', 'coding'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -372,6 +382,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.92, lateNightSuitability: 0.78, workHoursSuitability: 0.92,
         },
         specializations: ['general_purpose'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -408,6 +419,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.88, lateNightSuitability: 0.87, workHoursSuitability: 0.92,
         },
         specializations: ['fast_tasks', 'general_purpose'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -444,6 +456,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.82, lateNightSuitability: 0.90, workHoursSuitability: 0.88,
         },
         specializations: ['fast_tasks', 'budget'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -480,6 +493,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.95, lateNightSuitability: 0.80, workHoursSuitability: 0.95,
         },
         specializations: ['coding'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -516,6 +530,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.90, lateNightSuitability: 0.86, workHoursSuitability: 0.92,
         },
         specializations: ['coding', 'fast_tasks'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -552,6 +567,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.94, lateNightSuitability: 0.84, workHoursSuitability: 0.95,
         },
         specializations: ['general_purpose'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -588,6 +604,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.88, lateNightSuitability: 0.88, workHoursSuitability: 0.90,
         },
         specializations: ['fast_tasks', 'general_purpose'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -624,6 +641,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.82, lateNightSuitability: 0.92, workHoursSuitability: 0.85,
         },
         specializations: ['fast_tasks', 'budget'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -660,6 +678,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.88, lateNightSuitability: 0.88, workHoursSuitability: 0.92,
         },
         specializations: ['multimodal', 'creative_writing'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -696,6 +715,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.82, lateNightSuitability: 0.90, workHoursSuitability: 0.88,
         },
         specializations: ['fast_tasks', 'multimodal'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -732,6 +752,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.95, lateNightSuitability: 0.78, workHoursSuitability: 0.95,
         },
         specializations: ['reasoning', 'math'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -768,6 +789,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.96, lateNightSuitability: 0.70, workHoursSuitability: 0.95,
         },
         specializations: ['reasoning', 'math'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -804,6 +826,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.90, lateNightSuitability: 0.82, workHoursSuitability: 0.92,
         },
         specializations: ['reasoning', 'fast_tasks'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -842,6 +865,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.90, lateNightSuitability: 0.85, workHoursSuitability: 0.94,
         },
         specializations: ['multilingual', 'multimodal', 'reasoning'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -878,6 +902,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.85, lateNightSuitability: 0.90, workHoursSuitability: 0.90,
         },
         specializations: ['fast_tasks', 'multilingual'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -914,6 +939,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.80, lateNightSuitability: 0.92, workHoursSuitability: 0.85,
         },
         specializations: ['fast_tasks', 'budget'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -952,6 +978,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.90, lateNightSuitability: 0.78, workHoursSuitability: 0.94,
         },
         specializations: ['web_search', 'research'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -988,6 +1015,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.85, lateNightSuitability: 0.85, workHoursSuitability: 0.90,
         },
         specializations: ['web_search', 'research'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -1026,6 +1054,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.82, lateNightSuitability: 0.88, workHoursSuitability: 0.88,
         },
         specializations: ['web_search', 'research', 'reasoning'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -1062,6 +1091,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.78, lateNightSuitability: 0.90, workHoursSuitability: 0.85,
         },
         specializations: ['web_search', 'fast_tasks'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -1100,6 +1130,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.90, lateNightSuitability: 0.80, workHoursSuitability: 0.92,
         },
         specializations: ['multilingual', 'coding'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -1136,6 +1167,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.85, lateNightSuitability: 0.88, workHoursSuitability: 0.88,
         },
         specializations: ['fast_tasks', 'multilingual'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -1174,6 +1206,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.88, lateNightSuitability: 0.75, workHoursSuitability: 0.90,
         },
         specializations: ['reasoning', 'math', 'coding'],
+        accessTier: AccessTier.Free,
         available: true,
     },
 
@@ -1212,6 +1245,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.30, lateNightSuitability: 0.80, workHoursSuitability: 0.80,
         },
         specializations: ['image_generation'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -1248,6 +1282,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.28, lateNightSuitability: 0.80, workHoursSuitability: 0.80,
         },
         specializations: ['image_generation'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -1284,6 +1319,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.28, lateNightSuitability: 0.82, workHoursSuitability: 0.78,
         },
         specializations: ['image_generation'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -1320,6 +1356,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.28, lateNightSuitability: 0.78, workHoursSuitability: 0.78,
         },
         specializations: ['video_generation'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -1356,6 +1393,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.26, lateNightSuitability: 0.78, workHoursSuitability: 0.78,
         },
         specializations: ['video_generation'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -1392,6 +1430,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.35, lateNightSuitability: 0.85, workHoursSuitability: 0.85,
         },
         specializations: ['voice_generation'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 
@@ -1428,6 +1467,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.32, lateNightSuitability: 0.85, workHoursSuitability: 0.82,
         },
         specializations: ['voice_generation'],
+        accessTier: AccessTier.Pro,
         available: true,
     },
 ];
@@ -1445,6 +1485,34 @@ export function getAllModels(): ModelDefinition[] {
 // Get only available models
 export function getAvailableModels(): ModelDefinition[] {
     return models.filter((model) => model.available);
+}
+
+// Get models available for a specific access tier
+export function getModelsForTier(tier: AccessTier): ModelDefinition[] {
+    if (tier === AccessTier.Pro) {
+        // Pro users get ALL available models (free + pro)
+        return models.filter((model) => model.available);
+    }
+    // Free users only get free-tier models
+    return models.filter(
+        (model) => model.available && model.accessTier === AccessTier.Free
+    );
+}
+
+// Check if a specific model is accessible for a tier
+export function isModelAccessible(modelId: string, tier: AccessTier): boolean {
+    const model = modelMap.get(modelId);
+    if (!model || !model.available) return false;
+    if (tier === AccessTier.Pro) return true;
+    return model.accessTier === AccessTier.Free;
+}
+
+// Get pro-only models (for upgrade hint generation)
+export function getUpgradeModels(currentTier: AccessTier): ModelDefinition[] {
+    if (currentTier === AccessTier.Pro) return [];
+    return models.filter(
+        (model) => model.available && model.accessTier === AccessTier.Pro
+    );
 }
 
 // Get a specific model by ID
@@ -1516,6 +1584,7 @@ export function toModelInfo(model: ModelDefinition): ModelInfo {
             avgLatencyMs: model.performance.avgLatencyMs,
             reliabilityPercent: model.performance.reliabilityPercent,
         },
+        accessTier: model.accessTier,
         available: model.available,
     };
 }

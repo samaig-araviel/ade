@@ -3,6 +3,7 @@ import {
   Intent,
   Domain,
   Complexity,
+  AccessTier,
 } from './enums';
 
 // Pricing information in USD
@@ -102,6 +103,9 @@ export interface ModelDefinition {
   // Specializations - what this model is purpose-built for
   specializations?: Specialization[];
 
+  // Access control - which subscription tier can use this model
+  accessTier: AccessTier;
+
   // Availability
   available: boolean;
 }
@@ -126,5 +130,6 @@ export interface ModelInfo {
     avgLatencyMs: number;
     reliabilityPercent: number;
   };
+  accessTier: AccessTier;
   available: boolean;
 }

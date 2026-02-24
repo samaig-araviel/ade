@@ -60,6 +60,11 @@ interface RouteResponse {
     scoringMs: number;
     selectionMs: number;
   };
+  upgradeHint?: {
+    recommendedModel: { id: string; name: string; provider: string };
+    reason: string;
+    scoreDifference: number;
+  };
 }
 
 interface ModelResult {
@@ -1053,6 +1058,7 @@ export default function Home() {
   // Router State
   const [prompt, setPrompt] = useState('');
   const [modality, setModality] = useState('text');
+  const [userTier, setUserTier] = useState<'free' | 'pro'>('free');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<RouteResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1276,7 +1282,7 @@ export default function Home() {
     setResult(null);
     setIsLoading(true);
 
-    const requestBody: Record<string, unknown> = { prompt: prompt.trim(), modality };
+    const requestBody: Record<string, unknown> = { prompt: prompt.trim(), modality, userTier };
 
     if (useHumanContext) {
       const cleanedContext: HumanContext = {};
@@ -1338,7 +1344,7 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, [prompt, modality, humanContext, constraints, useHumanContext, useConstraints]);
+  }, [prompt, modality, userTier, humanContext, constraints, useHumanContext, useConstraints]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(JSON.stringify({ request: lastRequest, response: result }, null, 2));
@@ -1670,6 +1676,33 @@ export default function Home() {
                         );
                       })}
                     </div>
+
+                    {/* Tier Selector */}
+                    <div style={{ display: 'flex', alignItems: 'center', background: '#F3F4F6', borderRadius: 8, padding: 3 }}>
+                      {(['free', 'pro'] as const).map((tier) => {
+                        const isActive = userTier === tier;
+                        return (
+                            <button
+                                key={tier}
+                                onClick={() => setUserTier(tier)}
+                                title={tier === 'free' ? 'Free tier: 15 budget models' : 'Pro tier: All 39 models'}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px',
+                                  background: isActive ? (tier === 'pro' ? '#111' : '#fff') : 'transparent',
+                                  border: 'none', borderRadius: 6,
+                                  cursor: 'pointer', boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                                  fontSize: 12, color: isActive ? (tier === 'pro' ? '#fff' : '#111') : '#9CA3AF',
+                                  fontWeight: isActive ? 600 : 400,
+                                  transition: 'all 0.15s',
+                                }}
+                            >
+                              {tier === 'pro' && <span style={{ fontSize: 10 }}>⚡</span>}
+                              {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                            </button>
+                        );
+                      })}
+                    </div>
+
                     {/* Options Toggle */}
                     <button
                       onClick={() => setShowOptions(!showOptions)}
@@ -1932,6 +1965,32 @@ export default function Home() {
                           </button>
                         </div>
                       </div>
+
+                      {/* Upgrade Hint */}
+                      {result.upgradeHint && (
+                          <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '10px 20px', background: 'linear-gradient(135deg, #FFF7ED 0%, #FFFBEB 100%)',
+                            borderBottom: '1px solid #FED7AA',
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: 14 }}>⚡</span>
+                              <span style={{ fontSize: 12, color: '#92400E' }}>
+                              <strong>{result.upgradeHint.recommendedModel.name}</strong> scores {Math.round(result.upgradeHint.scoreDifference * 100)}% higher — {result.upgradeHint.reason}
+                            </span>
+                            </div>
+                            <button
+                                onClick={() => setUserTier('pro')}
+                                style={{
+                                  padding: '4px 12px', fontSize: 11, fontWeight: 600,
+                                  color: '#fff', background: '#F59E0B', border: 'none',
+                                  borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap',
+                                }}
+                            >
+                              Try Pro
+                            </button>
+                          </div>
+                      )}
 
                       {/* Tabs */}
                       <div style={{ display: 'flex', borderBottom: '1px solid #E5E5E5' }}>

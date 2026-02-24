@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { route } from '@/core';
-import { RouteRequest, Modality } from '@/types';
+import { RouteRequest, Modality, AccessTier } from '@/types';
 import { badRequest, invalidField, internalError } from '@/lib/errors';
 import { storeDecision } from '@/lib/kv';
 
@@ -63,6 +63,18 @@ function validateRequest(body: unknown): RouteRequest | { error: string; field?:
       return { error: 'constraints must be an object', field: 'constraints' };
     }
     validated.constraints = request.constraints as RouteRequest['constraints'];
+  }
+
+  // Optional userTier
+  if (request.userTier !== undefined) {
+    const validTiers = new Set(Object.values(AccessTier));
+    if (typeof request.userTier !== 'string' || !validTiers.has(request.userTier as AccessTier)) {
+      return {
+        error: `Invalid userTier. Must be one of: ${Object.values(AccessTier).join(', ')}`,
+        field: 'userTier',
+      };
+    }
+    validated.userTier = request.userTier as AccessTier;
   }
 
   return validated;
