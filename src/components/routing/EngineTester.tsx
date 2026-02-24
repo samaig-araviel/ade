@@ -33,6 +33,10 @@ import {
   Sparkles,
   AlertCircle,
   Building2,
+  Video,
+  FileText,
+  Film,
+  FileCode2,
 } from 'lucide-react';
 
 interface RouteResponse {
@@ -136,10 +140,15 @@ const examplePrompts = [
 
 const modalityOptions = [
   { value: 'text', label: 'Text', icon: Type, description: 'Text-only input' },
+  { value: 'code', label: 'Code', icon: Code2, description: 'Code generation & analysis' },
   { value: 'image', label: 'Image', icon: Image, description: 'Image analysis' },
+  { value: 'video', label: 'Video', icon: Video, description: 'Video understanding' },
   { value: 'voice', label: 'Voice', icon: Mic, description: 'Audio input' },
+  { value: 'document', label: 'Document', icon: FileText, description: 'PDF & document analysis' },
   { value: 'text+image', label: 'Text + Image', icon: ImageIcon, description: 'Combined text and image' },
   { value: 'text+voice', label: 'Text + Voice', icon: AudioLines, description: 'Combined text and audio' },
+  { value: 'text+code', label: 'Text + Code', icon: FileCode2, description: 'Text with code snippets' },
+  { value: 'text+video', label: 'Text + Video', icon: Film, description: 'Combined text and video' },
 ];
 
 const moodOptions = ['happy', 'neutral', 'stressed', 'frustrated', 'excited', 'tired', 'anxious', 'calm'];
@@ -369,7 +378,7 @@ export function EngineTester() {
             <label className="text-xs font-medium text-[var(--text-secondary)] mb-3 block">
               Input Modality
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-5 gap-2 grid-rows-2">
               {modalityOptions.map((option) => {
                 const Icon = option.icon;
                 const isSelected = modality === option.value;

@@ -4,7 +4,7 @@ import { AnalyzeRequest, Modality } from '@/types';
 import { badRequest, invalidField, internalError } from '@/lib/errors';
 
 // Valid modalities
-const VALID_MODALITIES = new Set(['text', 'image', 'voice', 'text+image', 'text+voice']);
+const VALID_MODALITIES = new Set(['text', 'code', 'image', 'video', 'voice', 'document', 'text+image', 'text+voice', 'text+code', 'text+video']);
 
 // Validate analyze request
 function validateRequest(body: unknown): AnalyzeRequest | { error: string; field?: string } {
