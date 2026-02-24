@@ -5,7 +5,7 @@ import { badRequest, invalidField, internalError } from '@/lib/errors';
 import { storeDecision } from '@/lib/kv';
 
 // Valid modalities
-const VALID_MODALITIES = new Set(['text', 'image', 'voice', 'text+image', 'text+voice']);
+const VALID_MODALITIES = new Set(['text', 'code', 'image', 'video', 'voice', 'document', 'text+image', 'text+voice', 'text+code', 'text+video']);
 
 // Validate route request
 function validateRequest(body: unknown): RouteRequest | { error: string; field?: string } {

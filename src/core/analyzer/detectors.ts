@@ -471,10 +471,18 @@ export function parseModality(modalityStr: string): Modality {
   switch (normalized) {
     case 'text':
       return Modality.Text;
+    case 'code':
+      return Modality.Code;
     case 'image':
       return Modality.Image;
+    case 'video':
+      return Modality.Video;
     case 'voice':
       return Modality.Voice;
+    case 'document':
+    case 'doc':
+    case 'pdf':
+      return Modality.Document;
     case 'text+image':
     case 'textimage':
     case 'text_image':
@@ -483,23 +491,33 @@ export function parseModality(modalityStr: string): Modality {
     case 'textvoice':
     case 'text_voice':
       return Modality.TextVoice;
+    case 'text+code':
+    case 'textcode':
+    case 'text_code':
+      return Modality.TextCode;
+    case 'text+video':
+    case 'textvideo':
+    case 'text_video':
+      return Modality.TextVideo;
     default:
       return Modality.Text;
   }
 }
 
 export function isPureModality(modality: Modality): boolean {
-  return modality === Modality.Image || modality === Modality.Voice;
+  return modality === Modality.Image || modality === Modality.Voice || modality === Modality.Video;
 }
 
 export function isCombinedModality(modality: Modality): boolean {
-  return modality === Modality.TextImage || modality === Modality.TextVoice;
+  return modality === Modality.TextImage || modality === Modality.TextVoice || modality === Modality.TextVideo;
 }
 
 export function getModalityType(modality: Modality): 'text' | 'vision' | 'audio' {
   switch (modality) {
     case Modality.Image:
     case Modality.TextImage:
+    case Modality.Video:
+    case Modality.TextVideo:
       return 'vision';
     case Modality.Voice:
     case Modality.TextVoice:

@@ -60,10 +60,15 @@ export enum Tone {
 // Input modality
 export enum Modality {
   Text = 'text',
+  Code = 'code',
   Image = 'image',
+  Video = 'video',
   Voice = 'voice',
+  Document = 'document',
   TextImage = 'text+image',
   TextVoice = 'text+voice',
+  TextCode = 'text+code',
+  TextVideo = 'text+video',
 }
 
 // LLM provider
