@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { route } from '@/core';
-import { RouteRequest, Modality, AccessTier } from '@/types';
+import { RouteRequest, Modality, AccessTier, Provider } from '@/types';
 import { badRequest, invalidField, internalError } from '@/lib/errors';
 import { storeDecision } from '@/lib/kv';
 
@@ -75,6 +75,23 @@ function validateRequest(body: unknown): RouteRequest | { error: string; field?:
       };
     }
     validated.userTier = request.userTier as AccessTier;
+  }
+
+  // Optional availableProviders
+  if (request.availableProviders !== undefined) {
+    if (!Array.isArray(request.availableProviders)) {
+      return { error: 'availableProviders must be an array', field: 'availableProviders' };
+    }
+    const validProviders: Set<string> = new Set(['openai', 'anthropic', 'google', 'perplexity', 'xai', 'mistral', 'meta', 'stability', 'elevenlabs', 'deepseek']);
+    for (const provider of request.availableProviders) {
+      if (typeof provider !== 'string' || !validProviders.has(provider)) {
+        return {
+          error: `Invalid provider in availableProviders. Must be one of: ${Array.from(validProviders).join(', ')}`,
+          field: 'availableProviders',
+        };
+      }
+    }
+    validated.availableProviders = request.availableProviders as Provider[];
   }
 
   return validated;

@@ -1,5 +1,5 @@
 import { route, analyzeOnly } from '@/core/engine';
-import { Modality, RouteRequest, Intent, Domain, Mood, EnergyLevel } from '@/types';
+import { Modality, RouteRequest, RouteResponse, Intent, Domain, Mood, EnergyLevel, AccessTier, Provider } from '@/types';
 
 describe('Engine', () => {
   describe('route', () => {
@@ -150,6 +150,217 @@ describe('Engine', () => {
 
       // Should complete without error
       expect(response.primaryModel).toBeTruthy();
+    });
+  });
+
+  describe('availableProviders constraint', () => {
+    it('returns providerHint as undefined when no availableProviders is set', () => {
+      const request: RouteRequest = {
+        prompt: 'Write a Python function to sort an array',
+        modality: Modality.Text,
+      };
+
+      const response = route(request);
+
+      expect(response.providerHint).toBeUndefined();
+    });
+
+    it('returns providerHint as undefined when availableProviders is empty', () => {
+      const request: RouteRequest = {
+        prompt: 'Write a Python function to sort an array',
+        modality: Modality.Text,
+        availableProviders: [],
+      };
+
+      const response = route(request);
+
+      expect(response.providerHint).toBeUndefined();
+    });
+
+    it('filters primaryModel to available providers', () => {
+      const request: RouteRequest = {
+        prompt: 'Write a Python function to sort an array',
+        modality: Modality.Text,
+        userTier: AccessTier.Pro,
+        availableProviders: ['google'] as Provider[],
+      };
+
+      const response = route(request);
+
+      expect(response.primaryModel.provider).toBe('google');
+    });
+
+    it('filters backupModels to available providers', () => {
+      const request: RouteRequest = {
+        prompt: 'Write a Python function to sort an array',
+        modality: Modality.Text,
+        userTier: AccessTier.Pro,
+        availableProviders: ['anthropic'] as Provider[],
+      };
+
+      const response = route(request);
+
+      expect(response.primaryModel.provider).toBe('anthropic');
+      response.backupModels.forEach((backup) => {
+        expect(backup.provider).toBe('anthropic');
+      });
+    });
+
+    it('generates providerHint when best model is from unavailable provider', () => {
+      // Only allow google - if the best model is from another provider, we should get a hint
+      const request: RouteRequest = {
+        prompt: 'Write a Python function to sort an array',
+        modality: Modality.Text,
+        userTier: AccessTier.Pro,
+        availableProviders: ['google'] as Provider[],
+      };
+
+      // First, check what the unconstrained best would be
+      const unconstrainedResponse = route({
+        prompt: 'Write a Python function to sort an array',
+        modality: Modality.Text,
+        userTier: AccessTier.Pro,
+      });
+
+      const response = route(request);
+
+      if (unconstrainedResponse.primaryModel.provider !== 'google') {
+        // The best model was NOT google, so providerHint should be populated
+        expect(response.providerHint).toBeTruthy();
+        expect(response.providerHint!.recommendedModel.provider).toBe(unconstrainedResponse.primaryModel.provider);
+        expect(response.providerHint!.recommendedModel.id).toBe(unconstrainedResponse.primaryModel.id);
+        expect(response.providerHint!.scoreDifference).toBeGreaterThanOrEqual(0);
+        expect(response.providerHint!.reason).toContain('not currently available');
+      } else {
+        // Best model was already google, no hint needed
+        expect(response.providerHint).toBeUndefined();
+      }
+    });
+
+    it('returns no providerHint when best model is already from available provider', () => {
+      // First find out what the best model provider is for a coding query
+      const unconstrainedResponse = route({
+        prompt: 'Write a Python function to sort an array',
+        modality: Modality.Text,
+        userTier: AccessTier.Pro,
+      });
+
+      const bestProvider = unconstrainedResponse.primaryModel.provider;
+
+      // Now constrain to that provider - should get no hint
+      const request: RouteRequest = {
+        prompt: 'Write a Python function to sort an array',
+        modality: Modality.Text,
+        userTier: AccessTier.Pro,
+        availableProviders: [bestProvider] as Provider[],
+      };
+
+      const response = route(request);
+
+      expect(response.providerHint).toBeUndefined();
+      expect(response.primaryModel.provider).toBe(bestProvider);
+    });
+
+    it('returns fallback when no models from available providers exist', () => {
+      // Use a provider that doesn't exist in the registry's free tier
+      const request: RouteRequest = {
+        prompt: 'Write a Python function to sort an array',
+        modality: Modality.Text,
+        availableProviders: ['stability'] as Provider[],
+      };
+
+      const response = route(request);
+
+      expect(response.fallback).toBeTruthy();
+      expect(response.fallback!.category).toBe('Provider Unavailable');
+      expect(response.fallback!.supported).toBe(false);
+      expect(response.primaryModel.score).toBe(0);
+      expect(response.confidence).toBe(0);
+    });
+
+    it('works with multiple available providers', () => {
+      const request: RouteRequest = {
+        prompt: 'Explain quantum computing',
+        modality: Modality.Text,
+        userTier: AccessTier.Pro,
+        availableProviders: ['anthropic', 'google'] as Provider[],
+      };
+
+      const response = route(request);
+
+      expect(['anthropic', 'google']).toContain(response.primaryModel.provider);
+      response.backupModels.forEach((backup) => {
+        expect(['anthropic', 'google']).toContain(backup.provider);
+      });
+    });
+
+    it('applies provider constraint on fast-path (image modality)', () => {
+      const request: RouteRequest = {
+        prompt: '',
+        modality: Modality.Image,
+        userTier: AccessTier.Pro,
+        availableProviders: ['google'] as Provider[],
+      };
+
+      const response = route(request);
+
+      expect(response.primaryModel.provider).toBe('google');
+      response.backupModels.forEach((backup) => {
+        expect(backup.provider).toBe('google');
+      });
+    });
+
+    it('applies provider constraint on combined modality (text+image)', () => {
+      const request: RouteRequest = {
+        prompt: 'Describe what you see in this image',
+        modality: Modality.TextImage,
+        userTier: AccessTier.Pro,
+        availableProviders: ['anthropic'] as Provider[],
+      };
+
+      const response = route(request);
+
+      expect(response.primaryModel.provider).toBe('anthropic');
+      response.backupModels.forEach((backup) => {
+        expect(backup.provider).toBe('anthropic');
+      });
+    });
+
+    it('preserves scoring and analysis when provider constraint is applied', () => {
+      const request: RouteRequest = {
+        prompt: 'Write a Python function to sort an array',
+        modality: Modality.Text,
+        userTier: AccessTier.Pro,
+        availableProviders: ['google'] as Provider[],
+      };
+
+      const response = route(request);
+
+      // Analysis should still be performed normally
+      expect(response.analysis.intent).toBe(Intent.Coding);
+      expect(response.primaryModel.score).toBeGreaterThan(0);
+      expect(response.confidence).toBeGreaterThan(0);
+      expect(response.timing.totalMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it('providerHint includes score difference between ideal and selected model', () => {
+      // Constrain to perplexity only to force a providerHint for a coding query
+      const request: RouteRequest = {
+        prompt: 'Write a complex algorithm in Python',
+        modality: Modality.Text,
+        userTier: AccessTier.Pro,
+        availableProviders: ['perplexity'] as Provider[],
+      };
+
+      const response = route(request);
+
+      if (response.providerHint) {
+        expect(response.providerHint.scoreDifference).toBeGreaterThanOrEqual(0);
+        expect(typeof response.providerHint.scoreDifference).toBe('number');
+        expect(response.providerHint.recommendedModel.id).toBeTruthy();
+        expect(response.providerHint.recommendedModel.name).toBeTruthy();
+        expect(response.providerHint.recommendedModel.provider).toBeTruthy();
+      }
     });
   });
 
