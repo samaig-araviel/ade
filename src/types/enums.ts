@@ -137,3 +137,9 @@ export enum FactorImpact {
   Neutral = 'neutral',
   Negative = 'negative',
 }
+
+// Subscription access tier for model gating
+export enum AccessTier {
+  Free = 'free',
+  Pro = 'pro',
+}

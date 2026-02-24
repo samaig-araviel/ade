@@ -58,6 +58,17 @@ export interface FallbackSuggestion {
   suggestedPlatforms: string[];
 }
 
+// Upgrade hint when a better model exists on a higher tier
+export interface UpgradeHint {
+  recommendedModel: {
+    id: string;
+    name: string;
+    provider: Provider;
+  };
+  reason: string;
+  scoreDifference: number;
+}
+
 // Main route response
 export interface RouteResponse {
   decisionId: string;
@@ -67,6 +78,7 @@ export interface RouteResponse {
   analysis: QueryAnalysis;
   timing: TimingMetrics;
   fallback?: FallbackSuggestion;
+  upgradeHint?: UpgradeHint;
 }
 
 // Analyze-only response

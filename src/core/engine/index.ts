@@ -1,38 +1,34 @@
+// Import ModelDefinition for type usage
+import type {ModelDefinition} from '@/types';
 import {
-  RouteRequest,
-  RouteResponse,
+  AccessTier,
   AnalyzeResponse,
-  QueryAnalysis,
-  Modality,
-  ScoringContext,
   FallbackSuggestion,
   Intent,
+  Modality,
+  ModelScore,
+  QueryAnalysis,
+  RouteRequest,
+  RouteResponse,
+  ScoringContext,
+  UpgradeHint,
 } from '@/types';
+import {analyze, getDefaultAnalysis, getModalityType, isCombinedModality, isPureModality,} from '../analyzer';
+import {quickScoreForModality, scoreAllModels, scoreCombinedModality,} from '../scorer';
+import {selectFallback, selectModels} from '../selector';
 import {
-  analyze,
-  getDefaultAnalysis,
-  isPureModality,
-  isCombinedModality,
-  getModalityType,
-} from '../analyzer';
-import {
-  scoreAllModels,
-  quickScoreForModality,
-  scoreCombinedModality,
-} from '../scorer';
-import { selectModels, selectFallback } from '../selector';
-import {
-  generateReasoning,
-  generateFastPathReasoning,
   generateFallbackReasoning,
+  generateFastPathReasoning,
+  generateReasoning,
   generateReconciledReasoning,
 } from '../reasoning';
 import {
-  getAvailableModels,
   filterModelsByConstraints,
+  getAvailableModels,
   getModelsByModalityCapability,
+  getModelsForTier,
 } from '@/models';
-import { generateDecisionId, measureTimeSync, round } from '@/lib/helpers';
+import {generateDecisionId, measureTimeSync, round} from '@/lib/helpers';
 
 // Maximum allowed routing time
 const MAX_ROUTING_TIME_MS = 50;
@@ -48,8 +44,7 @@ export function route(request: RouteRequest): RouteResponse {
 
   // Check for fast-path eligibility (pure image or voice)
   if (isPureModality(modality)) {
-    const fastPathResult = handleFastPath(request, modality, startTime);
-    return fastPathResult;
+    return handleFastPath(request, modality, startTime);
   }
 
   // Standard routing path
@@ -69,7 +64,7 @@ function handleFastPath(
   }
 
   // Get models with modality capability
-  let models = getAvailableModels();
+  let models = getModelsForTier(request.userTier ?? AccessTier.Free);
 
   // Apply constraints if any
   if (request.constraints) {
@@ -152,15 +147,16 @@ function handleStandardRoute(
     analyze(request.prompt, modality, request.humanContext)
   );
 
-  // Step 2: Get and filter models
-  let models = getAvailableModels();
+  // Step 2: Get and filter models (gated by user's subscription tier)
+  const userTier = request.userTier ?? AccessTier.Free;
+  let models = getModelsForTier(userTier);
   if (request.constraints) {
     models = filterModelsByConstraints(models, request.constraints);
   }
 
   if (models.length === 0) {
-    // Try with relaxed constraints
-    models = getAvailableModels();
+    // Try with relaxed constraints but still respect tier
+    models = getModelsForTier(userTier);
     if (models.length === 0) {
       throw new Error('No models available');
     }
@@ -213,6 +209,11 @@ function handleStandardRoute(
   // Check if we should attach a fallback suggestion (low confidence or unsupported task)
   const fallback = detectFallbackNeeded(analysis, selection.confidence);
 
+  // Generate upgrade hint for free-tier users if a better pro model exists
+  const upgradeHint = userTier === AccessTier.Free
+      ? generateUpgradeHint(analysis, selection.primary, request)
+      : undefined;
+
   return {
     decisionId: generateDecisionId(),
     primaryModel: {
@@ -238,6 +239,7 @@ function handleStandardRoute(
       selectionMs: round(selectionMs, 2),
     },
     ...(fallback ? { fallback } : {}),
+    ...(upgradeHint ? { upgradeHint } : {}),
   };
 }
 
@@ -371,9 +373,6 @@ export function analyzeOnly(prompt: string, modality: Modality): AnalyzeResponse
   };
 }
 
-// Import ModelDefinition for type usage
-import type { ModelDefinition } from '@/types';
-
 // Fallback suggestion mappings for unsupported or low-confidence tasks
 const FALLBACK_SUGGESTIONS: Partial<Record<Intent, { category: string; message: string; suggestedPlatforms: string[] }>> = {
   [Intent.ImageGeneration]: {
@@ -423,4 +422,72 @@ function detectFallbackNeeded(
   }
 
   return null;
+}
+
+// Generate upgrade hint for free-tier users
+function generateUpgradeHint(
+    analysis: QueryAnalysis,
+    freeSelection: ModelScore,
+    request: RouteRequest
+): UpgradeHint | undefined {
+  // Score ALL models (including pro) to find the true best
+  const allModels = getAvailableModels();
+  const filteredAll = request.constraints
+      ? filterModelsByConstraints(allModels, request.constraints)
+      : allModels;
+
+  const fullContext: ScoringContext = {
+    analysis,
+    humanContext: request.humanContext,
+    constraints: request.constraints,
+    conversationContext: request.context,
+    allModels: filteredAll,
+  };
+
+  const allScores = scoreAllModels(fullContext);
+  if (allScores.length === 0) return undefined;
+
+  const bestOverall = allScores[0]!;
+  const scoreDiff = bestOverall.compositeScore - freeSelection.compositeScore;
+
+  // Only show hint if pro model is meaningfully better (>= 5% gap)
+  if (scoreDiff < 0.05 || bestOverall.model.id === freeSelection.model.id) {
+    return undefined;
+  }
+
+  return {
+    recommendedModel: {
+      id: bestOverall.model.id,
+      name: bestOverall.model.name,
+      provider: bestOverall.model.provider,
+    },
+    reason: buildUpgradeReason(bestOverall.model, analysis),
+    scoreDifference: round(scoreDiff, 3),
+  };
+}
+
+// Build human-readable upgrade reason based on query intent
+function buildUpgradeReason(model: ModelDefinition, analysis: QueryAnalysis): string {
+  const intentLabels: Record<string, string> = {
+    coding: 'coding tasks',
+    creative: 'creative writing',
+    analysis: 'analytical tasks',
+    factual: 'factual research',
+    conversation: 'natural conversations',
+    task: 'task execution',
+    brainstorm: 'brainstorming',
+    translation: 'translation',
+    summarization: 'summarization',
+    extraction: 'data extraction',
+    research: 'in-depth research',
+    math: 'mathematical reasoning',
+    planning: 'planning and strategy',
+    image_generation: 'image generation',
+    video_generation: 'video generation',
+    voice_generation: 'voice generation',
+    music_generation: 'music generation',
+  };
+
+  const taskLabel = intentLabels[analysis.intent] ?? 'this type of task';
+  return `${model.name} excels at ${taskLabel} with higher accuracy and deeper reasoning.`;
 }

@@ -7,6 +7,7 @@ import {
   ResponseStyle,
   ResponseLength,
   FeedbackSignal,
+  AccessTier,
 } from './enums';
 
 // Conversation context
@@ -79,6 +80,7 @@ export interface RouteRequest {
   context?: ConversationContext;
   humanContext?: HumanContext;
   constraints?: Constraints;
+  userTier?: AccessTier;
 }
 
 // Analyze-only request
