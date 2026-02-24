@@ -8,6 +8,7 @@ import {
   ResponseLength,
   FeedbackSignal,
   AccessTier,
+  Provider,
 } from './enums';
 
 // Conversation context
@@ -81,6 +82,7 @@ export interface RouteRequest {
   humanContext?: HumanContext;
   constraints?: Constraints;
   userTier?: AccessTier;
+  availableProviders?: Provider[];
 }
 
 // Analyze-only request

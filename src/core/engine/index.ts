@@ -7,6 +7,8 @@ import {
   Intent,
   Modality,
   ModelScore,
+  Provider,
+  ProviderHint,
   QueryAnalysis,
   RouteRequest,
   RouteResponse,
@@ -86,8 +88,17 @@ function handleFastPath(
     return createFallbackResponse(fallbackModel, modality, totalMs);
   }
 
+  // Apply provider constraint if set
+  const { filteredScores, providerHint, noProvidersAvailable, originalBestModel } =
+    filterByAvailableProviders(scores, request.availableProviders);
+
+  if (noProvidersAvailable) {
+    const totalMs = round(performance.now() - startTime, 2);
+    return createProviderUnavailableResponse(originalBestModel!, modality, totalMs);
+  }
+
   // Select best
-  const selection = selectModels(scores);
+  const selection = selectModels(filteredScores);
 
   // Generate reasoning
   const primaryReasoning = generateFastPathReasoning(selection.primary, modalityType);
@@ -133,6 +144,7 @@ function handleFastPath(
       scoringMs: totalMs,
       selectionMs: 0,
     },
+    ...(providerHint ? { providerHint } : {}),
   };
 }
 
@@ -187,12 +199,21 @@ function handleStandardRoute(
     scoreAllModels(scoringContext)
   );
 
-  // Step 5: Select models
+  // Step 5: Apply provider constraint if set
+  const { filteredScores, providerHint, noProvidersAvailable, originalBestModel } =
+    filterByAvailableProviders(scores, request.availableProviders);
+
+  if (noProvidersAvailable) {
+    const totalMs = round(performance.now() - startTime, 2);
+    return createProviderUnavailableResponse(originalBestModel!, modality, totalMs, analysis);
+  }
+
+  // Step 6: Select models
   const { result: selection, durationMs: selectionMs } = measureTimeSync(() =>
-    selectModels(scores)
+    selectModels(filteredScores)
   );
 
-  // Step 6: Generate reasoning
+  // Step 7: Generate reasoning
   const primaryReasoning = generateReasoning(selection.primary, analysis, true);
   const backupReasonings = selection.backups.map((backup, idx) =>
     generateReasoning(backup, analysis, false, idx + 1)
@@ -240,6 +261,7 @@ function handleStandardRoute(
     },
     ...(fallback ? { fallback } : {}),
     ...(upgradeHint ? { upgradeHint } : {}),
+    ...(providerHint ? { providerHint } : {}),
   };
 }
 
@@ -284,9 +306,18 @@ function handleCombinedModality(
     return createFallbackResponse(fallbackModel, modality, totalMs);
   }
 
+  // Apply provider constraint if set
+  const { filteredScores, providerHint, noProvidersAvailable, originalBestModel } =
+    filterByAvailableProviders(combinedScores, request.availableProviders);
+
+  if (noProvidersAvailable) {
+    const totalMs = round(performance.now() - startTime, 2);
+    return createProviderUnavailableResponse(originalBestModel!, modality, totalMs, analysis);
+  }
+
   // Select from combined scores
   const { result: selection, durationMs: selectionMs } = measureTimeSync(() =>
-    selectModels(combinedScores)
+    selectModels(filteredScores)
   );
 
   // Generate reconciled reasoning
@@ -325,6 +356,7 @@ function handleCombinedModality(
       scoringMs: round(scoringMs, 2),
       selectionMs: round(selectionMs, 2),
     },
+    ...(providerHint ? { providerHint } : {}),
   };
 }
 
@@ -353,6 +385,99 @@ function createFallbackResponse(
       analysisMs: 0,
       scoringMs: 0,
       selectionMs: 0,
+    },
+  };
+}
+
+// Result of filtering scored models by available providers
+interface ProviderFilterResult {
+  filteredScores: ModelScore[];
+  providerHint: ProviderHint | undefined;
+  noProvidersAvailable: boolean;
+  originalBestModel?: ModelDefinition;
+}
+
+// Filter scored models to only those from available providers
+function filterByAvailableProviders(
+  scores: ModelScore[],
+  availableProviders: Provider[] | undefined
+): ProviderFilterResult {
+  if (!availableProviders || availableProviders.length === 0) {
+    return {
+      filteredScores: scores,
+      providerHint: undefined,
+      noProvidersAvailable: false,
+    };
+  }
+
+  const availableScores = scores.filter(
+    s => availableProviders.includes(s.model.provider as Provider)
+  );
+
+  if (availableScores.length === 0) {
+    return {
+      filteredScores: scores,
+      providerHint: undefined,
+      noProvidersAvailable: true,
+      originalBestModel: scores[0]?.model,
+    };
+  }
+
+  let providerHint: ProviderHint | undefined;
+
+  if (scores.length > 0 && !availableProviders.includes(scores[0]!.model.provider as Provider)) {
+    const originalBest = scores[0]!;
+    const newBest = availableScores[0]!;
+    providerHint = {
+      recommendedModel: {
+        id: originalBest.model.id,
+        name: originalBest.model.name,
+        provider: originalBest.model.provider,
+      },
+      reason: `${originalBest.model.name} scored highest for this query but ${originalBest.model.provider} is not currently available`,
+      scoreDifference: round(originalBest.compositeScore - newBest.compositeScore, 3),
+    };
+  }
+
+  return {
+    filteredScores: availableScores,
+    providerHint,
+    noProvidersAvailable: false,
+  };
+}
+
+// Create fallback response when no models from available providers exist
+function createProviderUnavailableResponse(
+  bestModel: ModelDefinition,
+  modality: Modality,
+  totalMs: number,
+  analysis?: QueryAnalysis
+): RouteResponse {
+  const reasoning = generateFallbackReasoning(bestModel);
+
+  return {
+    decisionId: generateDecisionId(),
+    primaryModel: {
+      id: bestModel.id,
+      name: bestModel.name,
+      provider: bestModel.provider,
+      score: 0,
+      reasoning,
+    },
+    backupModels: [],
+    confidence: 0,
+    analysis: analysis ?? getDefaultAnalysis(modality),
+    timing: {
+      totalMs,
+      analysisMs: 0,
+      scoringMs: 0,
+      selectionMs: 0,
+    },
+    fallback: {
+      supported: false,
+      category: 'Provider Unavailable',
+      message: `Our top recommendation for this query is ${bestModel.name} (${bestModel.provider}), but this provider is not currently configured. Please configure an API key for ${bestModel.provider} or another supported provider to get started.`,
+      suggestedPlatforms: [bestModel.provider],
     },
   };
 }

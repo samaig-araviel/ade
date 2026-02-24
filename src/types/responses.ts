@@ -69,6 +69,17 @@ export interface UpgradeHint {
   scoreDifference: number;
 }
 
+// Provider hint when the best model is from an unavailable provider
+export interface ProviderHint {
+  recommendedModel: {
+    id: string;
+    name: string;
+    provider: Provider;
+  };
+  reason: string;
+  scoreDifference: number;
+}
+
 // Main route response
 export interface RouteResponse {
   decisionId: string;
@@ -79,6 +90,7 @@ export interface RouteResponse {
   timing: TimingMetrics;
   fallback?: FallbackSuggestion;
   upgradeHint?: UpgradeHint;
+  providerHint?: ProviderHint;
 }
 
 // Analyze-only response
