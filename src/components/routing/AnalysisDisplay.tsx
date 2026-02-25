@@ -7,6 +7,7 @@ import {
   Gauge,
   MessageCircle,
   Hash,
+  Globe,
 } from 'lucide-react';
 
 interface QueryAnalysis {
@@ -17,6 +18,7 @@ interface QueryAnalysis {
   modality: string;
   keywords: string[];
   humanContextUsed: boolean;
+  webSearchRequired?: boolean;
 }
 
 interface AnalysisDisplayProps {
@@ -52,6 +54,12 @@ export function AnalysisDisplay({ analysis }: AnalysisDisplayProps) {
           Prompt Analysis
         </span>
         <div className="flex items-center gap-2">
+          {analysis.webSearchRequired && (
+            <span className="text-[11px] px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium flex items-center gap-1">
+              <Globe className="w-3 h-3" />
+              Web Search
+            </span>
+          )}
           {analysis.humanContextUsed && (
             <span className="text-[11px] px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full font-medium">
               Human Context

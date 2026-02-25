@@ -11,6 +11,7 @@ import {
   Star,
   ChevronDown,
   Check,
+  Globe,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -19,6 +20,7 @@ interface ModelRecommendation {
   name: string;
   provider: string;
   score: number;
+  supportsWebSearch?: boolean;
   reasoning: {
     summary: string;
     factors: Array<{
@@ -118,9 +120,17 @@ export function ModelCard({ model, rank, index = 0 }: ModelCardProps) {
                   </span>
                 )}
               </div>
-              <span className={`inline-flex text-[10px] px-1.5 py-0.5 rounded font-medium ${getProviderStyle(model.provider)}`}>
-                {model.provider}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className={`inline-flex text-[10px] px-1.5 py-0.5 rounded font-medium ${getProviderStyle(model.provider)}`}>
+                  {model.provider}
+                </span>
+                {model.supportsWebSearch && (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded font-medium bg-emerald-500/10 text-emerald-500">
+                    <Globe className="w-2.5 h-2.5" />
+                    Web
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

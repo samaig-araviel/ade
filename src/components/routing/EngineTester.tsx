@@ -37,6 +37,7 @@ import {
   FileText,
   Film,
   FileCode2,
+  Globe,
 } from 'lucide-react';
 
 interface RouteResponse {
@@ -46,6 +47,7 @@ interface RouteResponse {
     name: string;
     provider: string;
     score: number;
+    supportsWebSearch?: boolean;
     reasoning: {
       summary: string;
       factors: Array<{
@@ -62,6 +64,7 @@ interface RouteResponse {
     name: string;
     provider: string;
     score: number;
+    supportsWebSearch?: boolean;
     reasoning: {
       summary: string;
       factors: Array<{
@@ -74,6 +77,7 @@ interface RouteResponse {
     };
   }>;
   confidence: number;
+  webSearchRequired?: boolean;
   analysis: {
     intent: string;
     domain: string;
@@ -82,6 +86,7 @@ interface RouteResponse {
     modality: string;
     keywords: string[];
     humanContextUsed: boolean;
+    webSearchRequired?: boolean;
   };
   timing: {
     totalMs: number;
@@ -135,6 +140,11 @@ const examplePrompts = [
     { label: 'Simple Q&A', prompt: 'What is the capital of France?', icon: Target },
     { label: 'Translation', prompt: 'Translate "Hello, how are you today?" to Spanish, French, and German', icon: Type },
     { label: 'Format Data', prompt: 'Convert this CSV data to JSON format', icon: Code2 },
+  ]},
+  { category: 'Web Search', prompts: [
+    { label: 'Latest News', prompt: 'What are the latest news about AI regulation today?', icon: Globe },
+    { label: 'Stock Price', prompt: 'What is the current stock price of Tesla?', icon: BarChart3 },
+    { label: 'Weather', prompt: 'What is the weather forecast for New York this weekend?', icon: Sun },
   ]},
 ];
 
@@ -800,6 +810,35 @@ export function EngineTester() {
             exit={{ opacity: 0 }}
             className="space-y-6"
           >
+            {/* Web Search Banner */}
+            {result.webSearchRequired && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-3 px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl"
+              >
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <Globe className="w-4 h-4 text-emerald-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-emerald-600">Web Search Recommended</p>
+                  <p className="text-[10px] text-emerald-500/80 mt-0.5">
+                    This prompt requires real-time or up-to-date information from the web
+                    {result.primaryModel.supportsWebSearch && ' — selected model supports web search'}
+                  </p>
+                </div>
+                {result.primaryModel.supportsWebSearch ? (
+                  <span className="flex-shrink-0 text-[10px] px-2 py-1 bg-emerald-500/20 text-emerald-600 rounded-full font-medium">
+                    Supported
+                  </span>
+                ) : (
+                  <span className="flex-shrink-0 text-[10px] px-2 py-1 bg-amber-500/20 text-amber-600 rounded-full font-medium">
+                    Not Supported
+                  </span>
+                )}
+              </motion.div>
+            )}
+
             {/* Metrics Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-primary)] p-4">
@@ -877,6 +916,11 @@ export function EngineTester() {
                               {model.name}
                             </span>
                             <div className="flex items-center gap-2">
+                              {'supportsWebSearch' in model && (model as { supportsWebSearch?: boolean }).supportsWebSearch && (
+                                <span className="flex-shrink-0" aria-label="Supports web search">
+                                  <Globe className="w-3 h-3 text-emerald-500" />
+                                </span>
+                              )}
                               <div className="w-20 h-1.5 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
                                 <motion.div
                                   className={`h-full rounded-full ${isTop ? 'bg-indigo-500' : 'bg-[var(--text-quaternary)]'}`}

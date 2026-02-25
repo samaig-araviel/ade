@@ -22,6 +22,7 @@ import {
   ChevronUp,
   Copy,
   Check,
+  Globe,
 } from 'lucide-react';
 
 interface RouteResponse {
@@ -31,6 +32,7 @@ interface RouteResponse {
     name: string;
     provider: string;
     score: number;
+    supportsWebSearch?: boolean;
     reasoning: {
       summary: string;
       factors: Array<{
@@ -47,6 +49,7 @@ interface RouteResponse {
     name: string;
     provider: string;
     score: number;
+    supportsWebSearch?: boolean;
     reasoning: {
       summary: string;
       factors: Array<{
@@ -59,6 +62,7 @@ interface RouteResponse {
     };
   }>;
   confidence: number;
+  webSearchRequired?: boolean;
   analysis: {
     intent: string;
     domain: string;
@@ -67,6 +71,7 @@ interface RouteResponse {
     modality: string;
     keywords: string[];
     humanContextUsed: boolean;
+    webSearchRequired?: boolean;
   };
   timing: {
     totalMs: number;
@@ -81,6 +86,8 @@ const examplePrompts = [
   { label: 'Creative', prompt: 'Write a short story about a robot discovering emotions for the first time', icon: '✨' },
   { label: 'Analysis', prompt: 'Analyze this sales data and identify trends for Q4 performance', icon: '📊' },
   { label: 'Quick Q&A', prompt: 'What is the capital of France?', icon: '💬' },
+  { label: 'Web Search', prompt: 'What are the latest news about AI regulation in the EU today?', icon: '🌐' },
+  { label: 'Stock Price', prompt: 'What is the current stock price of Tesla?', icon: '📈' },
 ];
 
 const modalityOptions = [
@@ -420,6 +427,26 @@ export function PromptTester() {
                 exit={{ opacity: 0 }}
                 className="space-y-4"
               >
+                {/* Web Search Banner */}
+                {result.webSearchRequired && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-3 px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                      <Globe className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-emerald-600">Web Search Recommended</p>
+                      <p className="text-[10px] text-emerald-500/80 mt-0.5">
+                        This prompt requires real-time or up-to-date information from the web
+                        {result.primaryModel.supportsWebSearch && ' — selected model supports web search'}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+
                 {/* Metrics Row */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-primary)] p-4">
