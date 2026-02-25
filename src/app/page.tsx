@@ -37,6 +37,7 @@ import {
   ChevronLeft,
   Loader2,
   FlaskConical,
+  Globe,
 } from 'lucide-react';
 
 // ============ TYPES ============
@@ -45,6 +46,7 @@ interface RouteResponse {
   primaryModel: ModelResult;
   backupModels: ModelResult[];
   confidence: number;
+  webSearchRequired?: boolean;
   analysis: {
     intent: string;
     domain: string;
@@ -53,6 +55,7 @@ interface RouteResponse {
     modality: string;
     keywords: string[];
     humanContextUsed: boolean;
+    webSearchRequired?: boolean;
   };
   timing: {
     totalMs: number;
@@ -72,6 +75,7 @@ interface ModelResult {
   name: string;
   provider: string;
   score: number;
+  supportsWebSearch?: boolean;
   reasoning: {
     summary: string;
     factors: Array<{
@@ -97,6 +101,7 @@ interface ModelInfo {
     supportsAudio: boolean;
     supportsStreaming: boolean;
     supportsFunctionCalling: boolean;
+    supportsWebSearch?: boolean;
   };
   performance: { avgLatencyMs: number; reliabilityPercent: number };
 }
@@ -159,6 +164,8 @@ const EXAMPLE_PROMPTS = [
   { label: 'Simple Question', prompt: 'What is the capital of France?', category: 'factual' },
   { label: 'Complex Research', prompt: 'Explain the implications of quantum computing on current cryptographic systems and propose mitigation strategies', category: 'analysis' },
   { label: 'Translation', prompt: 'Translate this technical documentation from English to Spanish while maintaining accuracy', category: 'translation' },
+  { label: 'Web Search', prompt: 'What are the latest news about AI regulation today?', category: 'web' },
+  { label: 'Stock Price', prompt: 'What is the current stock price of Tesla?', category: 'web' },
 ];
 
 const LONG_EXAMPLE_PROMPTS = [
@@ -1992,6 +1999,39 @@ export default function Home() {
                           </div>
                       )}
 
+                      {/* Web Search Banner */}
+                      {result.webSearchRequired && (
+                        <div style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '10px 20px', background: 'linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%)',
+                          borderBottom: '1px solid #BBF7D0',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Globe style={{ width: 14, height: 14, color: '#059669' }} />
+                            <span style={{ fontSize: 12, color: '#065F46' }}>
+                              <strong>Web Search Recommended</strong> — This prompt needs real-time information
+                            </span>
+                          </div>
+                          {result.primaryModel.supportsWebSearch ? (
+                            <span style={{
+                              padding: '3px 10px', fontSize: 11, fontWeight: 600,
+                              color: '#059669', background: '#D1FAE5', border: '1px solid #A7F3D0',
+                              borderRadius: 6, whiteSpace: 'nowrap',
+                            }}>
+                              Model Supports Web Search
+                            </span>
+                          ) : (
+                            <span style={{
+                              padding: '3px 10px', fontSize: 11, fontWeight: 600,
+                              color: '#D97706', background: '#FEF3C7', border: '1px solid #FDE68A',
+                              borderRadius: 6, whiteSpace: 'nowrap',
+                            }}>
+                              Model Lacks Web Search
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       {/* Tabs */}
                       <div style={{ display: 'flex', borderBottom: '1px solid #E5E5E5' }}>
                         {[
@@ -2014,17 +2054,26 @@ export default function Home() {
                         {activeTab === 'result' && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                             {/* Stats */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12 }}>
                               {[
                                 { label: 'Intent', value: result.analysis.intent },
                                 { label: 'Domain', value: result.analysis.domain },
                                 { label: 'Complexity', value: result.analysis.complexity },
                                 { label: 'Total Time', value: `${result.timing.totalMs.toFixed(1)}ms` },
                                 { label: 'Human Context', value: result.analysis.humanContextUsed ? 'Yes' : 'No' },
+                                { label: 'Web Search', value: result.webSearchRequired ? 'Required' : 'Not Needed', isWebSearch: true },
                               ].map((stat) => (
-                                <div key={stat.label} style={{ padding: 10, background: '#FAFAFA', borderRadius: 6 }}>
+                                <div key={stat.label} style={{
+                                  padding: 10,
+                                  background: ('isWebSearch' in stat && stat.isWebSearch && result.webSearchRequired) ? '#ECFDF5' : '#FAFAFA',
+                                  borderRadius: 6,
+                                  border: ('isWebSearch' in stat && stat.isWebSearch && result.webSearchRequired) ? '1px solid #BBF7D0' : '1px solid transparent',
+                                }}>
                                   <div style={{ fontSize: 10, color: '#666', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{stat.label}</div>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: '#000', textTransform: 'capitalize' }}>{stat.value}</div>
+                                  <div style={{
+                                    fontSize: 13, fontWeight: 600, textTransform: 'capitalize',
+                                    color: ('isWebSearch' in stat && stat.isWebSearch && result.webSearchRequired) ? '#059669' : '#000',
+                                  }}>{stat.value}</div>
                                 </div>
                               ))}
                             </div>
@@ -2045,7 +2094,12 @@ export default function Home() {
                                           {idx + 1}
                                         </span>
                                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: getProviderColor(model.provider) }} />
-                                        <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#000' }}>{model.name}</span>
+                                        <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#000', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                          {model.name}
+                                          {model.supportsWebSearch && (
+                                            <Globe style={{ width: 12, height: 12, color: '#059669', flexShrink: 0 }} />
+                                          )}
+                                        </span>
                                         <span style={{ fontSize: 12, color: '#666' }}>{model.provider}</span>
                                         <div style={{ width: 60, height: 4, background: '#E5E5E5', borderRadius: 2, overflow: 'hidden' }}>
                                           <div style={{ width: `${(model.score || 0) * 100}%`, height: '100%', background: idx === 0 ? '#000' : '#999', borderRadius: 2 }} />
@@ -2716,6 +2770,11 @@ export default function Home() {
                           {model.capabilities.supportsFunctionCalling && (
                             <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 11, fontWeight: 500, background: '#FEF3C7', color: '#D97706', borderRadius: 6 }}>
                               <Box style={{ width: 12, height: 12 }} /> Functions
+                            </span>
+                          )}
+                          {model.capabilities.supportsWebSearch && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 11, fontWeight: 500, background: '#ECFDF5', color: '#059669', borderRadius: 6 }}>
+                              <Globe style={{ width: 12, height: 12 }} /> Web Search
                             </span>
                           )}
                         </div>
