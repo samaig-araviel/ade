@@ -364,6 +364,78 @@ describe('Engine', () => {
     });
   });
 
+  describe('web search detection in route response', () => {
+    it('includes webSearchRequired in route response for web search queries', () => {
+      const request: RouteRequest = {
+        prompt: 'What is the current stock price of Apple?',
+        modality: Modality.Text,
+      };
+
+      const response = route(request);
+
+      expect(response.webSearchRequired).toBe(true);
+      expect(response.analysis.webSearchRequired).toBe(true);
+    });
+
+    it('sets webSearchRequired to false for non-search queries', () => {
+      const request: RouteRequest = {
+        prompt: 'Write a Python function to sort an array',
+        modality: Modality.Text,
+      };
+
+      const response = route(request);
+
+      expect(response.webSearchRequired).toBe(false);
+      expect(response.analysis.webSearchRequired).toBe(false);
+    });
+
+    it('includes supportsWebSearch in primaryModel', () => {
+      const request: RouteRequest = {
+        prompt: 'Explain how machine learning works',
+        modality: Modality.Text,
+      };
+
+      const response = route(request);
+
+      expect(typeof response.primaryModel.supportsWebSearch).toBe('boolean');
+    });
+
+    it('includes supportsWebSearch in backup models', () => {
+      const request: RouteRequest = {
+        prompt: 'Write a creative story about space',
+        modality: Modality.Text,
+      };
+
+      const response = route(request);
+
+      response.backupModels.forEach((backup) => {
+        expect(typeof backup.supportsWebSearch).toBe('boolean');
+      });
+    });
+
+    it('detects web search for weather queries', () => {
+      const request: RouteRequest = {
+        prompt: 'What is the weather in New York today?',
+        modality: Modality.Text,
+      };
+
+      const response = route(request);
+
+      expect(response.webSearchRequired).toBe(true);
+    });
+
+    it('detects web search for news queries', () => {
+      const request: RouteRequest = {
+        prompt: 'What are the latest news headlines today?',
+        modality: Modality.Text,
+      };
+
+      const response = route(request);
+
+      expect(response.webSearchRequired).toBe(true);
+    });
+  });
+
   describe('analyzeOnly', () => {
     it('returns analysis without scoring', () => {
       const response = analyzeOnly('Write a function in JavaScript', Modality.Text);
@@ -386,6 +458,14 @@ describe('Engine', () => {
 
       const response4 = analyzeOnly('Translate this to Spanish', Modality.Text);
       expect(response4.analysis.intent).toBe(Intent.Translation);
+    });
+
+    it('includes webSearchRequired in analyze response', () => {
+      const response = analyzeOnly('What is the current price of Bitcoin?', Modality.Text);
+      expect(response.analysis.webSearchRequired).toBe(true);
+
+      const response2 = analyzeOnly('Explain photosynthesis', Modality.Text);
+      expect(response2.analysis.webSearchRequired).toBe(false);
     });
   });
 });

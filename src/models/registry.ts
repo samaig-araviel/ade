@@ -18,6 +18,7 @@ const models: ModelDefinition[] = [
             maxInputTokens: 200000, maxOutputTokens: 64000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
             supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsWebSearch: true,
             supportsExtendedThinking: true,
             visionScore: 0.97, audioScore: 0,
         },
@@ -56,6 +57,7 @@ const models: ModelDefinition[] = [
             maxInputTokens: 200000, maxOutputTokens: 64000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
             supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsWebSearch: true,
             supportsExtendedThinking: true,
             visionScore: 0.95, audioScore: 0,
         },
@@ -94,6 +96,7 @@ const models: ModelDefinition[] = [
             maxInputTokens: 200000, maxOutputTokens: 64000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
             supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsWebSearch: true,
             supportsExtendedThinking: true,
             visionScore: 0.96, audioScore: 0,
         },
@@ -132,6 +135,7 @@ const models: ModelDefinition[] = [
             maxInputTokens: 200000, maxOutputTokens: 64000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
             supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsWebSearch: true,
             supportsExtendedThinking: true,
             visionScore: 0.94, audioScore: 0,
         },
@@ -170,6 +174,7 @@ const models: ModelDefinition[] = [
             maxInputTokens: 200000, maxOutputTokens: 64000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
             supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsWebSearch: true,
             visionScore: 0.88, audioScore: 0,
         },
         performance: { avgLatencyMs: 400, reliabilityPercent: 99.8 },
@@ -207,6 +212,7 @@ const models: ModelDefinition[] = [
             maxInputTokens: 200000, maxOutputTokens: 8192,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
             supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsWebSearch: true,
             visionScore: 0.82, audioScore: 0,
         },
         performance: { avgLatencyMs: 350, reliabilityPercent: 99.8 },
@@ -245,7 +251,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 400000, maxOutputTokens: 128000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsReasoning: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true, supportsReasoning: true,
             visionScore: 0.95, audioScore: 0,
         },
         performance: { avgLatencyMs: 2000, reliabilityPercent: 99.5 },
@@ -282,7 +288,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 400000, maxOutputTokens: 128000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsReasoning: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true, supportsReasoning: true,
             visionScore: 0.96, audioScore: 0,
         },
         performance: { avgLatencyMs: 8000, reliabilityPercent: 99.3 },
@@ -319,7 +325,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 400000, maxOutputTokens: 128000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsReasoning: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true, supportsReasoning: true,
             visionScore: 0.94, audioScore: 0,
         },
         performance: { avgLatencyMs: 2200, reliabilityPercent: 99.5 },
@@ -356,7 +362,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 400000, maxOutputTokens: 128000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsReasoning: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true, supportsReasoning: true,
             visionScore: 0.92, audioScore: 0,
         },
         performance: { avgLatencyMs: 2400, reliabilityPercent: 99.4 },
@@ -393,7 +399,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 400000, maxOutputTokens: 128000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsReasoning: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true, supportsReasoning: true,
             visionScore: 0.88, audioScore: 0,
         },
         performance: { avgLatencyMs: 800, reliabilityPercent: 99.7 },
@@ -467,7 +473,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 400000, maxOutputTokens: 128000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsReasoning: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true, supportsReasoning: true,
             visionScore: 0.90, audioScore: 0,
         },
         performance: { avgLatencyMs: 2500, reliabilityPercent: 99.4 },
@@ -504,7 +510,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 400000, maxOutputTokens: 128000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsReasoning: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true, supportsReasoning: true,
             visionScore: 0.85, audioScore: 0,
         },
         performance: { avgLatencyMs: 600, reliabilityPercent: 99.7 },
@@ -541,7 +547,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 1047576, maxOutputTokens: 32768,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
             visionScore: 0.92, audioScore: 0,
         },
         performance: { avgLatencyMs: 1500, reliabilityPercent: 99.5 },
@@ -578,7 +584,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 1047576, maxOutputTokens: 32768,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
             visionScore: 0.85, audioScore: 0,
         },
         performance: { avgLatencyMs: 600, reliabilityPercent: 99.7 },
@@ -652,7 +658,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 128000, maxOutputTokens: 16384,
             supportsStreaming: true, supportsVision: true, supportsAudio: true,
-            supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
             visionScore: 0.94, audioScore: 0.92,
         },
         performance: { avgLatencyMs: 1000, reliabilityPercent: 99.6 },
@@ -689,7 +695,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 128000, maxOutputTokens: 16384,
             supportsStreaming: true, supportsVision: true, supportsAudio: true,
-            supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
             visionScore: 0.85, audioScore: 0.85,
         },
         performance: { avgLatencyMs: 500, reliabilityPercent: 99.7 },
@@ -726,7 +732,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 200000, maxOutputTokens: 100000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsReasoning: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true, supportsReasoning: true,
             visionScore: 0.90, audioScore: 0,
         },
         performance: { avgLatencyMs: 3000, reliabilityPercent: 99.3 },
@@ -763,7 +769,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 200000, maxOutputTokens: 100000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsReasoning: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true, supportsReasoning: true,
             visionScore: 0.92, audioScore: 0,
         },
         performance: { avgLatencyMs: 10000, reliabilityPercent: 99.2 },
@@ -800,7 +806,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 200000, maxOutputTokens: 100000,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsReasoning: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true, supportsReasoning: true,
             visionScore: 0.88, audioScore: 0,
         },
         performance: { avgLatencyMs: 1200, reliabilityPercent: 99.5 },
@@ -839,7 +845,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 1048576, maxOutputTokens: 65536,
             supportsStreaming: true, supportsVision: true, supportsAudio: true,
-            supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
             visionScore: 0.96, audioScore: 0.94,
         },
         performance: { avgLatencyMs: 2000, reliabilityPercent: 99.4 },
@@ -876,7 +882,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 1048576, maxOutputTokens: 65536,
             supportsStreaming: true, supportsVision: true, supportsAudio: true,
-            supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
             visionScore: 0.90, audioScore: 0.88,
         },
         performance: { avgLatencyMs: 500, reliabilityPercent: 99.7 },
@@ -913,7 +919,7 @@ const models: ModelDefinition[] = [
         capabilities: {
             maxInputTokens: 1048576, maxOutputTokens: 65536,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
             visionScore: 0.82, audioScore: 0,
         },
         performance: { avgLatencyMs: 300, reliabilityPercent: 99.8 },
@@ -1579,6 +1585,7 @@ export function toModelInfo(model: ModelDefinition): ModelInfo {
             supportsAudio: model.capabilities.supportsAudio,
             supportsFunctionCalling: model.capabilities.supportsFunctionCalling,
             supportsJsonMode: model.capabilities.supportsJsonMode,
+            supportsWebSearch: !!model.capabilities.supportsWebSearch,
         },
         performance: {
             avgLatencyMs: model.performance.avgLatencyMs,

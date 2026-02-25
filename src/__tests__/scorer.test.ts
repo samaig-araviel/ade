@@ -34,6 +34,7 @@ describe('Scorer', () => {
     modality: Modality.Text,
     keywords: ['code', 'function'],
     humanContextUsed: false,
+    webSearchRequired: false,
   };
 
   describe('calculateTaskFitness', () => {

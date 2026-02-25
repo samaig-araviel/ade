@@ -4,6 +4,7 @@ import {
   detectDomain,
   detectComplexity,
   detectTone,
+  detectWebSearchRequired,
   extractPromptKeywords,
   parseModality,
 } from './detectors';
@@ -13,6 +14,7 @@ export {
   detectDomain,
   detectComplexity,
   detectTone,
+  detectWebSearchRequired,
   extractPromptKeywords,
   parseModality,
   isPureModality,
@@ -37,6 +39,7 @@ export function analyze(
   const complexity = detectComplexity(prompt);
   const tone = detectTone(prompt);
   const keywords = extractPromptKeywords(prompt);
+  const webSearchRequired = detectWebSearchRequired(prompt, intent, domain);
 
   // Check if human context was provided and has any meaningful data
   const humanContextUsed = hasSignificantHumanContext(humanContext);
@@ -49,6 +52,7 @@ export function analyze(
     modality: parsedModality,
     keywords,
     humanContextUsed,
+    webSearchRequired,
   };
 }
 
@@ -98,5 +102,6 @@ export function getDefaultAnalysis(modality: Modality = Modality.Text): QueryAna
     modality,
     keywords: [],
     humanContextUsed: false,
+    webSearchRequired: false,
   };
 }
