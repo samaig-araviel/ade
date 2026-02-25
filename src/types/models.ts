@@ -125,6 +125,7 @@ export interface ModelInfo {
     supportsAudio: boolean;
     supportsFunctionCalling: boolean;
     supportsJsonMode: boolean;
+    supportsWebSearch: boolean;
   };
   performance: {
     avgLatencyMs: number;

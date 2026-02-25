@@ -27,6 +27,7 @@ describe('Reasoning Generator', () => {
     modality: Modality.Text,
     keywords: ['code', 'function'],
     humanContextUsed: false,
+    webSearchRequired: false,
   };
 
   const mockModelScore: ModelScore = {

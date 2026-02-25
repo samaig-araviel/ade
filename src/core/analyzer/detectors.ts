@@ -459,6 +459,314 @@ export function detectTone(prompt: string): Tone {
   return bestTone;
 }
 
+// ========== WEB SEARCH DETECTION ==========
+
+// Temporal keywords indicating need for current/real-time information
+const TEMPORAL_KEYWORDS = new Set([
+  // Direct temporal references
+  'today', 'tonight', 'tomorrow', 'yesterday', 'currently', 'current',
+  'latest', 'recent', 'recently', 'newest', 'updated',
+  // Recency modifiers
+  'breaking', 'trending', 'emerging', 'upcoming', 'ongoing', 'developing',
+  'live', 'realtime', 'fresh',
+  // Year references (2024-2027)
+  '2024', '2025', '2026', '2027',
+]);
+
+// Multi-word temporal phrases (checked against lowered prompt)
+const TEMPORAL_PHRASES: string[] = [
+  'this week', 'this month', 'this year', 'this quarter', 'this season',
+  'last week', 'last month', 'last year', 'last quarter', 'last night',
+  'past week', 'past month', 'past year', 'past hour', 'past day',
+  'right now', 'just now', 'moments ago',
+  'real-time', 'real time', 'up-to-date', 'up to date',
+  'as of today', 'as of now', 'at the moment',
+  'most recent', 'most up-to-date',
+];
+
+// News, events, and real-time data patterns
+const REALTIME_DATA_PATTERNS: RegExp[] = [
+  // News and events
+  /\b(latest|recent|current|breaking|trending)\s+(news|headlines|updates|developments|events|stories|reports)\b/i,
+  /\bnews\s+(about|on|regarding|from|in)\b/i,
+  /\bwhat\s+(is|are)\s+(happening|going\s+on|new)\b/i,
+  /\bwhat\s+happened\s+(to|with|in|at|today|yesterday|recently)\b/i,
+  /\bany\s+(new|recent|latest)\s+(news|updates|developments|announcements)\b/i,
+
+  // Sports scores and results
+  /\b(score|scores|result|results)\s+(of|for|from)\s+(the|today|yesterday|last\s+night)\b/i,
+  /\bwho\s+(won|lost|scored|is\s+winning|is\s+leading)\b/i,
+  /\b(game|match|fight|race)\s+(score|result|outcome)\b/i,
+  /\b(nba|nfl|mlb|nhl|fifa|premier\s+league|champions\s+league|world\s+cup|la\s+liga|serie\s+a|bundesliga|ligue\s+1|ipl|afl|mls)\s+(scores?|results?|standings?|schedule|table|fixtures?)\b/i,
+  /\bcurrent\s+(standings|rankings|leaderboard|stats|statistics|table|form)\b/i,
+  /\b(playoff|finals|semi.?final|quarter.?final)\s+(schedule|bracket|results?|scores?)\b/i,
+  /\btransfer\s+(news|rumors?|rumours?|window|deadline|signings?)\b/i,
+
+  // Weather
+  /\bweather\s+(in|for|at|today|tomorrow|this\s+week|forecast|conditions?|outlook)\b/i,
+  /\b(will\s+it|is\s+it\s+going\s+to)\s+(rain|snow|storm|hail|be\s+(hot|cold|warm|sunny|cloudy|humid|windy))\b/i,
+  /\bforecast\s+(for|in|today|tomorrow|this\s+week|weekend|next\s+week)\b/i,
+  /\btemperature\s+(in|at|today|right\s+now|current|outside)\b/i,
+  /\b(uv|air\s+quality|pollen|humidity)\s+(index|level|today|current|forecast)\b/i,
+
+  // Stock market and financial data
+  /\b(stock|share|equity)\s+(price|value|market|ticker|quote)\b/i,
+  /\b(price|value|cost|rate)\s+of\s+(bitcoin|btc|ethereum|eth|gold|silver|oil|gas|crypto|bnb|xrp|ada|doge|sol)\b/i,
+  /\b(market|stock|trading|crypto)\s+(today|now|current|update|open|close|hours)\b/i,
+  /\bhow\s+much\s+(is|does|are|do|did)\b/i,
+  /\b(exchange\s+rate|forex|currency\s+(rate|conversion|exchange))\b/i,
+  /\b(dow|nasdaq|s&p|ftse|nikkei|hang\s+seng|dax|cac|sensex|nifty|kospi|asx)\s*(500|100|200|30)?\s*(index|today|now|current)?\b/i,
+  /\b(interest\s+rate|fed\s+(rate|funds)|inflation\s+rate|cpi|ppi)\s*(today|current|now|latest)?\b/i,
+  /\b(earnings|quarterly\s+results?|annual\s+report|revenue)\s+(for|of|from)\b/i,
+  /\b(ipo|earnings\s+call|dividend)\s+(date|schedule|announcement|today)\b/i,
+
+  // Elections and politics
+  /\b(election|poll|polling|vote|ballot|referendum|primary|caucus)\s+(results?|updates?|latest|current|2024|2025|2026|predictions?|forecast)\b/i,
+  /\bwho\s+is\s+(winning|leading|ahead)\s+(in\s+the)?\s*(polls?|election|race|primary)\b/i,
+  /\b(president|prime\s+minister|governor|mayor|chancellor|premier)\s+of\b/i,
+  /\b(cabinet|government)\s+(reshuffle|formation|ministers?)\b/i,
+  /\b(sanctions?|tariffs?|trade\s+war|embargo)\s+(on|against|latest|new|current)\b/i,
+
+  // Product releases, launches, availability
+  /\b(release|released|launch|launched|announced|available|unveiled|revealed|dropped|out\s+now)\b/i,
+  /\bwhen\s+(does|will|is|did)\s+.{0,50}\s+(come\s+out|release|launch|drop|ship|available|premiere)\b/i,
+  /\b(new|latest|upcoming|next)\s+(release|version|model|update|feature|product|generation|lineup)\b/i,
+  /\bis\s+.{0,30}\s+(out|released|available|launched|shipping)\s*(yet|now|already)?\b/i,
+  /\b(pre.?order|waitlist|wait\s+list|sign\s+up|early\s+access)\s+(for|open|available|live)\b/i,
+
+  // Company and organization current state
+  /\b(ceo|cto|cfo|coo|cmo|president|chairman|founder|owner|director)\s+of\b/i,
+  /\bwho\s+(runs|leads|owns|founded|heads|manages)\b/i,
+  /\bhow\s+many\s+(employees|users|subscribers|members|customers|stores|locations)\s+(does|do|are\s+there)\b/i,
+  /\b(market\s+cap(italization)?|valuation|net\s+worth)\s+(of|for)\b/i,
+  /\b(revenue|profit|income|funding|series\s+[a-f])\s+(of|for|at)\b/i,
+  /\b(acquired|merger|acquisition|buyout|takeover)\s+(of|by|between)\b/i,
+  /\b(layoffs?|hiring\s+freeze|restructuring|bankruptcy|shutdown)\s+(at|of|by)\b/i,
+
+  // Travel and logistics
+  /\bflight\s+(status|delay|cancellation|schedule|to|from|tracker)\b/i,
+  /\b(traffic|road\s+conditions?|travel\s+advisory|travel\s+ban|visa\s+requirements?|entry\s+requirements?)\b/i,
+  /\b(open|closed|operating\s+hours|business\s+hours|opening\s+hours|schedule)\s+(right\s+now|today|currently|on\s+sunday|on\s+monday)\b/i,
+  /\b(gas|petrol|diesel|fuel)\s+(price|cost|station)\s*(near|in|at|today|current)?\b/i,
+  /\b(airport|train|bus)\s+(schedule|delay|status|arrivals?|departures?)\b/i,
+  /\b(uber|lyft|taxi)\s+(price|cost|fare|surge|availability)\b/i,
+
+  // Tech and product info
+  /\b(specs?|specifications?|features?|pricing|price|benchmarks?)\s+(of|for)\s+(the\s+)?(new|latest|upcoming|iphone|samsung|pixel|macbook|ipad|surface|galaxy)\b/i,
+  /\b(iphone|samsung|pixel|playstation|xbox|nvidia|amd|intel|apple|tesla|rivian)\s+\d+/i,
+  /\b(ios|android|windows|macos|chrome\s*os|linux)\s+\d+/i,
+  /\b(benchmark|geekbench|cinebench|3dmark|antutu)\s*(scores?|results?|comparison)\b/i,
+  /\b(software|app|firmware)\s+(update|version|patch|changelog|release\s+notes)\b/i,
+
+  // Entertainment and media
+  /\b(box\s+office|ratings?|viewership|reviews?|rotten\s+tomatoes|imdb|metacritic)\s+(for|of|this\s+week|today|latest|new)\b/i,
+  /\b(now\s+playing|currently\s+showing|streaming\s+on|available\s+on|coming\s+to)\b/i,
+  /\b(trailer|teaser)\s+(for|of)\s+(the\s+)?(new|latest|upcoming)\b/i,
+  /\b(netflix|hulu|disney|hbo|amazon\s+prime|apple\s+tv|peacock|paramount)\s+(new|releases?|shows?|movies?|originals?)\b/i,
+  /\b(billboard|spotify|apple\s+music)\s+(chart|top|hot|playlist|trending)\b/i,
+
+  // Health and pandemic data
+  /\b(covid|coronavirus|pandemic|outbreak|epidemic|flu\s+season|bird\s+flu|mpox)\s+(cases?|deaths?|stats?|data|numbers?|update|current|today|wave)\b/i,
+  /\b(vaccine|vaccination)\s+(availability|schedule|rollout|update|booster|side\s+effects?|recall)\b/i,
+  /\b(fda|ema|who|cdc)\s+(approval|approved|authorized|warning|recall|advisory|guidelines?)\b/i,
+  /\b(drug|medication)\s+(recall|shortage|approval|interaction|price)\b/i,
+
+  // Legal and regulatory
+  /\b(new|latest|recent|updated|proposed)\s+(law|regulation|policy|legislation|ruling|ban|sanction|directive|mandate)\b/i,
+  /\b(supreme\s+court|court|tribunal|judge|jury)\s+(ruling|decision|case|hearing|verdict|opinion)\b/i,
+  /\b(gdpr|ccpa|hipaa|sec|ftc|doj)\s+(ruling|fine|action|investigation|update|enforcement)\b/i,
+  /\b(antitrust|monopoly|class\s+action)\s+(case|lawsuit|ruling|investigation|settlement)\b/i,
+
+  // Research intent that benefits from live data
+  /\b(search\s+for|search\s+the\s+web|search\s+online|look\s+up|google|browse\s+for)\s+(me\s+)?(the|some|any)?\b/i,
+  /\bfind\s+(me\s+)?(the|some|any|information|details|data|results|articles|reviews)\b/i,
+  /\bwhat\s+are\s+people\s+saying\s+(about|regarding)\b/i,
+  /\bpublic\s+(opinion|sentiment|reaction|response)\s+(on|to|about|regarding)\b/i,
+  /\b(reviews?|ratings?|feedback|testimonials?)\s+(for|of|on|about)\b/i,
+  /\b(compare|comparison)\s+(of|between)\s+.{0,40}\s+(prices?|costs?|specs?|features?|plans?)\b/i,
+
+  // Comparison with current state
+  /\bis\s+.{1,40}\s+still\s+(open|available|running|active|alive|working|valid|legal|supported|in\s+business|operational|free|online|around)\b/i,
+  /\bhas\s+.{1,40}\s+been\s+(released|updated|fixed|resolved|cancelled|postponed|changed|discontinued|recalled|approved|banned)\b/i,
+  /\bdoes\s+.{1,40}\s+still\s+(exist|work|support|offer|have|accept|ship|deliver|operate|make)\b/i,
+  /\bwhat\s+is\s+the\s+(current|latest|newest|most\s+recent|actual|real)\b/i,
+
+  // Social media and trends
+  /\b(trending|viral|popular|top)\s+(on|tweets?|posts?|videos?|topics?|hashtags?|memes?|challenges?)\b/i,
+  /\b(viral|trending|popular)\s+(tiktok|twitter|instagram|reddit|youtube|twitch|threads)\b/i,
+  /\b(tiktok|twitter|x\.com|instagram|reddit|youtube|twitch|threads|bluesky|mastodon)\s+(trending|popular|viral|drama|controversy|ban)\b/i,
+  /\bwhat\s+is\s+everyone\s+(talking|posting|tweeting|saying)\s+about\b/i,
+
+  // Disaster and emergency
+  /\b(earthquake|tsunami|hurricane|tornado|wildfire|flood|eruption|cyclone|typhoon|avalanche|landslide)\s+(in|near|today|current|latest|warning|alert|update|damage|casualties)\b/i,
+  /\b(evacuation|emergency|alert|warning|amber\s+alert|silver\s+alert)\s+(in|for|near|current|issued)\b/i,
+  /\b(power\s+outage|blackout|water\s+shortage)\s+(in|near|current|update|map)\b/i,
+
+  // Shipping and delivery
+  /\b(track|tracking|shipment|delivery|package)\s+(status|update|where|number|info)\b/i,
+  /\bwhere\s+is\s+my\s+(package|order|delivery|shipment|mail)\b/i,
+
+  // Cryptocurrency and blockchain
+  /\b(bitcoin|btc|ethereum|eth|solana|sol|crypto|nft|defi)\s+(price|value|today|now|current|market|crash|pump|dump|halving)\b/i,
+  /\b(gas\s+fees?|network\s+fees?|mining|staking|yield)\s+(current|now|today|average|low|high)\b/i,
+  /\b(airdrop|token\s+launch|ico|ido)\s+(today|upcoming|new|live|current)\b/i,
+
+  // Events and schedules
+  /\b(concert|show|game|match|event|conference|expo|convention|festival|meetup|hackathon)\s+(schedule|dates?|tickets?|lineup|agenda|speakers?)\s*(for|in|near|today|this\s+week|this\s+weekend)?\b/i,
+  /\bwhen\s+is\s+(the\s+next|the\s+upcoming|the\s+latest)\b/i,
+  /\b(hours?|schedule|open|opening|closing)\s+(of|for|at|times?)\b/i,
+  /\b(sold\s+out|tickets?\s+available|presale|on\s+sale)\s*(for|at|now|today)?\b/i,
+
+  // Jobs and hiring
+  /\b(hiring|jobs?|openings?|positions?|vacancies?|careers?)\s+(at|for|in|near|remote)\b/i,
+  /\bis\s+.{1,30}\s+(hiring|recruiting)\b/i,
+  /\b(salary|compensation|pay|wage)\s+(for|at|range|average|median)\b/i,
+  /\b(glassdoor|indeed|linkedin)\s+(reviews?|ratings?|salary|jobs?)\b/i,
+  /\b(tech\s+layoffs?|hiring\s+freeze|job\s+market|unemployment)\s*(2024|2025|2026|today|current|latest)?\b/i,
+
+  // Restaurant and food
+  /\b(menu|specials?|happy\s+hour|reservations?|wait\s+time)\s+(at|for)\b/i,
+  /\b(restaurants?|cafes?|bars?|pubs?|bakeries?)\s+(near|open|best|top|new|recommended)\b/i,
+  /\b(uber\s+eats?|doordash|grubhub|deliveroo|postmates|just\s+eat|menulog)\b/i,
+  /\b(michelin|zagat)\s+(star|rated|guide|restaurant)\b/i,
+
+  // Population, demographics, statistics
+  /\b(population|gdp|unemployment\s+rate|crime\s+rate|literacy\s+rate|birth\s+rate|death\s+rate|poverty\s+rate|homelessness)\s+(of|in|for|current|latest|2024|2025|2026)\b/i,
+  /\bhow\s+many\s+people\s+(live|are|were|died|voted|immigrated)\s+(in|at|to|from)\b/i,
+
+  // Availability and status checks
+  /\b(is|are)\s+.{1,40}\s+(down|offline|working|up|running|available|out\s+of\s+stock|in\s+stock|back\s+in\s+stock|discontinued|recalled)\b/i,
+  /\b(status|uptime|downtime|outage|incident)\s+(of|for|check|page|dashboard)\b/i,
+  /\b(server|service|website|app|site)\s+(status|down|up|outage|issue|problem)\b/i,
+
+  // Academic and research
+  /\b(latest|recent|new|2024|2025|2026)\s+(study|studies|research|paper|papers|findings?|publication)\s+(on|about|in|from|shows?|suggests?|found|reveals?)\b/i,
+  /\b(peer.?reviewed|preprint|arxiv|pubmed|nature|science|lancet)\s+(paper|article|study|research)\b/i,
+
+  // Environmental and climate
+  /\b(carbon|co2|emissions?|pollution|air\s+quality)\s+(levels?|data|today|current|index|map)\b/i,
+  /\b(sea\s+level|glacier|ice\s+cap|deforestation|ozone)\s+(current|latest|data|level|rate|update)\b/i,
+  /\b(renewable\s+energy|solar|wind\s+power|ev|electric\s+vehicle)\s+(market|share|capacity|production|sales|stats)\b/i,
+
+  // Space and astronomy
+  /\b(nasa|spacex|blue\s+origin|esa|isro|jaxa)\s+(launch|mission|update|news|announcement)\b/i,
+  /\b(iss|international\s+space\s+station|satellite)\s+(location|tracker|pass|visible|update)\b/i,
+  /\b(asteroid|meteor|comet|eclipse|conjunction|supermoon)\s+(today|tonight|when|visible|approaching|near)\b/i,
+
+  // Telecommunications and internet
+  /\b(5g|broadband|internet|wifi)\s+(coverage|speeds?|availability|plans?|pricing|outage)\s*(in|near|for|at)?\b/i,
+  /\b(data\s+breach|hack|cyber\s*attack|security\s+incident|leak)\s+(at|of|by|today|recent|latest|new)\b/i,
+];
+
+// Phrases that strongly indicate a web search is needed (checked against lowered prompt)
+const WEB_SEARCH_PHRASE_INDICATORS: string[] = [
+  'search the web', 'search online', 'search the internet', 'search google',
+  'look it up', 'look this up', 'look that up', 'look up online',
+  'find out', 'find me', 'find information',
+  'google it', 'google this', 'google that',
+  'check online', 'check the internet', 'check the web',
+  'what time is it', 'what day is it',
+  'in the news', 'on the news', 'news today', 'today\'s news',
+  'right now', 'as of today', 'as of now', 'at the moment',
+  'most recent', 'most up-to-date',
+  'live update', 'live data', 'live score', 'live results',
+  'current status', 'current state', 'current situation',
+  'latest version', 'latest release', 'latest update', 'latest news',
+  'still available', 'still open', 'still running', 'still alive',
+  'what\'s new', 'whats new', 'what is new',
+  'where can i buy', 'where can i find', 'where can i get',
+  'where to buy', 'where to find', 'where to get',
+  'near me', 'close to me', 'around me', 'in my area',
+  'best places to', 'top rated', 'highest rated', 'best reviewed',
+  'on sale', 'on discount', 'best deal', 'best price',
+  'who is the current', 'who is the new',
+  'did they', 'has it been', 'have they',
+  'what\'s trending', 'whats trending',
+  'how much does it cost', 'what does it cost',
+  'is it true that', 'is it real that',
+];
+
+// Domains that inherently benefit from web search
+const WEB_SEARCH_DOMAINS = new Set([
+  'weather', 'sports', 'shopping',
+]);
+
+// Detect if a prompt requires web search
+export function detectWebSearchRequired(prompt: string, intent?: Intent, domain?: Domain): boolean {
+  const lowerPrompt = prompt.toLowerCase();
+  const tokens = new Set(tokenize(prompt));
+
+  // Check 1: Direct phrase indicators (highest confidence)
+  for (const phrase of WEB_SEARCH_PHRASE_INDICATORS) {
+    if (lowerPrompt.includes(phrase)) {
+      return true;
+    }
+  }
+
+  // Check 2: Pattern matching against real-time data patterns
+  if (matchesPatterns(prompt, REALTIME_DATA_PATTERNS)) {
+    return true;
+  }
+
+  // Check 3: Domain-based signals (weather, sports, shopping inherently need fresh data)
+  if (domain && WEB_SEARCH_DOMAINS.has(domain)) {
+    // Only if the prompt actually asks a question or requests info
+    if (lowerPrompt.includes('?') ||
+        tokens.has('what') || tokens.has('how') || tokens.has('when') ||
+        tokens.has('where') || tokens.has('who') || tokens.has('which') ||
+        tokens.has('tell') || tokens.has('show') || tokens.has('find') ||
+        tokens.has('get') || tokens.has('check')) {
+      return true;
+    }
+  }
+
+  // Check 4: Temporal keyword and phrase scoring (accumulate signals)
+  let temporalSignalCount = 0;
+
+  // Check multi-word phrases first
+  for (const phrase of TEMPORAL_PHRASES) {
+    if (lowerPrompt.includes(phrase)) {
+      temporalSignalCount += 2;
+    }
+  }
+
+  // Check single-word temporal keywords
+  for (const keyword of TEMPORAL_KEYWORDS) {
+    if (tokens.has(keyword)) {
+      temporalSignalCount++;
+    }
+  }
+
+  // If we have strong temporal signals
+  if (temporalSignalCount >= 2) {
+    return true;
+  }
+
+  // Check 5: Intent-based boost for research
+  if (intent === Intent.Research && temporalSignalCount >= 1) {
+    return true;
+  }
+
+  // Check 6: Question patterns asking about current/real-world state
+  const currentStatePatterns = [
+    /\bwho\s+is\s+the\s+(current|new|acting|interim|present)\b/i,
+    /\bwhat\s+is\s+the\s+(current|latest|new|best|cheapest|fastest|most\s+popular|most\s+expensive|highest|lowest)\b/i,
+    /\bhow\s+much\s+(does|do|is|are|did|will)\b/i,
+    /\bwhere\s+(is|are|can|do|does|should|would)\b/i,
+    /\bwhen\s+(is|does|will|did|was)\s+(the\s+next|the\s+upcoming|the\s+latest)\b/i,
+    /\bcan\s+i\s+(buy|get|order|find|watch|stream|download|rent|book|reserve)\b/i,
+    /\bis\s+there\s+(a|an)\s+.{1,40}\s+(near|in|at|for|around|close)\b/i,
+  ];
+
+  for (const pattern of currentStatePatterns) {
+    if (pattern.test(prompt)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // ========== UTILITIES ==========
 
 export function extractPromptKeywords(prompt: string): string[] {

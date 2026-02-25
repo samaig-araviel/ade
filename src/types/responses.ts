@@ -29,6 +29,7 @@ export interface ModelRecommendation {
   provider: Provider;
   score: number;
   reasoning: ModelReasoning;
+  supportsWebSearch: boolean;
 }
 
 // Query analysis result
@@ -40,6 +41,7 @@ export interface QueryAnalysis {
   modality: Modality;
   keywords: string[];
   humanContextUsed: boolean;
+  webSearchRequired: boolean;
 }
 
 // Timing metrics
@@ -88,6 +90,7 @@ export interface RouteResponse {
   confidence: number;
   analysis: QueryAnalysis;
   timing: TimingMetrics;
+  webSearchRequired: boolean;
   fallback?: FallbackSuggestion;
   upgradeHint?: UpgradeHint;
   providerHint?: ProviderHint;

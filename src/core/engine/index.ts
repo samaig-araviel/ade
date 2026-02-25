@@ -118,6 +118,7 @@ function handleFastPath(
     modality,
     keywords: [],
     humanContextUsed: false,
+    webSearchRequired: false,
   };
 
   return {
@@ -128,6 +129,7 @@ function handleFastPath(
       provider: selection.primary.model.provider,
       score: round(selection.primary.compositeScore, 3),
       reasoning: primaryReasoning,
+      supportsWebSearch: !!selection.primary.model.capabilities.supportsWebSearch,
     },
     backupModels: selection.backups.map((backup, idx) => ({
       id: backup.model.id,
@@ -135,6 +137,7 @@ function handleFastPath(
       provider: backup.model.provider,
       score: round(backup.compositeScore, 3),
       reasoning: backupReasonings[idx]!,
+      supportsWebSearch: !!backup.model.capabilities.supportsWebSearch,
     })),
     confidence: round(selection.confidence, 3),
     analysis,
@@ -144,6 +147,7 @@ function handleFastPath(
       scoringMs: totalMs,
       selectionMs: 0,
     },
+    webSearchRequired: false,
     ...(providerHint ? { providerHint } : {}),
   };
 }
@@ -243,6 +247,7 @@ function handleStandardRoute(
       provider: selection.primary.model.provider,
       score: round(selection.primary.compositeScore, 3),
       reasoning: primaryReasoning,
+      supportsWebSearch: !!selection.primary.model.capabilities.supportsWebSearch,
     },
     backupModels: selection.backups.map((backup, idx) => ({
       id: backup.model.id,
@@ -250,6 +255,7 @@ function handleStandardRoute(
       provider: backup.model.provider,
       score: round(backup.compositeScore, 3),
       reasoning: backupReasonings[idx]!,
+      supportsWebSearch: !!backup.model.capabilities.supportsWebSearch,
     })),
     confidence: round(selection.confidence, 3),
     analysis,
@@ -259,6 +265,7 @@ function handleStandardRoute(
       scoringMs: round(scoringMs, 2),
       selectionMs: round(selectionMs, 2),
     },
+    webSearchRequired: analysis.webSearchRequired,
     ...(fallback ? { fallback } : {}),
     ...(upgradeHint ? { upgradeHint } : {}),
     ...(providerHint ? { providerHint } : {}),
@@ -340,6 +347,7 @@ function handleCombinedModality(
       provider: selection.primary.model.provider,
       score: round(selection.primary.compositeScore, 3),
       reasoning: primaryReasoning,
+      supportsWebSearch: !!selection.primary.model.capabilities.supportsWebSearch,
     },
     backupModels: selection.backups.map((backup, idx) => ({
       id: backup.model.id,
@@ -347,6 +355,7 @@ function handleCombinedModality(
       provider: backup.model.provider,
       score: round(backup.compositeScore, 3),
       reasoning: backupReasonings[idx]!,
+      supportsWebSearch: !!backup.model.capabilities.supportsWebSearch,
     })),
     confidence: round(selection.confidence, 3),
     analysis,
@@ -356,6 +365,7 @@ function handleCombinedModality(
       scoringMs: round(scoringMs, 2),
       selectionMs: round(selectionMs, 2),
     },
+    webSearchRequired: analysis.webSearchRequired,
     ...(providerHint ? { providerHint } : {}),
   };
 }
@@ -376,6 +386,7 @@ function createFallbackResponse(
       provider: model.provider,
       score: 0.5,
       reasoning,
+      supportsWebSearch: !!model.capabilities.supportsWebSearch,
     },
     backupModels: [],
     confidence: 0.5,
@@ -386,6 +397,7 @@ function createFallbackResponse(
       scoringMs: 0,
       selectionMs: 0,
     },
+    webSearchRequired: false,
   };
 }
 
@@ -455,6 +467,8 @@ function createProviderUnavailableResponse(
 ): RouteResponse {
   const reasoning = generateFallbackReasoning(bestModel);
 
+  const resolvedAnalysis = analysis ?? getDefaultAnalysis(modality);
+
   return {
     decisionId: generateDecisionId(),
     primaryModel: {
@@ -463,16 +477,18 @@ function createProviderUnavailableResponse(
       provider: bestModel.provider,
       score: 0,
       reasoning,
+      supportsWebSearch: !!bestModel.capabilities.supportsWebSearch,
     },
     backupModels: [],
     confidence: 0,
-    analysis: analysis ?? getDefaultAnalysis(modality),
+    analysis: resolvedAnalysis,
     timing: {
       totalMs,
       analysisMs: 0,
       scoringMs: 0,
       selectionMs: 0,
     },
+    webSearchRequired: resolvedAnalysis.webSearchRequired,
     fallback: {
       supported: false,
       category: 'Provider Unavailable',
