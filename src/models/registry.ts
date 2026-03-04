@@ -1256,8 +1256,8 @@ const models: ModelDefinition[] = [
     },
 
     {
-        id: 'imagen-3', name: 'Imagen 3', provider: 'google',
-        description: 'Google DeepMind image generation with photorealistic quality and excellent text rendering.',
+        id: 'imagen-4', name: 'Imagen 4', provider: 'google',
+        description: 'Google DeepMind\'s latest image generation model with photorealistic quality and excellent text rendering.',
         pricing: { inputPer1k: 0.040, outputPer1k: 0.060 },
         capabilities: {
             maxInputTokens: 4000, maxOutputTokens: 1,

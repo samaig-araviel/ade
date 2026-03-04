@@ -519,7 +519,7 @@ const FALLBACK_SUGGESTIONS: Partial<Record<Intent, { category: string; message: 
   [Intent.ImageGeneration]: {
     category: 'Image Generation',
     message: 'For best results with image generation, we recommend using a specialized image generation platform. The models in our registry that support this are limited - consider using the suggested platforms directly for production-quality image generation.',
-    suggestedPlatforms: ['OpenAI DALL-E 3', 'Google Imagen 3', 'Stability AI (Stable Diffusion)', 'Midjourney'],
+    suggestedPlatforms: ['OpenAI DALL-E 3', 'Google Imagen 4', 'Stability AI (Stable Diffusion)', 'Midjourney'],
   },
   [Intent.VideoGeneration]: {
     category: 'Video Generation',
