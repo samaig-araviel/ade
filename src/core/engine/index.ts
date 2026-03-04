@@ -518,8 +518,8 @@ export function analyzeOnly(prompt: string, modality: Modality): AnalyzeResponse
 const FALLBACK_SUGGESTIONS: Partial<Record<Intent, { category: string; message: string; suggestedPlatforms: string[] }>> = {
   [Intent.ImageGeneration]: {
     category: 'Image Generation',
-    message: 'For best results with image generation, we recommend using a specialized image generation platform. The models in our registry that support this are limited - consider using the suggested platforms directly for production-quality image generation.',
-    suggestedPlatforms: ['OpenAI DALL-E 3', 'Google Imagen 4', 'Stability AI (Stable Diffusion)', 'Midjourney'],
+    message: 'For best results with image generation, we recommend using a specialized image generation platform or a model with native image generation support.',
+    suggestedPlatforms: ['OpenAI DALL-E 3', 'OpenAI GPT-4o (native)', 'OpenAI GPT-5 (native)', 'Google Imagen 4', 'Gemini 2.5 Flash', 'Stability AI (Stable Diffusion)', 'Midjourney'],
   },
   [Intent.VideoGeneration]: {
     category: 'Video Generation',
