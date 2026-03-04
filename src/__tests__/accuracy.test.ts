@@ -1,5 +1,6 @@
 import { route, analyzeOnly } from '@/core/engine';
 import { Modality, RouteRequest, Intent, Domain, Complexity } from '@/types';
+import { getModelById } from '@/models/registry';
 
 function routeText(prompt: string) {
   return route({ prompt, modality: Modality.Text });
@@ -177,12 +178,34 @@ describe('Routing Accuracy', () => {
       const response = routeText('Generate an image of a golden retriever puppy');
       const model = response.primaryModel;
 
-      // The model should either be an image generation specialist or have high generation capability
-      // It should NOT be a text-only model like Claude or GPT-4 unless they support image gen
-      const isTextOnlyChat = model.id.includes('claude') && !model.id.includes('vision');
-      // This is a softer check - we just want to ensure the system at least
-      // recognizes this as an image generation task
+      // The system should recognize this as an image generation task
       expect(response.analysis.intent).toBe(Intent.ImageGeneration);
+
+      // The recommended model should support image generation (look up full definition from registry)
+      const fullModel = getModelById(model.id);
+      expect(fullModel).toBeDefined();
+      expect(fullModel!.capabilities.supportsImageGeneration).toBe(true);
+    });
+
+    it('recognizes models with native image generation capability', () => {
+      const response = routeText('Create a photorealistic picture of a mountain lake at sunset');
+      expect(response.analysis.intent).toBe(Intent.ImageGeneration);
+
+      // At least some recommended models should support image generation
+      const allModels = [response.primaryModel, ...response.backupModels];
+      const imageCapableModels = allModels.filter(m => {
+        const full = getModelById(m.id);
+        return full?.capabilities.supportsImageGeneration;
+      });
+      expect(imageCapableModels.length).toBeGreaterThan(0);
+
+      // Verify native image gen models are correctly annotated in the registry
+      const nativeImageGenModels = ['gpt-4o', 'gpt-5.2', 'gpt-5-mini', 'gemini-2.5-flash'];
+      for (const modelId of nativeImageGenModels) {
+        const registryEntry = getModelById(modelId);
+        expect(registryEntry).toBeDefined();
+        expect(registryEntry!.capabilities.supportsImageGeneration).toBe(true);
+      }
     });
 
     it('routes research queries to web-capable models when available', () => {
