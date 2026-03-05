@@ -16,7 +16,7 @@ import {
   UpgradeHint,
 } from '@/types';
 import {analyze, getDefaultAnalysis, getModalityType, isCombinedModality, isPureModality,} from '../analyzer';
-import {quickScoreForModality, scoreAllModels, scoreCombinedModality,} from '../scorer';
+import {quickScoreForModality, quickScoreForImageGeneration, scoreAllModels, scoreCombinedModality,} from '../scorer';
 import {selectFallback, selectModels} from '../selector';
 import {
   generateFallbackReasoning,
@@ -27,6 +27,7 @@ import {
 import {
   filterModelsByConstraints,
   getAvailableModels,
+  getImageGenerationModels,
   getModelsByModalityCapability,
   getModelsForTier,
 } from '@/models';
@@ -44,13 +45,155 @@ export function route(request: RouteRequest): RouteResponse {
     ? (request.modality as Modality)
     : request.modality;
 
-  // Check for fast-path eligibility (pure image or voice)
+  // Image modality = user explicitly wants image generation (e.g. from image gallery view)
+  // Skip intent detection entirely and route directly to image-generation-capable models
+  if (modality === Modality.Image) {
+    return handleImageGenerationRoute(request, startTime);
+  }
+
+  // Check for fast-path eligibility (pure voice or video)
   if (isPureModality(modality)) {
     return handleFastPath(request, modality, startTime);
   }
 
   // Standard routing path
   return handleStandardRoute(request, modality, startTime);
+}
+
+// Handle image generation routing - when modality is 'image' or intent is image_generation
+function handleImageGenerationRoute(
+  request: RouteRequest,
+  startTime: number
+): RouteResponse {
+  // Get models gated by user tier
+  let models = getModelsForTier(request.userTier ?? AccessTier.Free);
+
+  // Apply constraints if any
+  if (request.constraints) {
+    models = filterModelsByConstraints(models, request.constraints);
+  }
+
+  // Filter to only image-generation-capable models
+  const imageModels = getImageGenerationModels(models);
+
+  // Score image generation models
+  const scores = quickScoreForImageGeneration(imageModels);
+
+  if (scores.length === 0) {
+    // No image-generation models available - return fallback with helpful suggestion
+    const totalMs = round(performance.now() - startTime, 2);
+    const fallbackModel = selectFallback(models);
+    if (!fallbackModel) {
+      throw new Error('No models available');
+    }
+    return createImageGenerationFallbackResponse(fallbackModel, totalMs);
+  }
+
+  // Apply provider constraint if set
+  const { filteredScores, providerHint, noProvidersAvailable, originalBestModel } =
+    filterByAvailableProviders(scores, request.availableProviders);
+
+  if (noProvidersAvailable) {
+    const totalMs = round(performance.now() - startTime, 2);
+    return createProviderUnavailableResponse(originalBestModel!, Modality.Image, totalMs);
+  }
+
+  // Select best
+  const selection = selectModels(filteredScores);
+
+  // Generate reasoning
+  const primaryReasoning = generateFastPathReasoning(selection.primary, 'image_generation');
+  const backupReasonings = selection.backups.map((backup) =>
+    generateFastPathReasoning(backup, 'image_generation')
+  );
+
+  const totalMs = round(performance.now() - startTime, 2);
+
+  const analysis: QueryAnalysis = {
+    intent: Intent.ImageGeneration,
+    domain: 'creative_arts' as QueryAnalysis['domain'],
+    complexity: 'standard' as QueryAnalysis['complexity'],
+    tone: 'casual' as QueryAnalysis['tone'],
+    modality: Modality.Image,
+    keywords: [],
+    humanContextUsed: false,
+    webSearchRequired: false,
+  };
+
+  return {
+    decisionId: generateDecisionId(),
+    primaryModel: {
+      id: selection.primary.model.id,
+      name: selection.primary.model.name,
+      provider: selection.primary.model.provider,
+      score: round(selection.primary.compositeScore, 3),
+      reasoning: primaryReasoning,
+      supportsWebSearch: !!selection.primary.model.capabilities.supportsWebSearch,
+    },
+    backupModels: selection.backups.map((backup, idx) => ({
+      id: backup.model.id,
+      name: backup.model.name,
+      provider: backup.model.provider,
+      score: round(backup.compositeScore, 3),
+      reasoning: backupReasonings[idx]!,
+      supportsWebSearch: !!backup.model.capabilities.supportsWebSearch,
+    })),
+    confidence: round(selection.confidence, 3),
+    analysis,
+    timing: {
+      totalMs,
+      analysisMs: 0,
+      scoringMs: totalMs,
+      selectionMs: 0,
+    },
+    webSearchRequired: false,
+    ...(providerHint ? { providerHint } : {}),
+  };
+}
+
+// Create fallback response specifically for image generation when no image models are available
+function createImageGenerationFallbackResponse(
+  model: ModelDefinition,
+  totalMs: number
+): RouteResponse {
+  const reasoning = generateFallbackReasoning(model);
+
+  return {
+    decisionId: generateDecisionId(),
+    primaryModel: {
+      id: model.id,
+      name: model.name,
+      provider: model.provider,
+      score: 0.5,
+      reasoning,
+      supportsWebSearch: !!model.capabilities.supportsWebSearch,
+    },
+    backupModels: [],
+    confidence: 0.5,
+    analysis: {
+      intent: Intent.ImageGeneration,
+      domain: 'creative_arts' as QueryAnalysis['domain'],
+      complexity: 'standard' as QueryAnalysis['complexity'],
+      tone: 'casual' as QueryAnalysis['tone'],
+      modality: Modality.Image,
+      keywords: [],
+      humanContextUsed: false,
+      webSearchRequired: false,
+    },
+    timing: {
+      totalMs,
+      analysisMs: 0,
+      scoringMs: 0,
+      selectionMs: 0,
+    },
+    webSearchRequired: false,
+    fallback: {
+      supported: false,
+      category: 'Image Generation',
+      message: 'For best results with image generation, we recommend using a specialized image generation model. Consider selecting one of the suggested platforms.',
+      suggestedPlatforms: ['OpenAI DALL-E 3', 'OpenAI GPT-4o (native)', 'OpenAI GPT-5 (native)', 'Google Imagen 4', 'Gemini 2.5 Flash', 'Stability AI (Stable Diffusion)', 'Midjourney'],
+    },
+  };
 }
 
 // Handle fast-path for pure modality requests
@@ -178,7 +321,74 @@ function handleStandardRoute(
     }
   }
 
-  // Step 3: Handle combined modality if applicable
+  // Step 3: If intent is image generation, filter to image-capable models only
+  if (analysis.intent === Intent.ImageGeneration) {
+    const imageModels = getImageGenerationModels(models);
+    if (imageModels.length > 0) {
+      // Score only image-generation-capable models
+      const { result: imageScores, durationMs: scoringMs } = measureTimeSync(() =>
+        quickScoreForImageGeneration(imageModels)
+      );
+
+      const { filteredScores: imgFiltered, providerHint: imgProviderHint, noProvidersAvailable: imgNoProviders, originalBestModel: imgOrigBest } =
+        filterByAvailableProviders(imageScores, request.availableProviders);
+
+      if (imgNoProviders) {
+        const totalMs = round(performance.now() - startTime, 2);
+        return createProviderUnavailableResponse(imgOrigBest!, modality, totalMs, analysis);
+      }
+
+      const { result: selection, durationMs: selectionMs } = measureTimeSync(() =>
+        selectModels(imgFiltered)
+      );
+
+      const primaryReasoning = generateReasoning(selection.primary, analysis, true);
+      const backupReasonings = selection.backups.map((backup, idx) =>
+        generateReasoning(backup, analysis, false, idx + 1)
+      );
+
+      const totalMs = round(performance.now() - startTime, 2);
+
+      const userTierForUpgrade = request.userTier ?? AccessTier.Free;
+      const upgradeHint = userTierForUpgrade === AccessTier.Free
+        ? generateUpgradeHint(analysis, selection.primary, request)
+        : undefined;
+
+      return {
+        decisionId: generateDecisionId(),
+        primaryModel: {
+          id: selection.primary.model.id,
+          name: selection.primary.model.name,
+          provider: selection.primary.model.provider,
+          score: round(selection.primary.compositeScore, 3),
+          reasoning: primaryReasoning,
+          supportsWebSearch: !!selection.primary.model.capabilities.supportsWebSearch,
+        },
+        backupModels: selection.backups.map((backup, idx) => ({
+          id: backup.model.id,
+          name: backup.model.name,
+          provider: backup.model.provider,
+          score: round(backup.compositeScore, 3),
+          reasoning: backupReasonings[idx]!,
+          supportsWebSearch: !!backup.model.capabilities.supportsWebSearch,
+        })),
+        confidence: round(selection.confidence, 3),
+        analysis,
+        timing: {
+          totalMs,
+          analysisMs: round(analysisMs, 2),
+          scoringMs: round(scoringMs, 2),
+          selectionMs: round(selectionMs, 2),
+        },
+        webSearchRequired: false,
+        ...(upgradeHint ? { upgradeHint } : {}),
+        ...(imgProviderHint ? { providerHint: imgProviderHint } : {}),
+      };
+    }
+    // If no image models available, fall through to standard scoring with fallback
+  }
+
+  // Step 3b: Handle combined modality if applicable
   if (isCombinedModality(modality)) {
     return handleCombinedModality(
       request,
