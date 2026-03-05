@@ -407,6 +407,7 @@ function handleStandardRoute(
     constraints: request.constraints,
     conversationContext: request.context,
     allModels: models,
+    conversationHasImages: request.conversationHasImages,
   };
 
   const { result: scores, durationMs: scoringMs } = measureTimeSync(() =>
@@ -504,6 +505,7 @@ function handleCombinedModality(
     constraints: request.constraints,
     conversationContext: request.context,
     allModels: models,
+    conversationHasImages: request.conversationHasImages,
   };
 
   const { result: textScores, durationMs: scoringMs } = measureTimeSync(() =>

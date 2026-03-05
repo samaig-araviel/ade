@@ -25,6 +25,7 @@ export interface ScoringContext {
   constraints?: Constraints;
   conversationContext?: ConversationContext;
   allModels: ModelDefinition[];
+  conversationHasImages?: boolean;
 }
 
 // Weights configuration

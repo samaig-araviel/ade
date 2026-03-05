@@ -83,6 +83,7 @@ export interface RouteRequest {
   constraints?: Constraints;
   userTier?: AccessTier;
   availableProviders?: Provider[];
+  conversationHasImages?: boolean;
 }
 
 // Analyze-only request

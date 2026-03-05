@@ -364,6 +364,50 @@ describe('Engine', () => {
     });
   });
 
+  describe('conversationHasImages', () => {
+    it('accepts conversationHasImages in request and completes routing', () => {
+      const request: RouteRequest = {
+        prompt: 'Now make it more colorful',
+        modality: Modality.Text,
+        conversationHasImages: true,
+        context: {
+          conversationId: 'abc-123',
+          previousModelUsed: 'gpt-4o',
+        },
+      };
+
+      const response = route(request);
+
+      expect(response.primaryModel).toBeTruthy();
+      expect(response.analysis).toBeTruthy();
+    });
+
+    it('does not change analysis intent based on conversationHasImages flag', () => {
+      const request: RouteRequest = {
+        prompt: 'Explain watercolor techniques in detail',
+        modality: Modality.Text,
+        conversationHasImages: true,
+      };
+
+      const response = route(request);
+
+      // Intent should be determined by prompt text, not the flag
+      expect(response.analysis.intent).not.toBe(Intent.ImageGeneration);
+    });
+
+    it('works without conversationHasImages (backward compatible)', () => {
+      const request: RouteRequest = {
+        prompt: 'Write a Python function',
+        modality: Modality.Text,
+      };
+
+      const response = route(request);
+
+      expect(response.primaryModel).toBeTruthy();
+      expect(response.analysis.intent).toBe(Intent.Coding);
+    });
+  });
+
   describe('web search detection in route response', () => {
     it('includes webSearchRequired in route response for web search queries', () => {
       const request: RouteRequest = {
