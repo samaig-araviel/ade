@@ -91,7 +91,21 @@ export function scoreModel(
   }
 
   // Calculate composite score
-  const compositeScore = factors.reduce((sum, f) => sum + f.weightedScore, 0);
+  let compositeScore = factors.reduce((sum, f) => sum + f.weightedScore, 0);
+
+  // Apply conversation image history bonus: soft preference for image-capable models
+  // when the conversation has previously generated images. Acts as a tiebreaker.
+  if (context.conversationHasImages && model.capabilities.supportsImageGeneration) {
+    const imageBonus = 0.05;
+    compositeScore += imageBonus;
+    factors.push({
+      name: 'Conversation Image Affinity',
+      score: 1.0,
+      weight: imageBonus,
+      weightedScore: imageBonus,
+      detail: 'Conversation includes prior images - slight preference for image-capable model',
+    });
+  }
 
   return {
     model,

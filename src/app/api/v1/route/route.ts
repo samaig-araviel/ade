@@ -94,6 +94,14 @@ function validateRequest(body: unknown): RouteRequest | { error: string; field?:
     validated.availableProviders = request.availableProviders as Provider[];
   }
 
+  // Optional conversationHasImages
+  if (request.conversationHasImages !== undefined) {
+    if (typeof request.conversationHasImages !== 'boolean') {
+      return { error: 'conversationHasImages must be a boolean', field: 'conversationHasImages' };
+    }
+    validated.conversationHasImages = request.conversationHasImages;
+  }
+
   return validated;
 }
 

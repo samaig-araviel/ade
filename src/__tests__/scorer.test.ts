@@ -247,6 +247,69 @@ describe('Scorer', () => {
     });
   });
 
+  describe('conversationHasImages bonus', () => {
+    it('adds image affinity bonus for image-capable models when conversationHasImages is true', () => {
+      const imageModel = models.find((m) => m.capabilities.supportsImageGeneration)!;
+      expect(imageModel).toBeTruthy();
+
+      const withoutHint = scoreModel(imageModel, {
+        analysis: baseAnalysis,
+        allModels: models,
+      });
+
+      const withHint = scoreModel(imageModel, {
+        analysis: baseAnalysis,
+        allModels: models,
+        conversationHasImages: true,
+      });
+
+      expect(withHint.compositeScore).toBeGreaterThan(withoutHint.compositeScore);
+      const hasAffinityFactor = withHint.factors.some(
+        (f) => f.name === 'Conversation Image Affinity'
+      );
+      expect(hasAffinityFactor).toBe(true);
+    });
+
+    it('does not add bonus for non-image-capable models', () => {
+      const nonImageModel = models.find((m) => !m.capabilities.supportsImageGeneration)!;
+      expect(nonImageModel).toBeTruthy();
+
+      const withoutHint = scoreModel(nonImageModel, {
+        analysis: baseAnalysis,
+        allModels: models,
+      });
+
+      const withHint = scoreModel(nonImageModel, {
+        analysis: baseAnalysis,
+        allModels: models,
+        conversationHasImages: true,
+      });
+
+      expect(withHint.compositeScore).toBe(withoutHint.compositeScore);
+      const hasAffinityFactor = withHint.factors.some(
+        (f) => f.name === 'Conversation Image Affinity'
+      );
+      expect(hasAffinityFactor).toBe(false);
+    });
+
+    it('does not add bonus when conversationHasImages is false or undefined', () => {
+      const imageModel = models.find((m) => m.capabilities.supportsImageGeneration)!;
+
+      const withFalse = scoreModel(imageModel, {
+        analysis: baseAnalysis,
+        allModels: models,
+        conversationHasImages: false,
+      });
+
+      const withUndefined = scoreModel(imageModel, {
+        analysis: baseAnalysis,
+        allModels: models,
+      });
+
+      expect(withFalse.compositeScore).toBe(withUndefined.compositeScore);
+    });
+  });
+
   describe('scoreAllModels', () => {
     it('scores and sorts all models', () => {
       const results = scoreAllModels({
