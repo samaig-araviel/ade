@@ -202,10 +202,31 @@ export function generateReasoning(
 // Generate reasoning for fast-path selection
 export function generateFastPathReasoning(
   modelScore: ModelScore,
-  modalityType: 'vision' | 'audio'
+  modalityType: 'vision' | 'audio' | 'image_generation'
 ): ModelReasoning {
   const model = modelScore.model;
   const score = Math.round(modelScore.compositeScore * 100);
+
+  if (modalityType === 'image_generation') {
+    const isSpecialist = model.specializations?.includes('image_generation') ?? false;
+    const summary = isSpecialist
+      ? `${model.name} is a specialist image generation model — purpose-built for creating images from text descriptions (${score}% capability score).`
+      : `${model.name} supports native image generation and can create images directly from your prompt (${score}% capability score).`;
+
+    return {
+      summary,
+      factors: [
+        {
+          name: 'Image Generation Capability',
+          impact: FactorImpact.Positive,
+          weight: 1.0,
+          detail: isSpecialist
+            ? `Specialist image generation model with ${score}% capability`
+            : `Native image generation support with ${score}% capability`,
+        },
+      ],
+    };
+  }
 
   const modalityName = modalityType === 'vision' ? 'image' : 'audio';
 

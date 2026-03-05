@@ -6,6 +6,10 @@ function routeText(prompt: string) {
   return route({ prompt, modality: Modality.Text });
 }
 
+function routeImage(prompt: string) {
+  return route({ prompt, modality: Modality.Image });
+}
+
 function analyzeText(prompt: string) {
   return analyzeOnly(prompt, Modality.Text);
 }
@@ -261,6 +265,96 @@ describe('Routing Accuracy', () => {
       expect(response.primaryModel).toBeTruthy();
       // Response should complete without error
       expect(response.decisionId).toMatch(/^dec_/);
+    });
+  });
+
+  describe('Image Modality Routing', () => {
+    it('routes modality=image directly to image-generation-capable models', () => {
+      const response = routeImage('Generate a hyper-realistic cinematic portrait with dramatic rim lighting');
+      const model = getModelById(response.primaryModel.id);
+
+      expect(response.analysis.intent).toBe(Intent.ImageGeneration);
+      expect(model).toBeDefined();
+      expect(model!.capabilities.supportsImageGeneration).toBe(true);
+    });
+
+    it('never selects Claude for modality=image requests', () => {
+      const prompts = [
+        'Generate a hyper-realistic cinematic portrait',
+        'Create a watercolor painting of a mountain lake',
+        'Design a minimalist logo',
+        'Create an abstract fluid art composition',
+        'Create a futuristic neon-lit cityscape',
+      ];
+
+      for (const prompt of prompts) {
+        const response = routeImage(prompt);
+        expect(response.primaryModel.provider).not.toBe('anthropic');
+        // Verify all recommended models support image generation
+        const allModels = [response.primaryModel, ...response.backupModels];
+        for (const m of allModels) {
+          const fullModel = getModelById(m.id);
+          expect(fullModel!.capabilities.supportsImageGeneration).toBe(true);
+        }
+      }
+    });
+
+    it('selects image-capable models even for ambiguous prompts when modality=image', () => {
+      // These prompts might not trigger ImageGeneration intent from text analysis
+      // but since modality=image, they should still route to image models
+      const response = routeImage('a beautiful sunset over the ocean');
+      const model = getModelById(response.primaryModel.id);
+      expect(model!.capabilities.supportsImageGeneration).toBe(true);
+    });
+  });
+
+  describe('Image Generation Intent Detection (text modality)', () => {
+    it('detects image generation for descriptive prompts with adjectives', () => {
+      const prompts = [
+        'Generate a hyper-realistic cinematic portrait with dramatic rim lighting, shallow depth of field, and a moody dark background',
+        'Create a delicate watercolor painting of a misty mountain lake at sunrise with soft pastel pinks and golds',
+        'Design a clean minimalist logo mark for a modern technology company, using geometric shapes and a bold color accent',
+        'Create an abstract fluid art composition with deep ocean blues, liquid gold, and ivory white swirling together in organic forms',
+        'Create a futuristic neon-lit cityscape at night with rain-soaked streets reflecting colorful signs and towering skyscrapers',
+        'Generate a premium product photography shot of sleek wireless headphones on a matte black surface with soft gradient studio lighting',
+      ];
+
+      for (const prompt of prompts) {
+        const { analysis } = analyzeText(prompt);
+        expect(analysis.intent).toBe(Intent.ImageGeneration);
+      }
+    });
+
+    it('routes descriptive image generation prompts to image-capable models via text modality', () => {
+      const prompts = [
+        'Generate a hyper-realistic cinematic portrait with dramatic rim lighting',
+        'Create a delicate watercolor painting of a misty mountain lake',
+        'Generate a premium product photography shot of sleek wireless headphones',
+      ];
+
+      for (const prompt of prompts) {
+        const response = routeText(prompt);
+        expect(response.analysis.intent).toBe(Intent.ImageGeneration);
+        const model = getModelById(response.primaryModel.id);
+        expect(model!.capabilities.supportsImageGeneration).toBe(true);
+        expect(response.primaryModel.provider).not.toBe('anthropic');
+      }
+    });
+  });
+
+  describe('Claude Not Selected for Image Generation', () => {
+    it('Claude models are not marked as image-generation capable in registry', () => {
+      const claudeModels = [
+        'claude-opus-4-6', 'claude-sonnet-4-6', 'claude-opus-4-5-20251101',
+        'claude-sonnet-4-5-20250929', 'claude-haiku-4-5-20251001',
+      ];
+
+      for (const modelId of claudeModels) {
+        const model = getModelById(modelId);
+        if (model) {
+          expect(model.capabilities.supportsImageGeneration).toBeFalsy();
+        }
+      }
     });
   });
 });

@@ -30,9 +30,13 @@ function countMatches(tokens: Set<string>, keywords: Set<string>): number {
 
 // ========== GENERATION DETECTION PATTERNS ==========
 
+// Image generation nouns - centralized for reuse across patterns
+const IMAGE_GEN_NOUNS = 'image|picture|photo|photograph|illustration|artwork|poster|logo|icon|banner|thumbnail|avatar|wallpaper|infographic|mockup|wireframe|portrait|landscape|cityscape|seascape|skyline|painting|drawing|sketch|rendering|composition|scene|shot|graphic|visual|headshot|diagram';
+
 // Image generation patterns - "generate an image", "create a picture", "draw me a..."
 const IMAGE_GENERATION_PATTERNS = [
-  /\b(generate|create|make|draw|design|paint|render|produce)\s+(me\s+)?(an?\s+)?(image|picture|photo|photograph|illustration|artwork|poster|logo|icon|banner|thumbnail|avatar|wallpaper|infographic|mockup|wireframe|portrait|landscape|cityscape|seascape|skyline)\b/i,
+  // Verb + optional "me" + optional article + optional adjectives (up to 60 chars) + image noun
+  new RegExp(`\\b(generate|create|make|draw|design|paint|render|produce)\\s+(me\\s+)?(an?\\s+)?([\\w\\s-]{0,60}\\s+)?(${IMAGE_GEN_NOUNS})\\b`, 'i'),
   /\b(draw|paint|sketch)\s+me\s+(an?\s+)?/i,  // "draw me a cityscape" - "me" disambiguates from "draw a conclusion"
   /\b(image|picture|photo|illustration|artwork|poster|logo|icon)\s+of\b/i,
   /\bdalle?\b/i,
@@ -40,6 +44,14 @@ const IMAGE_GENERATION_PATTERNS = [
   /\bstable\s+diffusion\b/i,
   /\btext[\s-]to[\s-]image\b/i,
   /\bai[\s-]generated?\s+(image|art|picture)\b/i,
+  // Visual style keywords + visual subject keywords (both present = image generation)
+  new RegExp(`\\b(hyper-?realistic|photorealistic|cinematic|watercolor|oil\\s+painting|digital\\s+art|concept\\s+art|3d\\s+render|pixel\\s+art|vector|anime\\s+style|comic\\s+style|studio\\s+lighting|product\\s+photography|fluid\\s+art|neon-?lit)\\b.*\\b(${IMAGE_GEN_NOUNS}|lighting|depth\\s+of\\s+field|background|foreground|color\\s+palette|gradient|swirling|flowing|matte|surface)\\b`, 'i'),
+  // Reverse: image noun followed by visual style
+  new RegExp(`\\b(${IMAGE_GEN_NOUNS})\\b.*\\b(hyper-?realistic|photorealistic|cinematic|watercolor|oil\\s+painting|digital\\s+art|concept\\s+art|3d\\s+render|pixel\\s+art|rim\\s+lighting|studio\\s+lighting|neon-?lit|rain-?soaked)\\b`, 'i'),
+  // Visual medium descriptions unambiguously about creating visual content
+  /\b(watercolor|oil\s+painting|digital\s+art|concept\s+art|3d\s+render|pixel\s+art)\s+(of|painting|style|with)\b/i,
+  // "product photography shot" etc. with generate-like verb
+  /\b(generate|create|make|produce)\s+(me\s+)?(an?\s+)?(premium|professional|sleek|modern|clean|elegant|stunning|beautiful)[\w\s-]{0,40}\b(photography|shot|rendering|composition)\b/i,
 ];
 
 // Video generation patterns
@@ -813,7 +825,8 @@ export function parseModality(modalityStr: string): Modality {
 }
 
 export function isPureModality(modality: Modality): boolean {
-  return modality === Modality.Image || modality === Modality.Voice || modality === Modality.Video;
+  // Note: Modality.Image is handled separately as image generation routing
+  return modality === Modality.Voice || modality === Modality.Video;
 }
 
 export function isCombinedModality(modality: Modality): boolean {

@@ -1658,3 +1658,10 @@ export function getModelsByModalityCapability(
         .filter((m) => m.capabilities[scoreKey] > 0)
         .sort((a, b) => b.capabilities[scoreKey] - a.capabilities[scoreKey]);
 }
+
+// Get models that support image generation
+export function getImageGenerationModels(
+    modelList: ModelDefinition[]
+): ModelDefinition[] {
+    return modelList.filter((m) => m.capabilities.supportsImageGeneration === true);
+}
