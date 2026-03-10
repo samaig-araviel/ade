@@ -1111,43 +1111,6 @@ const models: ModelDefinition[] = [
     // ===== GENERATION MODELS =====
 
     {
-        id: 'dall-e-3', name: 'DALL-E 3', provider: 'openai',
-        description: 'State-of-the-art image generation model. Creates high-quality images from text descriptions.',
-        pricing: { inputPer1k: 0.040, outputPer1k: 0.080 },
-        capabilities: {
-            maxInputTokens: 4000, maxOutputTokens: 1,
-            supportsStreaming: false, supportsVision: false, supportsAudio: false,
-            supportsFunctionCalling: false, supportsJsonMode: false, supportsImageGeneration: true,
-            visionScore: 0, audioScore: 0,
-        },
-        performance: { avgLatencyMs: 8000, reliabilityPercent: 98.5 },
-        taskStrengths: {
-            intents: {
-                [Intent.Coding]: 0.05, [Intent.Creative]: 0.15, [Intent.Analysis]: 0.05, [Intent.Factual]: 0.05,
-                [Intent.Conversation]: 0.05, [Intent.Task]: 0.10, [Intent.Brainstorm]: 0.10, [Intent.Translation]: 0.03,
-                [Intent.Summarization]: 0.03, [Intent.Extraction]: 0.03, [Intent.ImageGeneration]: 0.97,
-                [Intent.VideoGeneration]: 0.10, [Intent.VoiceGeneration]: 0.03, [Intent.MusicGeneration]: 0.03,
-                [Intent.Research]: 0.05, [Intent.Math]: 0.03, [Intent.Planning]: 0.08,
-            },
-            domains: {
-                [Domain.Technology]: 0.30, [Domain.Business]: 0.35, [Domain.Health]: 0.20, [Domain.Legal]: 0.10,
-                [Domain.Finance]: 0.15, [Domain.Education]: 0.25, [Domain.Science]: 0.25, [Domain.CreativeArts]: 0.92,
-                [Domain.Lifestyle]: 0.45, [Domain.General]: 0.50, [Domain.Government]: 0.10, [Domain.Relationships]: 0.30,
-                [Domain.Shopping]: 0.40, [Domain.EventPlanning]: 0.35, [Domain.Weather]: 0.20, [Domain.Sports]: 0.25,
-            },
-            complexity: { [Complexity.Quick]: 0.85, [Complexity.Standard]: 0.90, [Complexity.Demanding]: 0.75 },
-        },
-        humanFactors: {
-            empathyScore: 0.10, playfulnessScore: 0.30, professionalismScore: 0.40,
-            conciseness: 0.95, verbosity: 0.10, conversationalTone: 0.10,
-            formalTone: 0.30, lateNightSuitability: 0.80, workHoursSuitability: 0.80,
-        },
-        specializations: ['image_generation'],
-        accessTier: AccessTier.Pro,
-        available: true,
-    },
-
-    {
         id: 'imagen-4', name: 'Imagen 4', provider: 'google',
         description: 'Google DeepMind\'s latest image generation model with photorealistic quality and excellent text rendering.',
         pricing: { inputPer1k: 0.040, outputPer1k: 0.060 },
