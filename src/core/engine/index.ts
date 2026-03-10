@@ -191,7 +191,7 @@ function createImageGenerationFallbackResponse(
       supported: false,
       category: 'Image Generation',
       message: 'For best results with image generation, we recommend using a specialized image generation model. Consider selecting one of the suggested platforms.',
-      suggestedPlatforms: ['OpenAI GPT-4o (native)', 'OpenAI GPT-5 Mini (native)', 'Google Imagen 4', 'Gemini 2.5 Flash'],
+      suggestedPlatforms: ['Google Imagen 4', 'OpenAI GPT-4o', 'OpenAI GPT-4o Mini', 'OpenAI GPT-5 Mini', 'Gemini 2.5 Flash'],
     },
   };
 }
@@ -731,7 +731,7 @@ const FALLBACK_SUGGESTIONS: Partial<Record<Intent, { category: string; message: 
   [Intent.ImageGeneration]: {
     category: 'Image Generation',
     message: 'For best results with image generation, we recommend using a specialized image generation platform or a model with native image generation support.',
-    suggestedPlatforms: ['OpenAI GPT-4o (native)', 'OpenAI GPT-5 Mini (native)', 'Google Imagen 4', 'Gemini 2.5 Flash'],
+    suggestedPlatforms: ['Google Imagen 4', 'OpenAI GPT-4o', 'OpenAI GPT-4o Mini', 'OpenAI GPT-5 Mini', 'Gemini 2.5 Flash'],
   },
   [Intent.VideoGeneration]: {
     category: 'Video Generation',

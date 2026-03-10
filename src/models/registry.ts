@@ -702,6 +702,7 @@ const models: ModelDefinition[] = [
             maxInputTokens: 128000, maxOutputTokens: 16384,
             supportsStreaming: true, supportsVision: true, supportsAudio: true,
             supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
+            supportsImageGeneration: true,
             visionScore: 0.85, audioScore: 0.85,
         },
         performance: { avgLatencyMs: 500, reliabilityPercent: 99.7 },
@@ -709,7 +710,7 @@ const models: ModelDefinition[] = [
             intents: {
                 [Intent.Coding]: 0.78, [Intent.Creative]: 0.80, [Intent.Analysis]: 0.76, [Intent.Factual]: 0.80,
                 [Intent.Conversation]: 0.86, [Intent.Task]: 0.78, [Intent.Brainstorm]: 0.76, [Intent.Translation]: 0.82,
-                [Intent.Summarization]: 0.80, [Intent.Extraction]: 0.78, [Intent.ImageGeneration]: 0.10,
+                [Intent.Summarization]: 0.80, [Intent.Extraction]: 0.78, [Intent.ImageGeneration]: 0.50,
                 [Intent.VideoGeneration]: 0.08, [Intent.VoiceGeneration]: 0.07, [Intent.MusicGeneration]: 0.07,
                 [Intent.Research]: 0.68, [Intent.Math]: 0.72, [Intent.Planning]: 0.72,
             },
