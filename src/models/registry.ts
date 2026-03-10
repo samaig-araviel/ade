@@ -316,7 +316,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.97, lateNightSuitability: 0.75, workHoursSuitability: 0.96,
         },
         specializations: ['reasoning', 'math'],
-        accessTier: AccessTier.Pro,
+        accessTier: AccessTier.Premium,
         available: true,
     },
 
@@ -801,7 +801,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.96, lateNightSuitability: 0.70, workHoursSuitability: 0.95,
         },
         specializations: ['reasoning', 'math'],
-        accessTier: AccessTier.Pro,
+        accessTier: AccessTier.Premium,
         available: true,
     },
 
@@ -895,8 +895,8 @@ const models: ModelDefinition[] = [
         performance: { avgLatencyMs: 500, reliabilityPercent: 99.7 },
         taskStrengths: {
             intents: {
-                [Intent.Coding]: 0.82, [Intent.Creative]: 0.80, [Intent.Analysis]: 0.82, [Intent.Factual]: 0.85,
-                [Intent.Conversation]: 0.91, [Intent.Task]: 0.82, [Intent.Brainstorm]: 0.78, [Intent.Translation]: 0.92,
+                [Intent.Coding]: 0.80, [Intent.Creative]: 0.76, [Intent.Analysis]: 0.80, [Intent.Factual]: 0.83,
+                [Intent.Conversation]: 0.84, [Intent.Task]: 0.80, [Intent.Brainstorm]: 0.76, [Intent.Translation]: 0.86,
                 [Intent.Summarization]: 0.85, [Intent.Extraction]: 0.84, [Intent.ImageGeneration]: 0.60,
                 [Intent.VideoGeneration]: 0.08, [Intent.VoiceGeneration]: 0.07, [Intent.MusicGeneration]: 0.07,
                 [Intent.Research]: 0.76, [Intent.Math]: 0.78, [Intent.Planning]: 0.78,
@@ -932,17 +932,17 @@ const models: ModelDefinition[] = [
         performance: { avgLatencyMs: 300, reliabilityPercent: 99.8 },
         taskStrengths: {
             intents: {
-                [Intent.Coding]: 0.72, [Intent.Creative]: 0.70, [Intent.Analysis]: 0.72, [Intent.Factual]: 0.76,
-                [Intent.Conversation]: 0.82, [Intent.Task]: 0.74, [Intent.Brainstorm]: 0.67, [Intent.Translation]: 0.84,
-                [Intent.Summarization]: 0.78, [Intent.Extraction]: 0.80, [Intent.ImageGeneration]: 0.07,
+                [Intent.Coding]: 0.70, [Intent.Creative]: 0.68, [Intent.Analysis]: 0.70, [Intent.Factual]: 0.74,
+                [Intent.Conversation]: 0.78, [Intent.Task]: 0.72, [Intent.Brainstorm]: 0.65, [Intent.Translation]: 0.80,
+                [Intent.Summarization]: 0.76, [Intent.Extraction]: 0.78, [Intent.ImageGeneration]: 0.07,
                 [Intent.VideoGeneration]: 0.06, [Intent.VoiceGeneration]: 0.05, [Intent.MusicGeneration]: 0.05,
-                [Intent.Research]: 0.64, [Intent.Math]: 0.66, [Intent.Planning]: 0.64,
+                [Intent.Research]: 0.62, [Intent.Math]: 0.64, [Intent.Planning]: 0.62,
             },
             domains: {
-                [Domain.Technology]: 0.73, [Domain.Business]: 0.71, [Domain.Health]: 0.69, [Domain.Legal]: 0.67,
-                [Domain.Finance]: 0.70, [Domain.Education]: 0.76, [Domain.Science]: 0.72, [Domain.CreativeArts]: 0.70,
-                [Domain.Lifestyle]: 0.76, [Domain.General]: 0.80, [Domain.Government]: 0.64, [Domain.Relationships]: 0.70,
-                [Domain.Shopping]: 0.70, [Domain.EventPlanning]: 0.65, [Domain.Weather]: 0.66, [Domain.Sports]: 0.68,
+                [Domain.Technology]: 0.71, [Domain.Business]: 0.69, [Domain.Health]: 0.67, [Domain.Legal]: 0.65,
+                [Domain.Finance]: 0.68, [Domain.Education]: 0.74, [Domain.Science]: 0.70, [Domain.CreativeArts]: 0.68,
+                [Domain.Lifestyle]: 0.74, [Domain.General]: 0.78, [Domain.Government]: 0.62, [Domain.Relationships]: 0.68,
+                [Domain.Shopping]: 0.68, [Domain.EventPlanning]: 0.63, [Domain.Weather]: 0.64, [Domain.Sports]: 0.66,
             },
             complexity: { [Complexity.Quick]: 0.96, [Complexity.Standard]: 0.80, [Complexity.Demanding]: 0.58 },
         },
@@ -1108,121 +1108,6 @@ const models: ModelDefinition[] = [
         available: true,
     },
 
-    // ===== MISTRAL MODELS =====
-
-    {
-        id: 'mistral-large', name: 'Mistral Large', provider: 'mistral',
-        description: 'Flagship Mistral model with excellent multilingual capabilities and strong coding performance.',
-        pricing: { inputPer1k: 0.002, outputPer1k: 0.006 },
-        capabilities: {
-            maxInputTokens: 131072, maxOutputTokens: 32768,
-            supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true,
-            visionScore: 0.88, audioScore: 0,
-        },
-        performance: { avgLatencyMs: 900, reliabilityPercent: 99.5 },
-        taskStrengths: {
-            intents: {
-                [Intent.Coding]: 0.90, [Intent.Creative]: 0.83, [Intent.Analysis]: 0.88, [Intent.Factual]: 0.87,
-                [Intent.Conversation]: 0.84, [Intent.Task]: 0.87, [Intent.Brainstorm]: 0.84, [Intent.Translation]: 0.95,
-                [Intent.Summarization]: 0.87, [Intent.Extraction]: 0.86, [Intent.ImageGeneration]: 0.10,
-                [Intent.VideoGeneration]: 0.08, [Intent.VoiceGeneration]: 0.06, [Intent.MusicGeneration]: 0.06,
-                [Intent.Research]: 0.80, [Intent.Math]: 0.86, [Intent.Planning]: 0.82,
-            },
-            domains: {
-                [Domain.Technology]: 0.91, [Domain.Business]: 0.86, [Domain.Health]: 0.83, [Domain.Legal]: 0.85,
-                [Domain.Finance]: 0.86, [Domain.Education]: 0.88, [Domain.Science]: 0.89, [Domain.CreativeArts]: 0.82,
-                [Domain.Lifestyle]: 0.80, [Domain.General]: 0.87, [Domain.Government]: 0.83, [Domain.Relationships]: 0.75,
-                [Domain.Shopping]: 0.72, [Domain.EventPlanning]: 0.74, [Domain.Weather]: 0.70, [Domain.Sports]: 0.72,
-            },
-            complexity: { [Complexity.Quick]: 0.82, [Complexity.Standard]: 0.92, [Complexity.Demanding]: 0.90 },
-        },
-        humanFactors: {
-            empathyScore: 0.78, playfulnessScore: 0.72, professionalismScore: 0.90,
-            conciseness: 0.78, verbosity: 0.82, conversationalTone: 0.78,
-            formalTone: 0.90, lateNightSuitability: 0.80, workHoursSuitability: 0.92,
-        },
-        specializations: ['multilingual', 'coding'],
-        accessTier: AccessTier.Pro,
-        available: true,
-    },
-
-    {
-        id: 'mistral-small', name: 'Mistral Small', provider: 'mistral',
-        description: 'Fast, efficient Mistral model optimized for low-latency tasks with strong multilingual support.',
-        pricing: { inputPer1k: 0.0002, outputPer1k: 0.0006 },
-        capabilities: {
-            maxInputTokens: 131072, maxOutputTokens: 32768,
-            supportsStreaming: true, supportsVision: false, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true,
-            visionScore: 0, audioScore: 0,
-        },
-        performance: { avgLatencyMs: 300, reliabilityPercent: 99.7 },
-        taskStrengths: {
-            intents: {
-                [Intent.Coding]: 0.78, [Intent.Creative]: 0.74, [Intent.Analysis]: 0.76, [Intent.Factual]: 0.78,
-                [Intent.Conversation]: 0.82, [Intent.Task]: 0.76, [Intent.Brainstorm]: 0.73, [Intent.Translation]: 0.88,
-                [Intent.Summarization]: 0.78, [Intent.Extraction]: 0.76, [Intent.ImageGeneration]: 0.06,
-                [Intent.VideoGeneration]: 0.05, [Intent.VoiceGeneration]: 0.04, [Intent.MusicGeneration]: 0.04,
-                [Intent.Research]: 0.66, [Intent.Math]: 0.72, [Intent.Planning]: 0.70,
-            },
-            domains: {
-                [Domain.Technology]: 0.78, [Domain.Business]: 0.75, [Domain.Health]: 0.73, [Domain.Legal]: 0.72,
-                [Domain.Finance]: 0.74, [Domain.Education]: 0.78, [Domain.Science]: 0.77, [Domain.CreativeArts]: 0.74,
-                [Domain.Lifestyle]: 0.76, [Domain.General]: 0.80, [Domain.Government]: 0.70, [Domain.Relationships]: 0.72,
-                [Domain.Shopping]: 0.70, [Domain.EventPlanning]: 0.68, [Domain.Weather]: 0.66, [Domain.Sports]: 0.68,
-            },
-            complexity: { [Complexity.Quick]: 0.93, [Complexity.Standard]: 0.82, [Complexity.Demanding]: 0.65 },
-        },
-        humanFactors: {
-            empathyScore: 0.74, playfulnessScore: 0.72, professionalismScore: 0.85,
-            conciseness: 0.90, verbosity: 0.62, conversationalTone: 0.80,
-            formalTone: 0.85, lateNightSuitability: 0.88, workHoursSuitability: 0.88,
-        },
-        specializations: ['fast_tasks', 'multilingual'],
-        accessTier: AccessTier.Free,
-        available: true,
-    },
-
-    // ===== DEEPSEEK MODELS =====
-
-    {
-        id: 'deepseek-r1', name: 'DeepSeek R1', provider: 'deepseek',
-        description: 'Open-source reasoning model with exceptional math, science, and coding capabilities at very low cost.',
-        pricing: { inputPer1k: 0.00055, outputPer1k: 0.00219 },
-        capabilities: {
-            maxInputTokens: 131072, maxOutputTokens: 65536,
-            supportsStreaming: true, supportsVision: false, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsReasoning: true,
-            visionScore: 0, audioScore: 0,
-        },
-        performance: { avgLatencyMs: 2500, reliabilityPercent: 99.0 },
-        taskStrengths: {
-            intents: {
-                [Intent.Coding]: 0.93, [Intent.Creative]: 0.75, [Intent.Analysis]: 0.94, [Intent.Factual]: 0.88,
-                [Intent.Conversation]: 0.72, [Intent.Task]: 0.88, [Intent.Brainstorm]: 0.80, [Intent.Translation]: 0.78,
-                [Intent.Summarization]: 0.86, [Intent.Extraction]: 0.88, [Intent.ImageGeneration]: 0.08,
-                [Intent.VideoGeneration]: 0.06, [Intent.VoiceGeneration]: 0.04, [Intent.MusicGeneration]: 0.04,
-                [Intent.Research]: 0.82, [Intent.Math]: 0.96, [Intent.Planning]: 0.82,
-            },
-            domains: {
-                [Domain.Technology]: 0.94, [Domain.Business]: 0.84, [Domain.Health]: 0.82, [Domain.Legal]: 0.86,
-                [Domain.Finance]: 0.88, [Domain.Education]: 0.88, [Domain.Science]: 0.95, [Domain.CreativeArts]: 0.70,
-                [Domain.Lifestyle]: 0.68, [Domain.General]: 0.82, [Domain.Government]: 0.80, [Domain.Relationships]: 0.64,
-                [Domain.Shopping]: 0.60, [Domain.EventPlanning]: 0.62, [Domain.Weather]: 0.62, [Domain.Sports]: 0.64,
-            },
-            complexity: { [Complexity.Quick]: 0.72, [Complexity.Standard]: 0.90, [Complexity.Demanding]: 0.96 },
-        },
-        humanFactors: {
-            empathyScore: 0.65, playfulnessScore: 0.58, professionalismScore: 0.88,
-            conciseness: 0.72, verbosity: 0.85, conversationalTone: 0.65,
-            formalTone: 0.88, lateNightSuitability: 0.75, workHoursSuitability: 0.90,
-        },
-        specializations: ['reasoning', 'math', 'coding'],
-        accessTier: AccessTier.Free,
-        available: true,
-    },
-
     // ===== GENERATION MODELS =====
 
     {
@@ -1300,43 +1185,6 @@ const models: ModelDefinition[] = [
     },
 
     {
-        id: 'stable-diffusion-3.5', name: 'Stable Diffusion 3.5', provider: 'stability',
-        description: 'Open-source image generation with fine control over artistic style and composition.',
-        pricing: { inputPer1k: 0.030, outputPer1k: 0.050 },
-        capabilities: {
-            maxInputTokens: 4000, maxOutputTokens: 1,
-            supportsStreaming: false, supportsVision: false, supportsAudio: false,
-            supportsFunctionCalling: false, supportsJsonMode: false, supportsImageGeneration: true,
-            visionScore: 0, audioScore: 0,
-        },
-        performance: { avgLatencyMs: 5000, reliabilityPercent: 98.5 },
-        taskStrengths: {
-            intents: {
-                [Intent.Coding]: 0.03, [Intent.Creative]: 0.13, [Intent.Analysis]: 0.03, [Intent.Factual]: 0.03,
-                [Intent.Conversation]: 0.03, [Intent.Task]: 0.07, [Intent.Brainstorm]: 0.07, [Intent.Translation]: 0.02,
-                [Intent.Summarization]: 0.02, [Intent.Extraction]: 0.02, [Intent.ImageGeneration]: 0.94,
-                [Intent.VideoGeneration]: 0.07, [Intent.VoiceGeneration]: 0.02, [Intent.MusicGeneration]: 0.02,
-                [Intent.Research]: 0.03, [Intent.Math]: 0.02, [Intent.Planning]: 0.06,
-            },
-            domains: {
-                [Domain.Technology]: 0.25, [Domain.Business]: 0.28, [Domain.Health]: 0.15, [Domain.Legal]: 0.06,
-                [Domain.Finance]: 0.10, [Domain.Education]: 0.18, [Domain.Science]: 0.20, [Domain.CreativeArts]: 0.93,
-                [Domain.Lifestyle]: 0.40, [Domain.General]: 0.45, [Domain.Government]: 0.06, [Domain.Relationships]: 0.25,
-                [Domain.Shopping]: 0.35, [Domain.EventPlanning]: 0.30, [Domain.Weather]: 0.15, [Domain.Sports]: 0.20,
-            },
-            complexity: { [Complexity.Quick]: 0.88, [Complexity.Standard]: 0.88, [Complexity.Demanding]: 0.68 },
-        },
-        humanFactors: {
-            empathyScore: 0.08, playfulnessScore: 0.32, professionalismScore: 0.35,
-            conciseness: 0.95, verbosity: 0.10, conversationalTone: 0.08,
-            formalTone: 0.28, lateNightSuitability: 0.82, workHoursSuitability: 0.78,
-        },
-        specializations: ['image_generation'],
-        accessTier: AccessTier.Pro,
-        available: true,
-    },
-
-    {
         id: 'sora', name: 'Sora', provider: 'openai',
         description: 'OpenAI video generation model. Creates high-quality videos from text with cinematic quality.',
         pricing: { inputPer1k: 0.100, outputPer1k: 0.200 },
@@ -1369,7 +1217,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.28, lateNightSuitability: 0.78, workHoursSuitability: 0.78,
         },
         specializations: ['video_generation'],
-        accessTier: AccessTier.Pro,
+        accessTier: AccessTier.Premium,
         available: true,
     },
 
@@ -1406,7 +1254,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.26, lateNightSuitability: 0.78, workHoursSuitability: 0.78,
         },
         specializations: ['video_generation'],
-        accessTier: AccessTier.Pro,
+        accessTier: AccessTier.Premium,
         available: true,
     },
 
@@ -1502,9 +1350,15 @@ export function getAvailableModels(): ModelDefinition[] {
 
 // Get models available for a specific access tier
 export function getModelsForTier(tier: AccessTier): ModelDefinition[] {
-    if (tier === AccessTier.Pro) {
-        // Pro users get ALL available models (free + pro)
+    if (tier === AccessTier.Premium) {
+        // Premium users get ALL available models
         return models.filter((model) => model.available);
+    }
+    if (tier === AccessTier.Pro) {
+        // Pro users get free + pro models (not premium)
+        return models.filter(
+            (model) => model.available && model.accessTier !== AccessTier.Premium
+        );
     }
     // Free users only get free-tier models
     return models.filter(
@@ -1516,15 +1370,22 @@ export function getModelsForTier(tier: AccessTier): ModelDefinition[] {
 export function isModelAccessible(modelId: string, tier: AccessTier): boolean {
     const model = modelMap.get(modelId);
     if (!model || !model.available) return false;
-    if (tier === AccessTier.Pro) return true;
+    if (tier === AccessTier.Premium) return true;
+    if (tier === AccessTier.Pro) return model.accessTier !== AccessTier.Premium;
     return model.accessTier === AccessTier.Free;
 }
 
-// Get pro-only models (for upgrade hint generation)
+// Get models available in a higher tier but not in the current tier (for upgrade hints)
 export function getUpgradeModels(currentTier: AccessTier): ModelDefinition[] {
-    if (currentTier === AccessTier.Pro) return [];
+    if (currentTier === AccessTier.Premium) return [];
+    if (currentTier === AccessTier.Pro) {
+        return models.filter(
+            (model) => model.available && model.accessTier === AccessTier.Premium
+        );
+    }
+    // Free users: show Pro and Premium models as upgrade targets
     return models.filter(
-        (model) => model.available && model.accessTier === AccessTier.Pro
+        (model) => model.available && model.accessTier !== AccessTier.Free
     );
 }
 

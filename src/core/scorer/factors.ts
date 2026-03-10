@@ -63,19 +63,21 @@ export function calculateTaskFitness(
 
 // Intent-to-specialization mapping for scoring
 const INTENT_SPECIALIZATION_MAP: Partial<Record<Intent, Specialization[]>> = {
-  [Intent.Coding]: ['coding'],
+  [Intent.Coding]: ['coding', 'agentic_coding'],
   [Intent.Creative]: ['creative_writing'],
-  [Intent.Research]: ['web_search', 'research'],
-  [Intent.Factual]: ['web_search', 'research'],
-  [Intent.Math]: ['math', 'reasoning'],
-  [Intent.ImageGeneration]: ['image_generation'],
+  [Intent.Research]: ['web_search', 'research', 'deep_research', 'x_search'],
+  [Intent.Factual]: ['web_search', 'research', 'fact_checking', 'citations'],
+  [Intent.Math]: ['math', 'reasoning', 'extended_thinking'],
+  [Intent.ImageGeneration]: ['image_generation', 'image_editing'],
   [Intent.VideoGeneration]: ['video_generation'],
-  [Intent.VoiceGeneration]: ['voice_generation'],
-  [Intent.MusicGeneration]: ['music_generation'],
-  [Intent.Translation]: ['multilingual'],
-  [Intent.Planning]: ['general_purpose'],
-  [Intent.Conversation]: ['general_purpose', 'fast_tasks'],
-  [Intent.Analysis]: ['reasoning', 'research'],
+  [Intent.VoiceGeneration]: ['voice_generation', 'tts', 'voice_cloning', 'premium_voice'],
+  [Intent.MusicGeneration]: ['music_generation', 'audio_generation', 'sound_effects'],
+  [Intent.Translation]: ['multilingual', 'multilingual_voice', 'multilingual_stt'],
+  [Intent.Planning]: ['general_purpose', 'agentic'],
+  [Intent.Conversation]: ['general_purpose'],
+  [Intent.Analysis]: ['reasoning', 'research', 'extended_thinking'],
+  [Intent.Summarization]: ['summarization', 'long_context'],
+  [Intent.Extraction]: ['classification', 'instruction_following'],
 };
 
 // Calculate specialization bonus score
@@ -110,7 +112,7 @@ export function calculateSpecialization(
     const matchedSpec = modelSpecs.find(s => matchingSpecs.includes(s)) ?? modelSpecs[0];
     detail = `Purpose-built for ${matchedSpec} tasks - specialist advantage`;
   } else if (quickBonus > 0) {
-    score = 0.75;
+    score = 0.55;
     detail = 'Optimized for quick, lightweight tasks';
   } else if (modelSpecs.includes('general_purpose')) {
     score = 0.55;

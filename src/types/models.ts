@@ -13,6 +13,13 @@ export interface ModelPricing {
   cachedInputPer1k?: number;
 }
 
+// Tool-specific pricing
+export interface ToolPricing {
+  webSearchPer1k?: number;
+  searchGroundingPer1k?: number;
+  requestFeePer1k?: number;
+}
+
 // Model capabilities
 export interface ModelCapabilities {
   maxInputTokens: number;
@@ -23,12 +30,15 @@ export interface ModelCapabilities {
   supportsFunctionCalling: boolean;
   supportsJsonMode: boolean;
   supportsExtendedThinking?: boolean;
+  supportsAdaptiveThinking?: boolean;
   supportsReasoning?: boolean;
   supportsWebSearch?: boolean;
   supportsImageGeneration?: boolean;
   supportsVideoGeneration?: boolean;
+  supportsCodeExecution?: boolean;
   supportsTTS?: boolean;
-  supportsMusicGeneration?: boolean;
+  supportsSTT?: boolean;
+  supportsRealtimeAudio?: boolean;
   visionScore: number; // 0-1
   audioScore: number; // 0-1
 }
@@ -62,7 +72,10 @@ export interface HumanFactors {
 // Model specialization categories
 export type Specialization =
   | 'coding'
+  | 'agentic_coding'
+  | 'agentic'
   | 'web_search'
+  | 'x_search'
   | 'multimodal'
   | 'fast_tasks'
   | 'reasoning'
@@ -70,12 +83,39 @@ export type Specialization =
   | 'general_purpose'
   | 'budget'
   | 'image_generation'
+  | 'image_editing'
   | 'video_generation'
   | 'voice_generation'
+  | 'voice_cloning'
   | 'music_generation'
+  | 'sound_effects'
+  | 'audio_generation'
+  | 'audio_processing'
+  | 'voice_isolation'
+  | 'noise_removal'
   | 'multilingual'
+  | 'multilingual_voice'
+  | 'multilingual_stt'
+  | 'premium_voice'
   | 'research'
-  | 'math';
+  | 'deep_research'
+  | 'math'
+  | 'long_context'
+  | 'instruction_following'
+  | 'classification'
+  | 'summarization'
+  | 'extended_thinking'
+  | 'tts'
+  | 'stt'
+  | 'transcription'
+  | 'voice_agents'
+  | 'realtime_audio'
+  | 'realtime_data'
+  | 'fact_checking'
+  | 'citations'
+  | 'multi_step_search'
+  | 'comprehensive_reports'
+  | 'ultra_premium';
 
 // Complete model definition
 export interface ModelDefinition {
@@ -101,10 +141,16 @@ export interface ModelDefinition {
   humanFactors: HumanFactors;
 
   // Specializations - what this model is purpose-built for
-  specializations?: Specialization[];
+  specializations: Specialization[];
 
   // Access control - which subscription tier can use this model
   accessTier: AccessTier;
+
+  // Credit cost for usage tracking
+  creditCost?: number;
+
+  // Tool-specific pricing
+  toolPricing?: ToolPricing;
 
   // Availability
   available: boolean;
