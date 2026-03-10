@@ -72,7 +72,7 @@ export enum Modality {
 }
 
 // LLM provider
-export type Provider = 'anthropic' | 'openai' | 'google' | 'perplexity' | 'xai' | 'mistral' | 'meta' | 'stability' | 'elevenlabs' | 'deepseek';
+export type Provider = 'anthropic' | 'openai' | 'google' | 'perplexity' | 'xai' | 'elevenlabs';
 
 // Mood states for human context
 export enum Mood {
@@ -147,4 +147,5 @@ export enum FactorImpact {
 export enum AccessTier {
   Free = 'free',
   Pro = 'pro',
+  Premium = 'premium',
 }

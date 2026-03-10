@@ -191,7 +191,7 @@ function createImageGenerationFallbackResponse(
       supported: false,
       category: 'Image Generation',
       message: 'For best results with image generation, we recommend using a specialized image generation model. Consider selecting one of the suggested platforms.',
-      suggestedPlatforms: ['OpenAI DALL-E 3', 'OpenAI GPT-4o (native)', 'OpenAI GPT-5 (native)', 'Google Imagen 4', 'Gemini 2.5 Flash', 'Stability AI (Stable Diffusion)', 'Midjourney'],
+      suggestedPlatforms: ['OpenAI DALL-E 3', 'OpenAI GPT-4o (native)', 'OpenAI GPT-5 Mini (native)', 'Google Imagen 4', 'Gemini 2.5 Flash'],
     },
   };
 }
@@ -350,7 +350,7 @@ function handleStandardRoute(
       const totalMs = round(performance.now() - startTime, 2);
 
       const userTierForUpgrade = request.userTier ?? AccessTier.Free;
-      const upgradeHint = userTierForUpgrade === AccessTier.Free
+      const upgradeHint = userTierForUpgrade !== AccessTier.Premium
         ? generateUpgradeHint(analysis, selection.primary, request)
         : undefined;
 
@@ -445,8 +445,8 @@ function handleStandardRoute(
   // Check if we should attach a fallback suggestion (low confidence or unsupported task)
   const fallback = detectFallbackNeeded(analysis, selection.confidence);
 
-  // Generate upgrade hint for free-tier users if a better pro model exists
-  const upgradeHint = userTier === AccessTier.Free
+  // Generate upgrade hint for non-premium users if a better higher-tier model exists
+  const upgradeHint = userTier !== AccessTier.Premium
       ? generateUpgradeHint(analysis, selection.primary, request)
       : undefined;
 
@@ -731,17 +731,17 @@ const FALLBACK_SUGGESTIONS: Partial<Record<Intent, { category: string; message: 
   [Intent.ImageGeneration]: {
     category: 'Image Generation',
     message: 'For best results with image generation, we recommend using a specialized image generation platform or a model with native image generation support.',
-    suggestedPlatforms: ['OpenAI DALL-E 3', 'OpenAI GPT-4o (native)', 'OpenAI GPT-5 (native)', 'Google Imagen 4', 'Gemini 2.5 Flash', 'Stability AI (Stable Diffusion)', 'Midjourney'],
+    suggestedPlatforms: ['OpenAI DALL-E 3', 'OpenAI GPT-4o (native)', 'OpenAI GPT-5 Mini (native)', 'Google Imagen 4', 'Gemini 2.5 Flash'],
   },
   [Intent.VideoGeneration]: {
     category: 'Video Generation',
-    message: 'Video generation requires specialized AI models. While our registry includes some video generation models, this capability is still emerging. For production use, consider the suggested platforms.',
-    suggestedPlatforms: ['OpenAI Sora', 'Google Veo 2', 'Runway ML', 'Pika Labs'],
+    message: 'Video generation requires specialized AI models. Our registry includes OpenAI Sora and Google Veo 2 for Premium users.',
+    suggestedPlatforms: ['OpenAI Sora', 'Google Veo 2'],
   },
   [Intent.VoiceGeneration]: {
     category: 'Voice & Speech Generation',
-    message: 'Text-to-speech and voice generation is best handled by specialized voice AI platforms. Our registry includes some TTS models, but for voice cloning and advanced speech synthesis, consider dedicated platforms.',
-    suggestedPlatforms: ['ElevenLabs', 'OpenAI TTS', 'Google Cloud TTS', 'Amazon Polly'],
+    message: 'Text-to-speech and voice generation is handled by specialized voice AI models in our registry, including ElevenLabs and OpenAI TTS.',
+    suggestedPlatforms: ['ElevenLabs', 'OpenAI TTS'],
   },
   [Intent.MusicGeneration]: {
     category: 'Music Generation',
