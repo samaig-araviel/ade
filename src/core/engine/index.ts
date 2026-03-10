@@ -191,7 +191,7 @@ function createImageGenerationFallbackResponse(
       supported: false,
       category: 'Image Generation',
       message: 'For best results with image generation, we recommend using a specialized image generation model. Consider selecting one of the suggested platforms.',
-      suggestedPlatforms: ['Google Imagen 4', 'OpenAI GPT-4o', 'OpenAI GPT-4o Mini', 'OpenAI GPT-5 Mini', 'Gemini 2.5 Flash'],
+      suggestedPlatforms: ['GPT Image 1.5', 'Imagen 4 Standard', 'GPT-4o', 'Nano Banana 2', 'GPT Image 1 Mini'],
     },
   };
 }
@@ -730,23 +730,23 @@ export function analyzeOnly(prompt: string, modality: Modality): AnalyzeResponse
 const FALLBACK_SUGGESTIONS: Partial<Record<Intent, { category: string; message: string; suggestedPlatforms: string[] }>> = {
   [Intent.ImageGeneration]: {
     category: 'Image Generation',
-    message: 'For best results with image generation, we recommend using a specialized image generation platform or a model with native image generation support.',
-    suggestedPlatforms: ['Google Imagen 4', 'OpenAI GPT-4o', 'OpenAI GPT-4o Mini', 'OpenAI GPT-5 Mini', 'Gemini 2.5 Flash'],
+    message: 'For best results with image generation, we recommend using a specialized image generation model or a multimodal model with native image generation support.',
+    suggestedPlatforms: ['GPT Image 1.5', 'Imagen 4 Standard', 'GPT-4o', 'Nano Banana 2', 'GPT Image 1 Mini'],
   },
   [Intent.VideoGeneration]: {
     category: 'Video Generation',
-    message: 'Video generation requires specialized AI models. Our registry includes OpenAI Sora and Google Veo 2 for Premium users.',
-    suggestedPlatforms: ['OpenAI Sora', 'Google Veo 2'],
+    message: 'Video generation requires specialized AI models. Our registry includes Sora 2 and Veo 3.1 for Premium users.',
+    suggestedPlatforms: ['Sora 2', 'Veo 3.1'],
   },
   [Intent.VoiceGeneration]: {
     category: 'Voice & Speech Generation',
-    message: 'Text-to-speech and voice generation is handled by specialized voice AI models in our registry, including ElevenLabs and OpenAI TTS.',
-    suggestedPlatforms: ['ElevenLabs', 'OpenAI TTS'],
+    message: 'Text-to-speech and voice generation is handled by specialized voice AI models in our registry, including ElevenLabs TTS and GPT-4o Mini TTS.',
+    suggestedPlatforms: ['ElevenLabs TTS Flash', 'ElevenLabs TTS Multilingual', 'GPT-4o Mini TTS', 'Gemini 2.5 Flash TTS'],
   },
   [Intent.MusicGeneration]: {
     category: 'Music Generation',
-    message: 'AI music generation is a specialized capability not widely available through standard LLM providers. For creating music, songs, and audio compositions, use a dedicated music AI platform.',
-    suggestedPlatforms: ['Suno AI', 'Udio', 'AIVA', 'Soundraw'],
+    message: 'AI music generation is available through ElevenLabs Music in our registry. For more options, consider dedicated music AI platforms.',
+    suggestedPlatforms: ['ElevenLabs Music'],
   },
 };
 
