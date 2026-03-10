@@ -30,6 +30,7 @@ export interface ModelRecommendation {
   score: number;
   reasoning: ModelReasoning;
   supportsWebSearch: boolean;
+  dedicatedImageModel?: boolean;
 }
 
 // Query analysis result

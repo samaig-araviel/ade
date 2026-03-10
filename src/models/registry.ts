@@ -2372,6 +2372,18 @@ export function getImageGenerationModels(list?: ModelDefinition[]): ModelDefinit
     return (list ?? models).filter((m) => m.capabilities.supportsImageGeneration === true);
 }
 
+// A dedicated image model uses a provider-specific image generation API
+// (e.g. Google Imagen API) rather than a streaming chat API that supports
+// native image output (e.g. OpenAI Responses API with image_generation tool,
+// or Gemini API with responseModalities: ["TEXT", "IMAGE"]).
+// Only Imagen models qualify — GPT Image models use the Responses API,
+// and Nano Banana models use the Gemini streaming API.
+export function isDedicatedImageModel(model: ModelDefinition): boolean {
+    return model.specializations.includes('image_generation') &&
+        !model.capabilities.supportsVision &&
+        !model.capabilities.supportsFunctionCalling;
+}
+
 export function getVideoGenerationModels(list?: ModelDefinition[]): ModelDefinition[] {
     return (list ?? models).filter((m) => m.capabilities.supportsVideoGeneration === true);
 }

@@ -185,6 +185,7 @@ export function quickScoreForModality(
 
 // Quick scoring for image generation models
 // Ranks by ImageGeneration intent strength, with specialization bonus
+// Uses uncapped scoring to differentiate between models with high intent scores
 export function quickScoreForImageGeneration(
   models: ModelDefinition[]
 ): ModelScore[] {
@@ -193,8 +194,10 @@ export function quickScoreForImageGeneration(
     .map((model) => {
       const intentScore = model.taskStrengths.intents.image_generation ?? 0;
       const isSpecialist = model.specializations?.includes('image_generation') ?? false;
-      const specialistBonus = isSpecialist ? 0.15 : 0;
-      const compositeScore = Math.min(intentScore + specialistBonus, 1.0);
+      const specialistBonus = isSpecialist ? 0.05 : 0;
+      // Use intent score directly with a small specialist bonus (no capping at 1.0 for ranking)
+      // This preserves differentiation: 0.98 specialist > 0.96 specialist > 0.94 specialist
+      const compositeScore = intentScore + specialistBonus;
 
       return {
         model,
