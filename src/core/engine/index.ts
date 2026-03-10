@@ -99,9 +99,9 @@ function handleImageGenerationRoute(
     return createProviderUnavailableResponse(originalBestModel!, Modality.Image, totalMs);
   }
 
-  // Ensure backup diversity: if primary is a dedicated image model,
-  // include at least one general-purpose model with image generation as a backup.
-  // This gives the backend a viable chat-completions fallback.
+  // Ensure backup diversity: if primary is a dedicated image model (e.g. Imagen),
+  // include at least one streaming-capable model with native image generation as backup.
+  // This gives the backend a viable Responses API / Gemini streaming fallback.
   const diverseScores = ensureImageBackupDiversity(filteredScores);
 
   // Select best
@@ -346,7 +346,7 @@ function handleStandardRoute(
         return createProviderUnavailableResponse(imgOrigBest!, modality, totalMs, analysis);
       }
 
-      // Ensure backup diversity: mix dedicated and general-purpose image models
+      // Ensure backup diversity: mix dedicated (Imagen) and streaming-capable image models
       const diverseImgScores = ensureImageBackupDiversity(imgFiltered);
 
       const { result: selection, durationMs: selectionMs } = measureTimeSync(() =>
@@ -833,9 +833,9 @@ function generateUpgradeHint(
 }
 
 // Ensure image generation backup diversity: if the top 3 models are all dedicated
-// image models, promote the best general-purpose model (one that supports image gen
-// via chat completions) into the backup slot. This ensures the backend always has
-// a fallback it can call via chat completions when dedicated image APIs fail.
+// image API models (e.g. Imagen), promote the best streaming-capable model (one that
+// supports native image gen via Responses API or Gemini streaming) into a backup slot.
+// This ensures the backend always has a streaming fallback when dedicated APIs fail.
 function ensureImageBackupDiversity(scores: ModelScore[]): ModelScore[] {
   if (scores.length < 3) return scores;
 
