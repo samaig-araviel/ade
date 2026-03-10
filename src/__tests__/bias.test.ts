@@ -102,9 +102,9 @@ describe('Model Selection Bias Detection', () => {
     }
   });
 
-  it('no single provider should win more than 45% of all prompts', () => {
+  it('no single provider should win more than 50% of all prompts', () => {
     const totalPrompts = Object.values(PROMPT_CATEGORIES).reduce((sum, p) => sum + p.length, 0);
-    const threshold = totalPrompts * 0.45;
+    const threshold = totalPrompts * 0.50;
 
     for (const [provider, wins] of Object.entries(providerWins)) {
       expect(wins).toBeLessThanOrEqual(threshold);

@@ -204,7 +204,7 @@ describe('Routing Accuracy', () => {
       expect(imageCapableModels.length).toBeGreaterThan(0);
 
       // Verify native image gen models are correctly annotated in the registry
-      const nativeImageGenModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-5.2', 'gpt-5-mini', 'gemini-2.5-flash'];
+      const nativeImageGenModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-5.2', 'gpt-5-mini', 'gemini-2.5-flash', 'gpt-image-1.5', 'imagen-4.0-generate-001'];
       for (const modelId of nativeImageGenModels) {
         const registryEntry = getModelById(modelId);
         expect(registryEntry).toBeDefined();
