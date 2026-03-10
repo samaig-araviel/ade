@@ -2372,6 +2372,14 @@ export function getImageGenerationModels(list?: ModelDefinition[]): ModelDefinit
     return (list ?? models).filter((m) => m.capabilities.supportsImageGeneration === true);
 }
 
+// A dedicated image model is one that ONLY generates images (not a general-purpose
+// chat model that also supports image output). These require different API endpoints
+// (e.g. OpenAI images API vs chat completions with image output).
+export function isDedicatedImageModel(model: ModelDefinition): boolean {
+    return model.specializations.includes('image_generation') &&
+        !model.capabilities.supportsFunctionCalling;
+}
+
 export function getVideoGenerationModels(list?: ModelDefinition[]): ModelDefinition[] {
     return (list ?? models).filter((m) => m.capabilities.supportsVideoGeneration === true);
 }

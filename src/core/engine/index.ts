@@ -30,6 +30,7 @@ import {
   getImageGenerationModels,
   getModelsByModalityCapability,
   getModelsForTier,
+  isDedicatedImageModel,
 } from '@/models';
 import {generateDecisionId, measureTimeSync, round} from '@/lib/helpers';
 
@@ -98,8 +99,13 @@ function handleImageGenerationRoute(
     return createProviderUnavailableResponse(originalBestModel!, Modality.Image, totalMs);
   }
 
+  // Ensure backup diversity: if primary is a dedicated image model,
+  // include at least one general-purpose model with image generation as a backup.
+  // This gives the backend a viable chat-completions fallback.
+  const diverseScores = ensureImageBackupDiversity(filteredScores);
+
   // Select best
-  const selection = selectModels(filteredScores);
+  const selection = selectModels(diverseScores);
 
   // Generate reasoning
   const primaryReasoning = generateFastPathReasoning(selection.primary, 'image_generation');
@@ -129,6 +135,7 @@ function handleImageGenerationRoute(
       score: round(selection.primary.compositeScore, 3),
       reasoning: primaryReasoning,
       supportsWebSearch: !!selection.primary.model.capabilities.supportsWebSearch,
+      ...(isDedicatedImageModel(selection.primary.model) ? { dedicatedImageModel: true } : {}),
     },
     backupModels: selection.backups.map((backup, idx) => ({
       id: backup.model.id,
@@ -137,6 +144,7 @@ function handleImageGenerationRoute(
       score: round(backup.compositeScore, 3),
       reasoning: backupReasonings[idx]!,
       supportsWebSearch: !!backup.model.capabilities.supportsWebSearch,
+      ...(isDedicatedImageModel(backup.model) ? { dedicatedImageModel: true } : {}),
     })),
     confidence: round(selection.confidence, 3),
     analysis,
@@ -338,8 +346,11 @@ function handleStandardRoute(
         return createProviderUnavailableResponse(imgOrigBest!, modality, totalMs, analysis);
       }
 
+      // Ensure backup diversity: mix dedicated and general-purpose image models
+      const diverseImgScores = ensureImageBackupDiversity(imgFiltered);
+
       const { result: selection, durationMs: selectionMs } = measureTimeSync(() =>
-        selectModels(imgFiltered)
+        selectModels(diverseImgScores)
       );
 
       const primaryReasoning = generateReasoning(selection.primary, analysis, true);
@@ -363,6 +374,7 @@ function handleStandardRoute(
           score: round(selection.primary.compositeScore, 3),
           reasoning: primaryReasoning,
           supportsWebSearch: !!selection.primary.model.capabilities.supportsWebSearch,
+          ...(isDedicatedImageModel(selection.primary.model) ? { dedicatedImageModel: true } : {}),
         },
         backupModels: selection.backups.map((backup, idx) => ({
           id: backup.model.id,
@@ -371,6 +383,7 @@ function handleStandardRoute(
           score: round(backup.compositeScore, 3),
           reasoning: backupReasonings[idx]!,
           supportsWebSearch: !!backup.model.capabilities.supportsWebSearch,
+          ...(isDedicatedImageModel(backup.model) ? { dedicatedImageModel: true } : {}),
         })),
         confidence: round(selection.confidence, 3),
         analysis,
@@ -817,6 +830,31 @@ function generateUpgradeHint(
     reason: buildUpgradeReason(bestOverall.model, analysis),
     scoreDifference: round(scoreDiff, 3),
   };
+}
+
+// Ensure image generation backup diversity: if the top 3 models are all dedicated
+// image models, promote the best general-purpose model (one that supports image gen
+// via chat completions) into the backup slot. This ensures the backend always has
+// a fallback it can call via chat completions when dedicated image APIs fail.
+function ensureImageBackupDiversity(scores: ModelScore[]): ModelScore[] {
+  if (scores.length < 3) return scores;
+
+  const top3 = scores.slice(0, 3);
+  const allDedicated = top3.every(s => isDedicatedImageModel(s.model));
+
+  if (!allDedicated) return scores; // Already has a general-purpose model in top 3
+
+  // Find the best general-purpose model with image generation
+  const bestGeneralPurpose = scores.find(s => !isDedicatedImageModel(s.model));
+  if (!bestGeneralPurpose) return scores; // No general-purpose models available
+
+  // Swap the last backup (#3) with the best general-purpose model
+  const gpIndex = scores.indexOf(bestGeneralPurpose);
+  const result = [...scores];
+  result[2] = bestGeneralPurpose;
+  result[gpIndex] = top3[2]!;
+
+  return result;
 }
 
 // Build human-readable upgrade reason based on query intent
