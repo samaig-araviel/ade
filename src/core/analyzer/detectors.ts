@@ -305,16 +305,7 @@ export function detectIntents(prompt: string): RankedIntents {
   const tokens = new Set(tokenize(prompt));
   const lowerPrompt = prompt.toLowerCase();
 
-  // Check for greeting/conversation patterns first (short casual messages)
-  const greetingPatterns = /^(hey|hi|hello|howdy|good\s+(morning|afternoon|evening|night)|greetings|yo|sup|what'?s\s+up)/i;
-  if (greetingPatterns.test(prompt.trim()) && tokenize(prompt).length < 8) {
-    return {
-      primary: Intent.Conversation,
-      weights: [{ intent: Intent.Conversation, weight: 1.0 }],
-    };
-  }
-
-  // Check for pattern-matched primary intent
+  // Check for pattern-matched primary intent (highest priority)
   let patternMatchedIntent: Intent | null = null;
 
   if (matchesPatterns(prompt, IMAGE_GENERATION_PATTERNS)) patternMatchedIntent = Intent.ImageGeneration;
@@ -325,6 +316,18 @@ export function detectIntents(prompt: string): RankedIntents {
   else if (matchesPatterns(prompt, RESEARCH_PATTERNS)) patternMatchedIntent = Intent.Research;
   else if (matchesPatterns(prompt, PLANNING_PATTERNS)) patternMatchedIntent = Intent.Planning;
   else if (hasCreativeWritingPattern(prompt)) patternMatchedIntent = Intent.Creative;
+
+  // Check for greeting/conversation patterns AFTER pattern matching
+  // so "Hey, create a video clip" matches VideoGeneration, not Conversation
+  if (!patternMatchedIntent) {
+    const greetingPatterns = /^(hey|hi|hello|howdy|good\s+(morning|afternoon|evening|night)|greetings|yo|sup|what'?s\s+up)/i;
+    if (greetingPatterns.test(prompt.trim()) && tokenize(prompt).length < 8) {
+      return {
+        primary: Intent.Conversation,
+        weights: [{ intent: Intent.Conversation, weight: 1.0 }],
+      };
+    }
+  }
 
   // Always run keyword scoring to find potential secondary intent
   const intentScores = new Map<Intent, number>();
@@ -416,26 +419,6 @@ export function detectIntents(prompt: string): RankedIntents {
   }
 
   const [bestIntent, bestScore] = sorted[0]!;
-
-  // If the best keyword score is 0, fall back
-  if (bestScore === 0) {
-    if (lowerPrompt.includes('?') ||
-        lowerPrompt.startsWith('what') ||
-        lowerPrompt.startsWith('how') ||
-        lowerPrompt.startsWith('why') ||
-        lowerPrompt.startsWith('when') ||
-        lowerPrompt.startsWith('where') ||
-        lowerPrompt.startsWith('who')) {
-      return {
-        primary: Intent.Factual,
-        weights: [{ intent: Intent.Factual, weight: 1.0 }],
-      };
-    }
-    return {
-      primary: Intent.Conversation,
-      weights: [{ intent: Intent.Conversation, weight: 1.0 }],
-    };
-  }
 
   // Check for a secondary keyword-based intent
   if (sorted.length >= 2) {
