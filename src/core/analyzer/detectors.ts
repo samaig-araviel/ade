@@ -1,4 +1,4 @@
-import { Intent, Domain, Complexity, Tone, Modality } from '@/types';
+import { Intent, Domain, Complexity, Tone, Modality, IntentWeight } from '@/types';
 import {
   INTENT_KEYWORDS,
   DOMAIN_KEYWORDS,
@@ -282,6 +282,197 @@ export function detectIntent(prompt: string): Intent {
   }
 
   return bestIntent;
+}
+
+// Result of multi-intent detection
+export interface RankedIntents {
+  primary: Intent;
+  secondary?: Intent;
+  weights: IntentWeight[];
+}
+
+// Minimum keyword score for a secondary intent to be considered
+const SECONDARY_INTENT_MIN_SCORE = 2;
+// Minimum ratio of secondary score to primary score for keyword-based detection
+const SECONDARY_INTENT_MIN_RATIO = 0.35;
+// Minimum weight the primary intent must retain
+const PRIMARY_INTENT_MIN_WEIGHT = 0.55;
+// Maximum weight a secondary intent can have when primary was pattern-matched
+const PATTERN_MATCH_SECONDARY_MAX_WEIGHT = 0.35;
+
+// Detect multiple intents with weights for blended scoring
+export function detectIntents(prompt: string): RankedIntents {
+  const tokens = new Set(tokenize(prompt));
+  const lowerPrompt = prompt.toLowerCase();
+
+  // Check for greeting/conversation patterns first (short casual messages)
+  const greetingPatterns = /^(hey|hi|hello|howdy|good\s+(morning|afternoon|evening|night)|greetings|yo|sup|what'?s\s+up)/i;
+  if (greetingPatterns.test(prompt.trim()) && tokenize(prompt).length < 8) {
+    return {
+      primary: Intent.Conversation,
+      weights: [{ intent: Intent.Conversation, weight: 1.0 }],
+    };
+  }
+
+  // Check for pattern-matched primary intent
+  let patternMatchedIntent: Intent | null = null;
+
+  if (matchesPatterns(prompt, IMAGE_GENERATION_PATTERNS)) patternMatchedIntent = Intent.ImageGeneration;
+  else if (matchesPatterns(prompt, VIDEO_GENERATION_PATTERNS)) patternMatchedIntent = Intent.VideoGeneration;
+  else if (matchesPatterns(prompt, VOICE_GENERATION_PATTERNS)) patternMatchedIntent = Intent.VoiceGeneration;
+  else if (matchesPatterns(prompt, MUSIC_GENERATION_PATTERNS)) patternMatchedIntent = Intent.MusicGeneration;
+  else if (matchesPatterns(prompt, MATH_PATTERNS)) patternMatchedIntent = Intent.Math;
+  else if (matchesPatterns(prompt, RESEARCH_PATTERNS)) patternMatchedIntent = Intent.Research;
+  else if (matchesPatterns(prompt, PLANNING_PATTERNS)) patternMatchedIntent = Intent.Planning;
+  else if (hasCreativeWritingPattern(prompt)) patternMatchedIntent = Intent.Creative;
+
+  // Always run keyword scoring to find potential secondary intent
+  const intentScores = new Map<Intent, number>();
+  for (const [intent, keywords] of INTENT_KEYWORDS) {
+    intentScores.set(intent, countMatches(tokens, keywords));
+  }
+
+  // Apply contextual boosting (same logic as detectIntent)
+  const creativeScore = intentScores.get(Intent.Creative) ?? 0;
+  if (tokens.has('write') || tokens.has('writing')) {
+    if (tokens.has('story') || tokens.has('poem') || tokens.has('fiction') ||
+        tokens.has('novel') || tokens.has('narrative') || tokens.has('creative') ||
+        tokens.has('song') || tokens.has('lyrics') || tokens.has('screenplay')) {
+      intentScores.set(Intent.Creative, creativeScore + 5);
+    }
+  }
+  if (tokens.has('imagine') || tokens.has('fantasy') || tokens.has('fictional') ||
+      tokens.has('character') || tokens.has('plot')) {
+    intentScores.set(Intent.Creative, (intentScores.get(Intent.Creative) ?? 0) + 3);
+  }
+
+  const hasCodingContext = tokens.has('code') || tokens.has('function') ||
+    tokens.has('programming') || tokens.has('debug') || tokens.has('api') ||
+    tokens.has('database') || tokens.has('algorithm') || tokens.has('implement');
+  if (!hasCodingContext) {
+    const codingScore = intentScores.get(Intent.Coding) ?? 0;
+    intentScores.set(Intent.Coding, Math.max(0, codingScore - 2));
+  }
+
+  const generationIntents = [Intent.ImageGeneration, Intent.VideoGeneration, Intent.VoiceGeneration, Intent.MusicGeneration];
+  for (const genIntent of generationIntents) {
+    const genScore = intentScores.get(genIntent) ?? 0;
+    intentScores.set(genIntent, Math.max(0, genScore - 3));
+  }
+
+  // Sort intents by keyword score descending
+  const sorted = [...intentScores.entries()]
+    .filter(([, score]) => score > 0)
+    .sort((a, b) => b[1] - a[1]);
+
+  // Case 1: Pattern-matched primary — look for a keyword-based secondary
+  if (patternMatchedIntent) {
+    const secondaryCandidate = sorted.find(([intent]) => intent !== patternMatchedIntent);
+
+    if (secondaryCandidate && secondaryCandidate[1] >= SECONDARY_INTENT_MIN_SCORE) {
+      // Weight the secondary based on its keyword strength
+      // score=2 → ~0.20, score=4 → ~0.29, score=6+ → capped at 0.35
+      const secondaryWeight = Math.min(
+        PATTERN_MATCH_SECONDARY_MAX_WEIGHT,
+        secondaryCandidate[1] / (secondaryCandidate[1] + 8)
+      );
+      const primaryWeight = 1 - secondaryWeight;
+
+      return {
+        primary: patternMatchedIntent,
+        secondary: secondaryCandidate[0],
+        weights: [
+          { intent: patternMatchedIntent, weight: round2(primaryWeight) },
+          { intent: secondaryCandidate[0], weight: round2(secondaryWeight) },
+        ],
+      };
+    }
+
+    return {
+      primary: patternMatchedIntent,
+      weights: [{ intent: patternMatchedIntent, weight: 1.0 }],
+    };
+  }
+
+  // Case 2: No pattern match — use keyword scoring for primary and secondary
+  if (sorted.length === 0) {
+    // Fallback: question words → Factual, otherwise Conversation
+    if (lowerPrompt.includes('?') ||
+        lowerPrompt.startsWith('what') ||
+        lowerPrompt.startsWith('how') ||
+        lowerPrompt.startsWith('why') ||
+        lowerPrompt.startsWith('when') ||
+        lowerPrompt.startsWith('where') ||
+        lowerPrompt.startsWith('who')) {
+      return {
+        primary: Intent.Factual,
+        weights: [{ intent: Intent.Factual, weight: 1.0 }],
+      };
+    }
+    return {
+      primary: Intent.Conversation,
+      weights: [{ intent: Intent.Conversation, weight: 1.0 }],
+    };
+  }
+
+  const [bestIntent, bestScore] = sorted[0]!;
+
+  // If the best keyword score is 0, fall back
+  if (bestScore === 0) {
+    if (lowerPrompt.includes('?') ||
+        lowerPrompt.startsWith('what') ||
+        lowerPrompt.startsWith('how') ||
+        lowerPrompt.startsWith('why') ||
+        lowerPrompt.startsWith('when') ||
+        lowerPrompt.startsWith('where') ||
+        lowerPrompt.startsWith('who')) {
+      return {
+        primary: Intent.Factual,
+        weights: [{ intent: Intent.Factual, weight: 1.0 }],
+      };
+    }
+    return {
+      primary: Intent.Conversation,
+      weights: [{ intent: Intent.Conversation, weight: 1.0 }],
+    };
+  }
+
+  // Check for a secondary keyword-based intent
+  if (sorted.length >= 2) {
+    const [secondIntent, secondScore] = sorted[1]!;
+    const ratio = secondScore / bestScore;
+
+    if (secondScore >= SECONDARY_INTENT_MIN_SCORE && ratio >= SECONDARY_INTENT_MIN_RATIO) {
+      const total = bestScore + secondScore;
+      let primaryWeight = bestScore / total;
+      let secondaryWeight = secondScore / total;
+
+      // Ensure primary retains dominance
+      if (primaryWeight < PRIMARY_INTENT_MIN_WEIGHT) {
+        primaryWeight = PRIMARY_INTENT_MIN_WEIGHT;
+        secondaryWeight = 1 - PRIMARY_INTENT_MIN_WEIGHT;
+      }
+
+      return {
+        primary: bestIntent,
+        secondary: secondIntent,
+        weights: [
+          { intent: bestIntent, weight: round2(primaryWeight) },
+          { intent: secondIntent, weight: round2(secondaryWeight) },
+        ],
+      };
+    }
+  }
+
+  return {
+    primary: bestIntent,
+    weights: [{ intent: bestIntent, weight: 1.0 }],
+  };
+}
+
+// Round to 2 decimal places for clean weight values
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
 }
 
 // ========== DOMAIN DETECTION ==========

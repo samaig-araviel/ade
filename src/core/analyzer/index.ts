@@ -1,6 +1,6 @@
 import { QueryAnalysis, Modality, HumanContext } from '@/types';
 import {
-  detectIntent,
+  detectIntents,
   detectDomain,
   detectComplexity,
   detectTone,
@@ -11,6 +11,7 @@ import {
 
 export {
   detectIntent,
+  detectIntents,
   detectDomain,
   detectComplexity,
   detectTone,
@@ -21,6 +22,7 @@ export {
   isCombinedModality,
   getModalityType,
 } from './detectors';
+export type { RankedIntents } from './detectors';
 
 // Main analysis function
 export function analyze(
@@ -33,9 +35,12 @@ export function analyze(
     ? parseModality(modality)
     : modality;
 
-  // Run all detectors - detect intent first, then use it for domain detection
-  const intent = detectIntent(prompt);
-  const domain = detectDomain(prompt, intent);  // Pass intent for context-aware domain detection
+  // Run multi-intent detection to get primary + optional secondary intent with weights
+  const rankedIntents = detectIntents(prompt);
+  const intent = rankedIntents.primary;
+
+  // Run remaining detectors - pass primary intent for context-aware detection
+  const domain = detectDomain(prompt, intent);
   const complexity = detectComplexity(prompt);
   const tone = detectTone(prompt);
   const keywords = extractPromptKeywords(prompt);
@@ -53,6 +58,8 @@ export function analyze(
     keywords,
     humanContextUsed,
     webSearchRequired,
+    ...(rankedIntents.secondary ? { secondaryIntent: rankedIntents.secondary } : {}),
+    ...(rankedIntents.weights.length > 1 ? { intentWeights: rankedIntents.weights } : {}),
   };
 }
 
