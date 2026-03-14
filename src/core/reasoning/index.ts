@@ -51,6 +51,11 @@ function generatePrimarySummary(
   // Build summary dynamically
   const parts: string[] = [];
 
+  // Build intent label for multi-intent awareness
+  const intentLabel = analysis.secondaryIntent
+    ? `${analysis.intent} + ${analysis.secondaryIntent}`
+    : `${analysis.intent}`;
+
   // Strong opening based on top factor
   if (strongest) {
     const strongestScore = Math.round(strongest.score * 100);
@@ -58,9 +63,9 @@ function generatePrimarySummary(
     switch (strongest.name) {
       case 'Task Fitness':
         if (strongestScore >= 90) {
-          parts.push(`${model.name} excels at ${analysis.intent} tasks`);
+          parts.push(`${model.name} excels at ${intentLabel} tasks`);
         } else {
-          parts.push(`${model.name} handles ${analysis.intent} requests really well`);
+          parts.push(`${model.name} handles ${intentLabel} requests really well`);
         }
         break;
 
@@ -160,8 +165,12 @@ function generateBackupSummary(
   // Add reason based on strength
   if (topStrength) {
     switch (topStrength.name) {
-      case 'Task Fitness':
-        return `${opening} with good ${analysis.intent} capabilities.`;
+      case 'Task Fitness': {
+        const backupIntentLabel = analysis.secondaryIntent
+          ? `${analysis.intent} + ${analysis.secondaryIntent}`
+          : `${analysis.intent}`;
+        return `${opening} with good ${backupIntentLabel} capabilities.`;
+      }
       case 'Cost Efficiency':
         return `${opening} — more budget-friendly while still capable.`;
       case 'Speed':

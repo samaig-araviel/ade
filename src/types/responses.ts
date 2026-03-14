@@ -33,6 +33,12 @@ export interface ModelRecommendation {
   dedicatedImageModel?: boolean;
 }
 
+// Intent with associated weight for multi-intent detection
+export interface IntentWeight {
+  intent: Intent;
+  weight: number; // 0-1, weights sum to 1.0
+}
+
 // Query analysis result
 export interface QueryAnalysis {
   intent: Intent;
@@ -43,6 +49,8 @@ export interface QueryAnalysis {
   keywords: string[];
   humanContextUsed: boolean;
   webSearchRequired: boolean;
+  secondaryIntent?: Intent;
+  intentWeights?: IntentWeight[];
 }
 
 // Timing metrics

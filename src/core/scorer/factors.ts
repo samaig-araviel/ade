@@ -20,7 +20,27 @@ export function calculateTaskFitness(
   model: ModelDefinition,
   analysis: QueryAnalysis
 ): FactorScore {
-  const intentScore = model.taskStrengths.intents[analysis.intent] ?? 0;
+  // Blend intent scores when multiple intents are detected
+  let intentScore: number;
+  let intentLabel: string;
+
+  if (analysis.intentWeights && analysis.intentWeights.length > 1) {
+    // Multi-intent: weighted blend of intent scores
+    intentScore = analysis.intentWeights.reduce((sum, iw) => {
+      const modelIntentScore = model.taskStrengths.intents[iw.intent] ?? 0;
+      return sum + (modelIntentScore * iw.weight);
+    }, 0);
+
+    const primaryPercent = Math.round((model.taskStrengths.intents[analysis.intent] ?? 0) * 100);
+    const secondaryIntent = analysis.secondaryIntent!;
+    const secondaryPercent = Math.round((model.taskStrengths.intents[secondaryIntent] ?? 0) * 100);
+    intentLabel = `${analysis.intent} (${primaryPercent}%) + ${secondaryIntent} (${secondaryPercent}%)`;
+  } else {
+    // Single intent: use primary directly
+    intentScore = model.taskStrengths.intents[analysis.intent] ?? 0;
+    intentLabel = `${analysis.intent} (${Math.round(intentScore * 100)}%)`;
+  }
+
   const domainScore = model.taskStrengths.domains[analysis.domain] ?? 0;
   const complexityScore = model.taskStrengths.complexity[analysis.complexity];
 
@@ -40,16 +60,31 @@ export function calculateTaskFitness(
   const domainPercent = Math.round(domainScore * 100);
 
   let detail: string;
-  if (score >= 0.9) {
-    detail = `Excels at ${analysis.intent} tasks (${intentPercent}%) with strong ${analysis.domain} domain knowledge (${domainPercent}%)`;
-  } else if (score >= 0.8) {
-    detail = `Strong fit for ${analysis.intent} (${intentPercent}%) and handles ${analysis.domain} topics well (${domainPercent}%)`;
-  } else if (score >= 0.7) {
-    detail = `Capable at ${analysis.intent} tasks (${intentPercent}%) with decent ${analysis.domain} knowledge (${domainPercent}%)`;
-  } else if (score >= 0.3) {
-    detail = `Can handle ${analysis.intent} (${intentPercent}%) though not its strongest area for ${analysis.domain} (${domainPercent}%)`;
+  if (analysis.intentWeights && analysis.intentWeights.length > 1) {
+    // Multi-intent detail message
+    if (score >= 0.9) {
+      detail = `Excels at blended ${intentLabel} with strong ${analysis.domain} domain knowledge (${domainPercent}%)`;
+    } else if (score >= 0.8) {
+      detail = `Strong fit for ${intentLabel} and handles ${analysis.domain} topics well (${domainPercent}%)`;
+    } else if (score >= 0.7) {
+      detail = `Capable at ${intentLabel} with decent ${analysis.domain} knowledge (${domainPercent}%)`;
+    } else if (score >= 0.3) {
+      detail = `Can handle ${intentLabel} though not its strongest area for ${analysis.domain} (${domainPercent}%)`;
+    } else {
+      detail = `Limited capability for ${intentLabel} combination (${intentPercent}%)`;
+    }
   } else {
-    detail = `Not designed for ${analysis.intent} tasks - limited capability (${intentPercent}%)`;
+    if (score >= 0.9) {
+      detail = `Excels at ${analysis.intent} tasks (${intentPercent}%) with strong ${analysis.domain} domain knowledge (${domainPercent}%)`;
+    } else if (score >= 0.8) {
+      detail = `Strong fit for ${analysis.intent} (${intentPercent}%) and handles ${analysis.domain} topics well (${domainPercent}%)`;
+    } else if (score >= 0.7) {
+      detail = `Capable at ${analysis.intent} tasks (${intentPercent}%) with decent ${analysis.domain} knowledge (${domainPercent}%)`;
+    } else if (score >= 0.3) {
+      detail = `Can handle ${analysis.intent} (${intentPercent}%) though not its strongest area for ${analysis.domain} (${domainPercent}%)`;
+    } else {
+      detail = `Not designed for ${analysis.intent} tasks - limited capability (${intentPercent}%)`;
+    }
   }
 
   return {
@@ -96,8 +131,14 @@ export function calculateSpecialization(
     };
   }
 
-  const matchingSpecs = INTENT_SPECIALIZATION_MAP[analysis.intent] ?? [];
-  const hasMatch = modelSpecs.some(s => matchingSpecs.includes(s));
+  // Check specialization matches for primary intent
+  const primarySpecs = INTENT_SPECIALIZATION_MAP[analysis.intent] ?? [];
+  const hasPrimaryMatch = modelSpecs.some(s => primarySpecs.includes(s));
+
+  // Check specialization matches for secondary intent (if present)
+  const hasSecondaryMatch = analysis.secondaryIntent
+    ? modelSpecs.some(s => (INTENT_SPECIALIZATION_MAP[analysis.secondaryIntent!] ?? []).includes(s))
+    : false;
 
   // Also check complexity-based specializations
   const isQuickTask = analysis.complexity === Complexity.Quick;
@@ -107,10 +148,21 @@ export function calculateSpecialization(
   let score: number;
   let detail: string;
 
-  if (hasMatch) {
+  if (hasPrimaryMatch && hasSecondaryMatch) {
+    // Model specializes in BOTH intents - strong advantage for multi-intent prompts
+    score = clamp(0.98 + quickBonus, 0, 1);
+    const matchedPrimary = modelSpecs.find(s => primarySpecs.includes(s)) ?? modelSpecs[0];
+    detail = `Specialist in both ${matchedPrimary} and ${analysis.secondaryIntent} tasks - ideal for this combined request`;
+  } else if (hasPrimaryMatch) {
     score = clamp(0.95 + quickBonus, 0, 1);
-    const matchedSpec = modelSpecs.find(s => matchingSpecs.includes(s)) ?? modelSpecs[0];
+    const matchedSpec = modelSpecs.find(s => primarySpecs.includes(s)) ?? modelSpecs[0];
     detail = `Purpose-built for ${matchedSpec} tasks - specialist advantage`;
+  } else if (hasSecondaryMatch) {
+    // Model specializes in the secondary intent - partial match bonus
+    const secondarySpecs = INTENT_SPECIALIZATION_MAP[analysis.secondaryIntent!] ?? [];
+    const matchedSpec = modelSpecs.find(s => secondarySpecs.includes(s)) ?? modelSpecs[0];
+    score = clamp(0.75 + quickBonus, 0, 1);
+    detail = `Specialized in ${matchedSpec} which partially matches this combined request`;
   } else if (quickBonus > 0) {
     score = 0.55;
     detail = 'Optimized for quick, lightweight tasks';
