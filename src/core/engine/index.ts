@@ -362,7 +362,7 @@ function handleStandardRoute(
 
       const userTierForUpgrade = request.userTier ?? AccessTier.Free;
       const upgradeHint = userTierForUpgrade !== AccessTier.Premium
-        ? generateUpgradeHint(analysis, selection.primary, request)
+        ? generateUpgradeHint(analysis, selection.primary, request, imageScores)
         : undefined;
 
       return {
@@ -460,7 +460,7 @@ function handleStandardRoute(
 
   // Generate upgrade hint for non-premium users if a better higher-tier model exists
   const upgradeHint = userTier !== AccessTier.Premium
-      ? generateUpgradeHint(analysis, selection.primary, request)
+      ? generateUpgradeHint(analysis, selection.primary, request, scores)
       : undefined;
 
   return {
@@ -790,30 +790,64 @@ function detectFallbackNeeded(
   return null;
 }
 
-// Generate upgrade hint for free-tier users
+// Generate upgrade hint for free-tier users.
+// Reuses already-scored tier models and only scores the additional higher-tier
+// models that weren't included in the original scoring pass, avoiding a full
+// redundant scoreAllModels() call.
 function generateUpgradeHint(
     analysis: QueryAnalysis,
     freeSelection: ModelScore,
-    request: RouteRequest
+    request: RouteRequest,
+    alreadyScoredModels?: ModelScore[]
 ): UpgradeHint | undefined {
-  // Score ALL models (including pro) to find the true best
+  // Get ALL models (including higher tiers)
   const allModels = getAvailableModels();
   const filteredAll = request.constraints
       ? filterModelsByConstraints(allModels, request.constraints)
       : allModels;
 
-  const fullContext: ScoringContext = {
-    analysis,
-    humanContext: request.humanContext,
-    constraints: request.constraints,
-    conversationContext: request.context,
-    allModels: filteredAll,
-  };
+  let bestOverall: ModelScore | undefined;
 
-  const allScores = scoreAllModels(fullContext);
-  if (allScores.length === 0) return undefined;
+  if (alreadyScoredModels && alreadyScoredModels.length > 0) {
+    // Find models not already scored (i.e. higher-tier models)
+    const alreadyScoredIds = new Set(alreadyScoredModels.map(s => s.model.id));
+    const unscoredModels = filteredAll.filter(m => !alreadyScoredIds.has(m.id));
 
-  const bestOverall = allScores[0]!;
+    if (unscoredModels.length === 0) {
+      // All models were already scored — the tier selection is already the best
+      return undefined;
+    }
+
+    // Score only the unscored higher-tier models
+    const unscoredContext: ScoringContext = {
+      analysis,
+      humanContext: request.humanContext,
+      constraints: request.constraints,
+      conversationContext: request.context,
+      allModels: unscoredModels,
+    };
+    const unscoredScores = scoreAllModels(unscoredContext);
+
+    // Merge and find the overall best
+    const merged = [...alreadyScoredModels, ...unscoredScores];
+    merged.sort((a, b) => b.compositeScore - a.compositeScore);
+    bestOverall = merged[0];
+  } else {
+    // Fallback: score all models (legacy path)
+    const fullContext: ScoringContext = {
+      analysis,
+      humanContext: request.humanContext,
+      constraints: request.constraints,
+      conversationContext: request.context,
+      allModels: filteredAll,
+    };
+    const allScores = scoreAllModels(fullContext);
+    if (allScores.length === 0) return undefined;
+    bestOverall = allScores[0]!;
+  }
+
+  if (!bestOverall) return undefined;
+
   const scoreDiff = bestOverall.compositeScore - freeSelection.compositeScore;
 
   // Only show hint if pro model is meaningfully better (>= 5% gap)
