@@ -6,6 +6,7 @@ import {
   Tone,
   Modality,
   FactorImpact,
+  AccessTier,
 } from './enums';
 
 // Factor detail in reasoning
@@ -76,6 +77,7 @@ export interface UpgradeHint {
     name: string;
     provider: Provider;
   };
+  targetTier: AccessTier;
   reason: string;
   scoreDifference: number;
 }

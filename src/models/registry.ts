@@ -86,7 +86,7 @@ const models: ModelDefinition[] = [
             formalTone: 0.96, lateNightSuitability: 0.86, workHoursSuitability: 0.98,
         },
         specializations: ['creative_writing', 'reasoning', 'coding', 'agentic', 'extended_thinking'],
-        accessTier: AccessTier.Premium, creditCost: 22,
+        accessTier: AccessTier.Pro, creditCost: 22,
         toolPricing: { webSearchPer1k: 10.0 },
         available: true,
     },
@@ -131,7 +131,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.86, workHoursSuitability: 0.98,
         },
         specializations: ['creative_writing', 'reasoning', 'coding', 'agentic'],
-        accessTier: AccessTier.Premium, creditCost: 22,
+        accessTier: AccessTier.Pro, creditCost: 22,
         toolPricing: { webSearchPer1k: 10.0 }, available: true,
     },
     // ---------------------------------------------------------------
@@ -175,7 +175,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.89, workHoursSuitability: 0.97,
         },
         specializations: ['coding', 'general_purpose', 'extended_thinking'],
-        accessTier: AccessTier.Pro, creditCost: 14,
+        accessTier: AccessTier.Lite, creditCost: 14,
         toolPricing: { webSearchPer1k: 10.0 }, available: true,
     },
     // ---------------------------------------------------------------
@@ -219,7 +219,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.88, workHoursSuitability: 0.96,
         },
         specializations: ['coding', 'agentic'],
-        accessTier: AccessTier.Pro, creditCost: 14,
+        accessTier: AccessTier.Lite, creditCost: 14,
         toolPricing: { webSearchPer1k: 10.0 }, available: true,
     },
     // ---------------------------------------------------------------
@@ -351,7 +351,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.82, workHoursSuitability: 0.96,
         },
         specializations: ['reasoning', 'coding', 'math', 'agentic'],
-        accessTier: AccessTier.Pro, creditCost: 10,
+        accessTier: AccessTier.Lite, creditCost: 10,
         toolPricing: { webSearchPer1k: 10.0 }, available: true,
     },
     // ---------------------------------------------------------------
@@ -395,7 +395,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.75, workHoursSuitability: 0.96,
         },
         specializations: ['reasoning', 'math', 'research', 'ultra_premium'],
-        accessTier: AccessTier.Premium, creditCost: 50, available: true,
+        accessTier: AccessTier.Pro, creditCost: 50, available: true,
     },
     // ---------------------------------------------------------------
     // GPT-5 (OPENAI)
@@ -438,7 +438,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.78, workHoursSuitability: 0.92,
         },
         specializations: ['general_purpose', 'reasoning'],
-        accessTier: AccessTier.Pro, creditCost: 8,
+        accessTier: AccessTier.Lite, creditCost: 8,
         toolPricing: { webSearchPer1k: 10.0 }, available: true,
     },
     // ---------------------------------------------------------------
@@ -569,7 +569,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.82, workHoursSuitability: 0.94,
         },
         specializations: ['coding', 'instruction_following', 'long_context'],
-        accessTier: AccessTier.Pro, creditCost: 8, available: true,
+        accessTier: AccessTier.Lite, creditCost: 8, available: true,
     },
     // ---------------------------------------------------------------
     // GPT-4.1 Mini (OPENAI)
@@ -698,7 +698,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.88, workHoursSuitability: 0.94,
         },
         specializations: ['multimodal', 'creative_writing', 'audio_processing'],
-        accessTier: AccessTier.Pro, creditCost: 8, available: true,
+        accessTier: AccessTier.Lite, creditCost: 8, available: true,
     },
     // ---------------------------------------------------------------
     // GPT-4o Mini (OPENAI)
@@ -784,7 +784,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.75, workHoursSuitability: 0.96,
         },
         specializations: ['coding', 'agentic_coding'],
-        accessTier: AccessTier.Premium, creditCost: 30, available: true,
+        accessTier: AccessTier.Pro, creditCost: 30, available: true,
     },
     // ---------------------------------------------------------------
     // GPT-5.1 Codex Mini (OPENAI)
@@ -870,7 +870,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.65, workHoursSuitability: 0.95,
         },
         specializations: ['deep_research', 'research', 'comprehensive_reports'],
-        accessTier: AccessTier.Premium, creditCost: 50, available: true,
+        accessTier: AccessTier.Pro, creditCost: 50, available: true,
     },
     // ---------------------------------------------------------------
     // o4-mini Deep Research (OPENAI)
@@ -913,7 +913,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.68, workHoursSuitability: 0.94,
         },
         specializations: ['deep_research', 'research'],
-        accessTier: AccessTier.Pro, creditCost: 15, available: true,
+        accessTier: AccessTier.Lite, creditCost: 15, available: true,
     },
     // ---------------------------------------------------------------
     // GPT Image 1.5 (OPENAI)
@@ -956,7 +956,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.85, workHoursSuitability: 0.9,
         },
         specializations: ['image_generation', 'image_editing'],
-        accessTier: AccessTier.Pro, creditCost: 8, available: true,
+        accessTier: AccessTier.Lite, creditCost: 8, available: true,
     },
     // ---------------------------------------------------------------
     // GPT Image 1 Mini (OPENAI)
@@ -1042,7 +1042,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.8, workHoursSuitability: 0.85,
         },
         specializations: ['video_generation'],
-        accessTier: AccessTier.Premium, creditCost: 100, available: true,
+        accessTier: AccessTier.Pro, creditCost: 100, available: true,
     },
     // ---------------------------------------------------------------
     // GPT-4o Mini TTS (OPENAI)
@@ -1085,7 +1085,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.85, workHoursSuitability: 0.9,
         },
         specializations: ['tts', 'voice_generation'],
-        accessTier: AccessTier.Pro, creditCost: 3, available: true,
+        accessTier: AccessTier.Lite, creditCost: 3, available: true,
     },
     // ---------------------------------------------------------------
     // GPT-4o Mini Transcribe (OPENAI)
@@ -1128,7 +1128,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.85, workHoursSuitability: 0.92,
         },
         specializations: ['stt', 'transcription'],
-        accessTier: AccessTier.Pro, creditCost: 2, available: true,
+        accessTier: AccessTier.Lite, creditCost: 2, available: true,
     },
     // ---------------------------------------------------------------
     // GPT Realtime (OPENAI)
@@ -1171,7 +1171,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.9, workHoursSuitability: 0.85,
         },
         specializations: ['realtime_audio', 'voice_generation', 'voice_agents'],
-        accessTier: AccessTier.Premium, creditCost: 20, available: true,
+        accessTier: AccessTier.Pro, creditCost: 20, available: true,
     },
     // ---------------------------------------------------------------
     // Gemini 3.1 Pro Preview (GOOGLE)
@@ -1214,7 +1214,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.82, workHoursSuitability: 0.96,
         },
         specializations: ['reasoning', 'coding', 'long_context', 'extended_thinking'],
-        accessTier: AccessTier.Premium, creditCost: 20, available: true,
+        accessTier: AccessTier.Pro, creditCost: 20, available: true,
     },
     // ---------------------------------------------------------------
     // Gemini 3 Flash Preview (GOOGLE)
@@ -1257,7 +1257,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.86, workHoursSuitability: 0.92,
         },
         specializations: ['fast_tasks', 'reasoning', 'long_context'],
-        accessTier: AccessTier.Pro, creditCost: 5, available: true,
+        accessTier: AccessTier.Lite, creditCost: 5, available: true,
     },
     // ---------------------------------------------------------------
     // Gemini 2.5 Pro (GOOGLE)
@@ -1300,7 +1300,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.82, workHoursSuitability: 0.95,
         },
         specializations: ['reasoning', 'coding', 'long_context', 'extended_thinking'],
-        accessTier: AccessTier.Pro, creditCost: 12,
+        accessTier: AccessTier.Lite, creditCost: 12,
         toolPricing: { searchGroundingPer1k: 35.0 }, available: true,
     },
     // ---------------------------------------------------------------
@@ -1431,7 +1431,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.85, workHoursSuitability: 0.88,
         },
         specializations: ['image_generation'],
-        accessTier: AccessTier.Pro, creditCost: 4, available: true,
+        accessTier: AccessTier.Lite, creditCost: 4, available: true,
     },
     // ---------------------------------------------------------------
     // Nano Banana (GOOGLE)
@@ -1560,7 +1560,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.85, workHoursSuitability: 0.9,
         },
         specializations: ['image_generation'],
-        accessTier: AccessTier.Pro, creditCost: 6, available: true,
+        accessTier: AccessTier.Lite, creditCost: 6, available: true,
     },
     // ---------------------------------------------------------------
     // Veo 3.1 (GOOGLE)
@@ -1603,7 +1603,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.78, workHoursSuitability: 0.84,
         },
         specializations: ['video_generation'],
-        accessTier: AccessTier.Premium, creditCost: 80, available: true,
+        accessTier: AccessTier.Pro, creditCost: 80, available: true,
     },
     // ---------------------------------------------------------------
     // Gemini 2.5 Flash TTS (GOOGLE)
@@ -1646,7 +1646,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.84, workHoursSuitability: 0.88,
         },
         specializations: ['tts', 'voice_generation'],
-        accessTier: AccessTier.Pro, creditCost: 2, available: true,
+        accessTier: AccessTier.Lite, creditCost: 2, available: true,
     },
     // ---------------------------------------------------------------
     // Gemini 2.5 Flash Live (GOOGLE)
@@ -1689,7 +1689,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.88, workHoursSuitability: 0.84,
         },
         specializations: ['realtime_audio', 'voice_generation', 'voice_agents'],
-        accessTier: AccessTier.Premium, creditCost: 15, available: true,
+        accessTier: AccessTier.Pro, creditCost: 15, available: true,
     },
     // ---------------------------------------------------------------
     // Gemini Deep Research (GOOGLE)
@@ -1732,7 +1732,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.64, workHoursSuitability: 0.95,
         },
         specializations: ['deep_research', 'research', 'comprehensive_reports'],
-        accessTier: AccessTier.Premium, creditCost: 40, available: true,
+        accessTier: AccessTier.Pro, creditCost: 40, available: true,
     },
     // ---------------------------------------------------------------
     // Grok 4 (XAI)
@@ -1775,7 +1775,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.85, workHoursSuitability: 0.92,
         },
         specializations: ['web_search', 'reasoning', 'realtime_data', 'x_search'],
-        accessTier: AccessTier.Pro, creditCost: 10,
+        accessTier: AccessTier.Lite, creditCost: 10,
         toolPricing: { webSearchPer1k: 5.0 }, available: true,
     },
     // ---------------------------------------------------------------
@@ -1951,7 +1951,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.82, workHoursSuitability: 0.92,
         },
         specializations: ['research', 'web_search', 'multi_step_search', 'citations'],
-        accessTier: AccessTier.Pro, creditCost: 8,
+        accessTier: AccessTier.Lite, creditCost: 8,
         toolPricing: { requestFeePer1k: 5.0 }, available: true,
     },
     // ---------------------------------------------------------------
@@ -1995,7 +1995,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.78, workHoursSuitability: 0.94,
         },
         specializations: ['reasoning', 'research', 'web_search', 'citations'],
-        accessTier: AccessTier.Premium, creditCost: 15,
+        accessTier: AccessTier.Pro, creditCost: 15,
         toolPricing: { requestFeePer1k: 5.0 }, available: true,
     },
     // ---------------------------------------------------------------
@@ -2039,7 +2039,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.7, workHoursSuitability: 0.94,
         },
         specializations: ['deep_research', 'research', 'comprehensive_reports', 'citations'],
-        accessTier: AccessTier.Premium, creditCost: 30,
+        accessTier: AccessTier.Pro, creditCost: 30,
         toolPricing: { requestFeePer1k: 5.0 }, available: true,
     },
     // ---------------------------------------------------------------
@@ -2083,7 +2083,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.88, workHoursSuitability: 0.9,
         },
         specializations: ['tts', 'voice_generation', 'voice_cloning', 'fast_tasks'],
-        accessTier: AccessTier.Pro, creditCost: 2, available: true,
+        accessTier: AccessTier.Lite, creditCost: 2, available: true,
     },
     // ---------------------------------------------------------------
     // ElevenLabs TTS Multilingual (ELEVENLABS)
@@ -2126,7 +2126,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.86, workHoursSuitability: 0.92,
         },
         specializations: ['tts', 'voice_generation', 'voice_cloning', 'multilingual_voice', 'premium_voice'],
-        accessTier: AccessTier.Premium, creditCost: 5, available: true,
+        accessTier: AccessTier.Pro, creditCost: 5, available: true,
     },
     // ---------------------------------------------------------------
     // ElevenLabs Scribe STT (ELEVENLABS)
@@ -2169,7 +2169,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.85, workHoursSuitability: 0.92,
         },
         specializations: ['stt', 'transcription', 'multilingual_stt'],
-        accessTier: AccessTier.Pro, creditCost: 2, available: true,
+        accessTier: AccessTier.Lite, creditCost: 2, available: true,
     },
     // ---------------------------------------------------------------
     // ElevenLabs Music (ELEVENLABS)
@@ -2212,7 +2212,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.9, workHoursSuitability: 0.8,
         },
         specializations: ['music_generation', 'audio_generation'],
-        accessTier: AccessTier.Pro, creditCost: 5, available: true,
+        accessTier: AccessTier.Lite, creditCost: 5, available: true,
     },
     // ---------------------------------------------------------------
     // ElevenLabs Sound Effects (ELEVENLABS)
@@ -2255,7 +2255,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.88, workHoursSuitability: 0.78,
         },
         specializations: ['sound_effects', 'audio_generation'],
-        accessTier: AccessTier.Pro, creditCost: 3, available: true,
+        accessTier: AccessTier.Lite, creditCost: 3, available: true,
     },
     // ---------------------------------------------------------------
     // ElevenLabs Voice Isolator (ELEVENLABS)
@@ -2298,7 +2298,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.85, workHoursSuitability: 0.85,
         },
         specializations: ['audio_processing', 'voice_isolation', 'noise_removal'],
-        accessTier: AccessTier.Pro, creditCost: 2, available: true,
+        accessTier: AccessTier.Lite, creditCost: 2, available: true,
     },
 ];
 
@@ -2317,22 +2317,22 @@ export function getAvailableModels(): ModelDefinition[] {
 }
 
 export function getModelsForTier(tier: AccessTier): ModelDefinition[] {
-    if (tier === AccessTier.Premium) return models.filter((m) => m.available);
-    if (tier === AccessTier.Pro) return models.filter((m) => m.available && m.accessTier !== AccessTier.Premium);
+    if (tier === AccessTier.Pro) return models.filter((m) => m.available);
+    if (tier === AccessTier.Lite) return models.filter((m) => m.available && m.accessTier !== AccessTier.Pro);
     return models.filter((m) => m.available && m.accessTier === AccessTier.Free);
 }
 
 export function isModelAccessible(modelId: string, tier: AccessTier): boolean {
     const model = modelMap.get(modelId);
     if (!model || !model.available) return false;
-    if (tier === AccessTier.Premium) return true;
-    if (tier === AccessTier.Pro) return model.accessTier !== AccessTier.Premium;
+    if (tier === AccessTier.Pro) return true;
+    if (tier === AccessTier.Lite) return model.accessTier !== AccessTier.Pro;
     return model.accessTier === AccessTier.Free;
 }
 
 export function getUpgradeModels(currentTier: AccessTier): ModelDefinition[] {
-    if (currentTier === AccessTier.Premium) return [];
-    if (currentTier === AccessTier.Pro) return models.filter((m) => m.available && m.accessTier === AccessTier.Premium);
+    if (currentTier === AccessTier.Pro) return [];
+    if (currentTier === AccessTier.Lite) return models.filter((m) => m.available && m.accessTier === AccessTier.Pro);
     return models.filter((m) => m.available && m.accessTier !== AccessTier.Free);
 }
 
