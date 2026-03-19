@@ -146,6 +146,6 @@ export enum FactorImpact {
 // Subscription access tier for model gating
 export enum AccessTier {
   Free = 'free',
+  Lite = 'lite',
   Pro = 'pro',
-  Premium = 'premium',
 }

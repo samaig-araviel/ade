@@ -26,7 +26,6 @@ import {
 } from '../reasoning';
 import {
   filterModelsByConstraints,
-  getAvailableModels,
   getImageGenerationModels,
   getModelsByModalityCapability,
   getModelsForTier,
@@ -361,7 +360,7 @@ function handleStandardRoute(
       const totalMs = round(performance.now() - startTime, 2);
 
       const userTierForUpgrade = request.userTier ?? AccessTier.Free;
-      const upgradeHint = userTierForUpgrade !== AccessTier.Premium
+      const upgradeHint = userTierForUpgrade !== AccessTier.Pro
         ? generateUpgradeHint(analysis, selection.primary, request, imageScores)
         : undefined;
 
@@ -459,7 +458,7 @@ function handleStandardRoute(
   const fallback = detectFallbackNeeded(analysis, selection.confidence);
 
   // Generate upgrade hint for non-premium users if a better higher-tier model exists
-  const upgradeHint = userTier !== AccessTier.Premium
+  const upgradeHint = userTier !== AccessTier.Pro
       ? generateUpgradeHint(analysis, selection.primary, request, scores)
       : undefined;
 
@@ -790,79 +789,118 @@ function detectFallbackNeeded(
   return null;
 }
 
-// Generate upgrade hint for free-tier users.
-// Reuses already-scored tier models and only scores the additional higher-tier
-// models that weren't included in the original scoring pass, avoiding a full
-// redundant scoreAllModels() call.
+// Smart tier-aware upgrade hint generation.
+//
+// For Free users: suggests the nearest tier (Lite) unless Pro is significantly
+// better — lowering the barrier to upgrade while still surfacing compelling
+// Pro models when they clearly outperform.
+//
+// For Lite users: suggests Pro when a meaningful improvement exists.
+//
+// Reuses already-scored tier models to avoid redundant work.
 function generateUpgradeHint(
     analysis: QueryAnalysis,
-    freeSelection: ModelScore,
+    currentSelection: ModelScore,
     request: RouteRequest,
     alreadyScoredModels?: ModelScore[]
 ): UpgradeHint | undefined {
-  // Get ALL models (including higher tiers)
-  const allModels = getAvailableModels();
-  const filteredAll = request.constraints
-      ? filterModelsByConstraints(allModels, request.constraints)
-      : allModels;
+  const userTier = request.userTier ?? AccessTier.Free;
 
-  let bestOverall: ModelScore | undefined;
+  // Determine which higher tiers to evaluate
+  const nextTier = userTier === AccessTier.Free ? AccessTier.Lite : AccessTier.Pro;
+  const hasJumpTier = userTier === AccessTier.Free; // Free can jump to Pro
 
-  if (alreadyScoredModels && alreadyScoredModels.length > 0) {
-    // Find models not already scored (i.e. higher-tier models)
-    const alreadyScoredIds = new Set(alreadyScoredModels.map(s => s.model.id));
-    const unscoredModels = filteredAll.filter(m => !alreadyScoredIds.has(m.id));
+  // Build scoring context helper
+  const buildContext = (models: ModelDefinition[]): ScoringContext => ({
+    analysis,
+    humanContext: request.humanContext,
+    constraints: request.constraints,
+    conversationContext: request.context,
+    allModels: models,
+  });
 
-    if (unscoredModels.length === 0) {
-      // All models were already scored — the tier selection is already the best
-      return undefined;
-    }
+  // Collect already-scored model IDs to avoid re-scoring
+  const alreadyScoredIds = new Set(
+    (alreadyScoredModels ?? []).map(s => s.model.id)
+  );
 
-    // Score only the unscored higher-tier models
-    const unscoredContext: ScoringContext = {
-      analysis,
-      humanContext: request.humanContext,
-      constraints: request.constraints,
-      conversationContext: request.context,
-      allModels: unscoredModels,
-    };
-    const unscoredScores = scoreAllModels(unscoredContext);
+  // Score models for a given tier, reusing already-scored results
+  const scoreForTier = (tier: AccessTier): ModelScore[] => {
+    const tierModels = getModelsForTier(tier);
+    const filtered = request.constraints
+      ? filterModelsByConstraints(tierModels, request.constraints)
+      : tierModels;
 
-    // Merge and find the overall best
-    const merged = [...alreadyScoredModels, ...unscoredScores];
+    // Partition into already-scored and unscored
+    const reused = (alreadyScoredModels ?? []).filter(
+      s => filtered.some(m => m.id === s.model.id)
+    );
+    const unscored = filtered.filter(m => !alreadyScoredIds.has(m.id));
+
+    if (unscored.length === 0) return reused;
+
+    const newScores = scoreAllModels(buildContext(unscored));
+    const merged = [...reused, ...newScores];
     merged.sort((a, b) => b.compositeScore - a.compositeScore);
-    bestOverall = merged[0];
-  } else {
-    // Fallback: score all models (legacy path)
-    const fullContext: ScoringContext = {
-      analysis,
-      humanContext: request.humanContext,
-      constraints: request.constraints,
-      conversationContext: request.context,
-      allModels: filteredAll,
-    };
-    const allScores = scoreAllModels(fullContext);
-    if (allScores.length === 0) return undefined;
-    bestOverall = allScores[0]!;
+    return merged;
+  };
+
+  // Score the next tier up (Lite for Free users, Pro for Lite users)
+  const nextTierScores = scoreForTier(nextTier);
+  const bestNextTier = nextTierScores[0];
+
+  // For Free users, also evaluate Pro tier to see if it's worth the jump
+  let bestJumpTier: ModelScore | undefined;
+  if (hasJumpTier) {
+    const jumpTierScores = scoreForTier(AccessTier.Pro);
+    bestJumpTier = jumpTierScores[0];
   }
 
-  if (!bestOverall) return undefined;
+  // Decide which tier to recommend
+  const minGap = 0.05; // Minimum score gap to show any hint
+  const jumpThreshold = 0.08; // Extra gap needed to suggest Pro over Lite for Free users
 
-  const scoreDiff = bestOverall.compositeScore - freeSelection.compositeScore;
+  const nextGap = bestNextTier
+    ? bestNextTier.compositeScore - currentSelection.compositeScore
+    : 0;
+  const jumpGap = bestJumpTier
+    ? bestJumpTier.compositeScore - currentSelection.compositeScore
+    : 0;
 
-  // Only show hint if pro model is meaningfully better (>= 5% gap)
-  if (scoreDiff < 0.05 || bestOverall.model.id === freeSelection.model.id) {
+  // No meaningful improvement at any tier
+  if (nextGap < minGap && jumpGap < minGap) return undefined;
+
+  let chosen: ModelScore;
+  let targetTier: AccessTier;
+
+  if (hasJumpTier && bestJumpTier && jumpGap >= jumpThreshold && jumpGap - nextGap >= 0.03) {
+    // Pro is significantly better than Lite — suggest the jump
+    chosen = bestJumpTier;
+    targetTier = AccessTier.Pro;
+  } else if (bestNextTier && nextGap >= minGap) {
+    // Nearest tier has a meaningful improvement — suggest it (lower barrier)
+    chosen = bestNextTier;
+    targetTier = nextTier;
+  } else if (bestJumpTier && jumpGap >= minGap) {
+    // Only Pro has an improvement (Lite didn't clear the gap)
+    chosen = bestJumpTier;
+    targetTier = AccessTier.Pro;
+  } else {
     return undefined;
   }
 
+  // Don't suggest the same model already selected
+  if (chosen.model.id === currentSelection.model.id) return undefined;
+
   return {
     recommendedModel: {
-      id: bestOverall.model.id,
-      name: bestOverall.model.name,
-      provider: bestOverall.model.provider,
+      id: chosen.model.id,
+      name: chosen.model.name,
+      provider: chosen.model.provider,
     },
-    reason: buildUpgradeReason(bestOverall.model, analysis),
-    scoreDifference: round(scoreDiff, 3),
+    targetTier,
+    reason: buildUpgradeReason(chosen.model, analysis),
+    scoreDifference: round(chosen.compositeScore - currentSelection.compositeScore, 3),
   };
 }
 

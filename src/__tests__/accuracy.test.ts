@@ -1,5 +1,5 @@
 import { route, analyzeOnly } from '@/core/engine';
-import { Modality, RouteRequest, Intent, Domain, Complexity } from '@/types';
+import { Modality, Intent, Complexity } from '@/types';
 import { getModelById } from '@/models/registry';
 
 function routeText(prompt: string) {

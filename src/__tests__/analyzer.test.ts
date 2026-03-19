@@ -8,7 +8,7 @@ import {
   parseModality,
   analyze,
 } from '@/core/analyzer';
-import { Intent, Domain, Complexity, Tone, Modality } from '@/types';
+import { Intent, Domain, Complexity, Tone, Modality, Mood } from '@/types';
 
 describe('Analyzer', () => {
   describe('detectIntent', () => {
@@ -325,7 +325,7 @@ describe('Analyzer', () => {
 
     it('indicates human context usage when provided', () => {
       const result = analyze('Help me relax', Modality.Text, {
-        emotionalState: { mood: 'stressed' as const },
+        emotionalState: { mood: Mood.Stressed },
       });
 
       expect(result.humanContextUsed).toBe(true);

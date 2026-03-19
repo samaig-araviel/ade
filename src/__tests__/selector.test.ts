@@ -1,6 +1,6 @@
 import { selectModels, selectFallback } from '@/core/selector';
 import { getAvailableModels } from '@/models';
-import { ModelScore, Intent, Domain, Complexity } from '@/types';
+import { ModelScore } from '@/types';
 
 describe('Selector', () => {
   const models = getAvailableModels();

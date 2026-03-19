@@ -1,5 +1,5 @@
 import { route, analyzeOnly } from '@/core/engine';
-import { Modality, RouteRequest, RouteResponse, Intent, Domain, Mood, EnergyLevel, AccessTier, Provider } from '@/types';
+import { Modality, RouteRequest, Intent, Mood, EnergyLevel, AccessTier, Provider } from '@/types';
 
 describe('Engine', () => {
   describe('route', () => {
@@ -266,7 +266,7 @@ describe('Engine', () => {
       const request: RouteRequest = {
         prompt: 'Write a Python function to sort an array',
         modality: Modality.Text,
-        availableProviders: ['stability'] as Provider[],
+        availableProviders: ['stability' as unknown as Provider],
       };
 
       const response = route(request);
