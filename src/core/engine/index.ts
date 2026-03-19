@@ -26,7 +26,6 @@ import {
 } from '../reasoning';
 import {
   filterModelsByConstraints,
-  getAvailableModels,
   getImageGenerationModels,
   getModelsByModalityCapability,
   getModelsForTier,

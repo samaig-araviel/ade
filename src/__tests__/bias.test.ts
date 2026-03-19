@@ -106,7 +106,7 @@ describe('Model Selection Bias Detection', () => {
     const totalPrompts = Object.values(PROMPT_CATEGORIES).reduce((sum, p) => sum + p.length, 0);
     const threshold = totalPrompts * 0.50;
 
-    for (const [provider, wins] of Object.entries(providerWins)) {
+    for (const [_provider, wins] of Object.entries(providerWins)) {
       expect(wins).toBeLessThanOrEqual(threshold);
     }
   });
