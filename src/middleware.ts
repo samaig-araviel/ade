@@ -1,8 +1,24 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { validateApiKey, requiresAuth } from '@/lib/auth';
 
-export function middleware(_request: NextRequest) {
-  // All endpoints are currently public — no authentication required.
-  // Authentication will be re-added once all endpoints are confirmed working.
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Skip auth for paths that don't require it (health, models, public endpoints in dev)
+  if (!requiresAuth(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Validate API key for protected endpoints
+  const authResult = validateApiKey(request);
+
+  if (!authResult.valid) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: 401 }
+    );
+  }
+
   return NextResponse.next();
 }
 
