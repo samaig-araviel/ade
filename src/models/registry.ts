@@ -526,7 +526,7 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.9, workHoursSuitability: 0.88,
         },
         specializations: ['fast_tasks', 'budget', 'summarization', 'classification'],
-        accessTier: AccessTier.Free, creditCost: 1, available: true,
+        accessTier: AccessTier.Lite, creditCost: 1, available: true,
     },
     // ---------------------------------------------------------------
     // GPT-4.1 (OPENAI)
