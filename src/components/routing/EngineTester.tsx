@@ -163,7 +163,7 @@ const modalityOptions = [
 
 const moodOptions = ['happy', 'neutral', 'stressed', 'frustrated', 'excited', 'tired', 'anxious', 'calm'];
 const energyOptions = ['low', 'moderate', 'high'];
-const responseStyleOptions = ['concise', 'detailed', 'conversational', 'formal', 'casual'];
+const responseStyleOptions = ['default', 'professional', 'friendly', 'candid', 'quirky', 'efficient', 'cynical'];
 const responseLengthOptions = ['short', 'medium', 'long'];
 
 const providerOptions = [

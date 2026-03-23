@@ -369,48 +369,6 @@ export const DOMAIN_KEYWORDS: Map<Domain, Set<string>> = new Map([
 
 // Tone indicator words
 export const TONE_INDICATORS: Map<Tone, Set<string>> = new Map([
-  [Tone.Casual, new Set([
-    'hey', 'hi', 'yo', 'sup', 'dude', 'bro', 'man', 'buddy', 'pal', 'mate',
-    'cool', 'awesome', 'sweet', 'nice', 'great', 'chill', 'laid', 'back',
-    'whatever', 'gonna', 'wanna', 'gotta', 'kinda', 'sorta', 'dunno', 'yeah',
-    'yep', 'nope', 'nah', 'meh', 'lol', 'haha', 'hehe', 'lmao', 'rofl', 'omg',
-    'btw', 'tbh', 'imo', 'imho', 'fyi', 'jk', 'nvm', 'idk', 'rn', 'atm',
-  ])],
-  [Tone.Focused, new Set([
-    'specifically', 'exactly', 'precisely', 'particular', 'particularly',
-    'detail', 'detailed', 'accurate', 'accuracy', 'correct', 'correctly',
-    'proper', 'properly', 'technical', 'technically', 'strict', 'strictly',
-    'careful', 'carefully', 'thorough', 'thoroughly', 'complete', 'completely',
-    'comprehensive', 'comprehensively', 'systematic', 'systematically',
-  ])],
-  [Tone.Curious, new Set([
-    'curious', 'wonder', 'wondering', 'interested', 'interesting', 'fascinating',
-    'intriguing', 'explore', 'exploring', 'discover', 'discovering', 'learn',
-    'learning', 'understand', 'understanding', 'how', 'why', 'what', 'when',
-    'where', 'who', 'which', 'explain', 'elaborate', 'tell', 'more', 'about',
-  ])],
-  [Tone.Frustrated, new Set([
-    'frustrated', 'frustrating', 'annoyed', 'annoying', 'angry', 'mad', 'upset',
-    'irritated', 'irritating', 'sick', 'tired', 'fed', 'up', 'enough', 'still',
-    'again', 'always', 'never', 'nothing', 'works', 'broken', 'stupid', 'dumb',
-    'terrible', 'awful', 'horrible', 'worst', 'hate', 'cant', "can't", 'wont',
-    "won't", 'doesnt', "doesn't", 'didnt', "didn't", 'isnt', "isn't", 'wasnt',
-    "wasn't", 'problem', 'issue', 'error', 'bug', 'fail', 'failed', 'failing',
-  ])],
-  [Tone.Urgent, new Set([
-    'urgent', 'urgently', 'asap', 'immediately', 'now', 'right', 'away', 'quick',
-    'quickly', 'fast', 'faster', 'hurry', 'rush', 'rushing', 'deadline', 'due',
-    'today', 'tonight', 'tomorrow', 'soon', 'critical', 'crucial', 'important',
-    'emergency', 'help', 'please', 'need', 'must', 'have', 'to', 'required',
-    'necessary', 'essential', 'vital', 'imperative', 'pressing', 'time',
-    'sensitive', 'running', 'out', 'of', 'last', 'minute', 'behind', 'schedule',
-  ])],
-  [Tone.Playful, new Set([
-    'fun', 'funny', 'joke', 'joking', 'kidding', 'silly', 'goofy', 'crazy',
-    'wild', 'wacky', 'weird', 'random', 'lol', 'haha', 'hehe', 'rofl', 'lmao',
-    'play', 'playing', 'game', 'games', 'challenge', 'bet', 'dare', 'guess',
-    'imagine', 'pretend', 'fantasy', 'dream', 'magic', 'magical', 'unicorn',
-  ])],
   [Tone.Professional, new Set([
     'professional', 'professionally', 'formal', 'formally', 'official',
     'officially', 'business', 'corporate', 'enterprise', 'organization',
@@ -418,6 +376,41 @@ export const TONE_INDICATORS: Map<Tone, Set<string>> = new Map([
     'sincerely', 'regards', 'dear', 'sir', 'madam', 'mr', 'ms', 'mrs', 'dr',
     'professor', 'pursuant', 'regarding', 'concerning', 'reference', 'attached',
     'enclosed', 'hereby', 'therefore', 'furthermore', 'moreover', 'accordingly',
+  ])],
+  [Tone.Friendly, new Set([
+    'hey', 'hi', 'hello', 'howdy', 'thanks', 'thank', 'appreciate', 'grateful',
+    'awesome', 'great', 'wonderful', 'amazing', 'fantastic', 'lovely', 'nice',
+    'cool', 'sweet', 'cheers', 'buddy', 'friend', 'pal', 'mate', 'please',
+    'kindly', 'hope', 'excited', 'happy', 'glad', 'welcome', 'warm', 'care',
+  ])],
+  [Tone.Candid, new Set([
+    'honestly', 'truthfully', 'frankly', 'bluntly', 'straight', 'direct',
+    'straightforward', 'no', 'nonsense', 'real', 'reality', 'actually',
+    'fact', 'facts', 'truth', 'genuine', 'authentic', 'upfront', 'tell',
+    'really', 'serious', 'seriously', 'practically', 'realistic', 'honest',
+    'plain', 'simply', 'just', 'bottom', 'line', 'clear', 'clearly',
+  ])],
+  [Tone.Quirky, new Set([
+    'fun', 'funny', 'joke', 'joking', 'kidding', 'silly', 'goofy', 'crazy',
+    'wild', 'wacky', 'weird', 'random', 'lol', 'haha', 'hehe', 'rofl', 'lmao',
+    'play', 'playing', 'game', 'games', 'challenge', 'bet', 'dare', 'guess',
+    'imagine', 'pretend', 'fantasy', 'dream', 'magic', 'magical', 'creative',
+    'whimsical', 'unusual', 'curious', 'wonder', 'fascinating', 'intriguing',
+  ])],
+  [Tone.Efficient, new Set([
+    'specifically', 'exactly', 'precisely', 'quick', 'quickly', 'fast', 'brief',
+    'short', 'concise', 'summary', 'summarize', 'tldr', 'bullet', 'points',
+    'urgent', 'urgently', 'asap', 'immediately', 'deadline', 'hurry', 'rush',
+    'straight', 'answer', 'just', 'only', 'need', 'must', 'essential',
+    'key', 'main', 'important', 'critical', 'focus', 'focused', 'direct',
+  ])],
+  [Tone.Cynical, new Set([
+    'frustrated', 'frustrating', 'annoyed', 'annoying', 'angry', 'mad', 'upset',
+    'irritated', 'irritating', 'sick', 'tired', 'fed', 'up', 'enough', 'still',
+    'again', 'always', 'never', 'nothing', 'works', 'broken', 'stupid', 'dumb',
+    'terrible', 'awful', 'horrible', 'worst', 'hate', 'cant', "can't", 'wont',
+    "won't", 'doesnt', "doesn't", 'didnt', "didn't", 'isnt', "isn't",
+    'skeptical', 'doubt', 'doubtful', 'whatever', 'supposedly', 'apparently',
   ])],
 ]);
 

@@ -605,26 +605,26 @@ export function detectTone(prompt: string): Tone {
     toneScores.set(tone, score);
   }
 
-  // Frustration signals
+  // Cynical signals — frustration markers
   if (lowerPrompt.includes('!!!') || lowerPrompt.includes('???') ||
       lowerPrompt === lowerPrompt.toUpperCase() && prompt.length > 20) {
-    toneScores.set(Tone.Frustrated, (toneScores.get(Tone.Frustrated) ?? 0) + 3);
+    toneScores.set(Tone.Cynical, (toneScores.get(Tone.Cynical) ?? 0) + 3);
   }
 
-  // Urgency signals
+  // Efficient signals — urgency markers
   if (lowerPrompt.includes('asap') || lowerPrompt.includes('urgent') ||
       lowerPrompt.includes('immediately') || lowerPrompt.includes('deadline')) {
-    toneScores.set(Tone.Urgent, (toneScores.get(Tone.Urgent) ?? 0) + 3);
+    toneScores.set(Tone.Efficient, (toneScores.get(Tone.Efficient) ?? 0) + 3);
   }
 
-  // Playfulness (emojis)
+  // Quirky signals — emojis
   const emojiCount = (prompt.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]/gu) || []).length;
   if (emojiCount > 0) {
-    toneScores.set(Tone.Playful, (toneScores.get(Tone.Playful) ?? 0) + emojiCount);
+    toneScores.set(Tone.Quirky, (toneScores.get(Tone.Quirky) ?? 0) + emojiCount);
   }
 
   // Find best tone
-  let bestTone = Tone.Casual;
+  let bestTone = Tone.Default;
   let bestScore = 0;
 
   for (const [tone, score] of toneScores) {
@@ -639,7 +639,7 @@ export function detectTone(prompt: string): Tone {
         lowerPrompt.includes('would you') || lowerPrompt.includes('could you')) {
       return Tone.Professional;
     }
-    return Tone.Casual;
+    return Tone.Default;
   }
 
   return bestTone;
