@@ -48,13 +48,13 @@ export enum Complexity {
 
 // Detected user emotional tone
 export enum Tone {
-  Casual = 'casual',
-  Focused = 'focused',
-  Curious = 'curious',
-  Frustrated = 'frustrated',
-  Urgent = 'urgent',
-  Playful = 'playful',
+  Default = 'default',
   Professional = 'professional',
+  Friendly = 'friendly',
+  Candid = 'candid',
+  Quirky = 'quirky',
+  Efficient = 'efficient',
+  Cynical = 'cynical',
 }
 
 // Input modality

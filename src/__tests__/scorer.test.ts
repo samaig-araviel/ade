@@ -30,7 +30,7 @@ describe('Scorer', () => {
     intent: Intent.Coding,
     domain: Domain.Technology,
     complexity: Complexity.Standard,
-    tone: Tone.Focused,
+    tone: Tone.Default,
     modality: Modality.Text,
     keywords: ['code', 'function'],
     humanContextUsed: false,

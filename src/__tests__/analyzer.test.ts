@@ -111,27 +111,27 @@ describe('Analyzer', () => {
   });
 
   describe('detectTone', () => {
-    it('detects casual tone', () => {
-      expect(detectTone('Hey dude, whats up?')).toBe(Tone.Casual);
-      expect(detectTone('lol thats cool')).toBe(Tone.Casual);
+    it('detects friendly tone', () => {
+      expect(detectTone('Hey buddy, thanks for the help!')).toBe(Tone.Friendly);
+      expect(detectTone('Hi there, hope you are doing great')).toBe(Tone.Friendly);
     });
 
-    it('detects frustrated tone', () => {
-      expect(detectTone('This still doesnt work! So frustrated!')).toBe(Tone.Frustrated);
-      expect(detectTone('Nothing works anymore, this is terrible')).toBe(Tone.Frustrated);
+    it('detects cynical tone', () => {
+      expect(detectTone('This still doesnt work! So frustrated!')).toBe(Tone.Cynical);
+      expect(detectTone('Nothing works anymore, this is terrible')).toBe(Tone.Cynical);
     });
 
-    it('detects urgent tone', () => {
-      expect(detectTone('Need this ASAP, urgent deadline!')).toBe(Tone.Urgent);
-      expect(detectTone('Please help immediately, this is critical')).toBe(Tone.Urgent);
+    it('detects efficient tone', () => {
+      expect(detectTone('Need this ASAP, urgent deadline!')).toBe(Tone.Efficient);
+      expect(detectTone('Quick concise summary please')).toBe(Tone.Efficient);
     });
 
-    it('detects playful tone with emojis', () => {
-      expect(detectTone('This is so fun! 😄🎉')).toBe(Tone.Playful);
+    it('detects quirky tone with emojis', () => {
+      expect(detectTone('This is so fun! 😄🎉')).toBe(Tone.Quirky);
     });
 
-    it('detects curious tone', () => {
-      expect(detectTone('I wonder how this works? Im curious to learn more')).toBe(Tone.Curious);
+    it('detects candid tone', () => {
+      expect(detectTone('Honestly just tell me the truth, be straightforward')).toBe(Tone.Candid);
     });
   });
 

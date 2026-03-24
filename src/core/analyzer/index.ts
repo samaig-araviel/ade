@@ -105,7 +105,7 @@ export function getDefaultAnalysis(modality: Modality = Modality.Text): QueryAna
     intent: 'conversation' as QueryAnalysis['intent'],
     domain: 'general' as QueryAnalysis['domain'],
     complexity: 'standard' as QueryAnalysis['complexity'],
-    tone: 'casual' as QueryAnalysis['tone'],
+    tone: 'default' as QueryAnalysis['tone'],
     modality,
     keywords: [],
     humanContextUsed: false,

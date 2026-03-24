@@ -142,7 +142,7 @@ const MODALITIES = [
 
 const MOODS = ['happy', 'neutral', 'stressed', 'frustrated', 'excited', 'tired', 'anxious', 'calm'];
 const ENERGY_LEVELS = ['low', 'moderate', 'high'];
-const RESPONSE_STYLES = ['concise', 'detailed', 'conversational', 'formal', 'casual'];
+const RESPONSE_STYLES = ['default', 'professional', 'friendly', 'candid', 'quirky', 'efficient', 'cynical'];
 const RESPONSE_LENGTHS = ['short', 'medium', 'long'];
 const WEATHER_OPTIONS = ['sunny', 'cloudy', 'rainy', 'stormy', 'snowy', 'hot', 'cold'];
 
