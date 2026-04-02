@@ -838,7 +838,7 @@ const models: ModelDefinition[] = [
         pricing: { inputPer1k: 0.01, outputPer1k: 0.04 },
         capabilities: {
             maxInputTokens: 200000, maxOutputTokens: 100000,
-            supportsStreaming: true, supportsVision: true, supportsAudio: false,
+            supportsStreaming: false, supportsVision: true, supportsAudio: false,
             supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
             supportsReasoning: true, supportsImageGeneration: false,
             supportsExtendedThinking: false, supportsAdaptiveThinking: false,
@@ -881,7 +881,7 @@ const models: ModelDefinition[] = [
         pricing: { inputPer1k: 0.0011, outputPer1k: 0.0044, cachedInputPer1k: 0.000275 },
         capabilities: {
             maxInputTokens: 200000, maxOutputTokens: 100000,
-            supportsStreaming: true, supportsVision: true, supportsAudio: false,
+            supportsStreaming: false, supportsVision: true, supportsAudio: false,
             supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
             supportsReasoning: true, supportsImageGeneration: false,
             supportsExtendedThinking: false, supportsAdaptiveThinking: false,
