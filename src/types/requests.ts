@@ -9,6 +9,7 @@ import {
   FeedbackSignal,
   AccessTier,
   Provider,
+  QualityTier,
 } from './enums';
 
 // Conversation context
@@ -84,6 +85,7 @@ export interface RouteRequest {
   userTier?: AccessTier;
   availableProviders?: Provider[];
   conversationHasImages?: boolean;
+  qualityTier?: QualityTier;
 }
 
 // Analyze-only request

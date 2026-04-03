@@ -3,8 +3,7 @@ import {
   ModelScore,
   ScoringContext,
   FactorScore,
-  DEFAULT_WEIGHTS,
-  HUMAN_CONTEXT_WEIGHTS,
+  resolveWeights,
 } from '@/types';
 import {
   calculateTaskFitness,
@@ -34,7 +33,7 @@ export function scoreModel(
   context: ScoringContext
 ): ModelScore {
   const hasHumanContext = !!context.humanContext;
-  const weights = hasHumanContext ? HUMAN_CONTEXT_WEIGHTS : DEFAULT_WEIGHTS;
+  const weights = resolveWeights(context.qualityTier, hasHumanContext);
 
   const factors: FactorScore[] = [];
 
