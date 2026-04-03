@@ -420,7 +420,7 @@ function handleStandardRoute(
     conversationContext: request.context,
     allModels: models,
     conversationHasImages: request.conversationHasImages,
-    qualityTier: request.qualityTier,
+    strategy: request.strategy,
   };
 
   const { result: scores, durationMs: scoringMs } = measureTimeSync(() =>
@@ -519,7 +519,7 @@ function handleCombinedModality(
     conversationContext: request.context,
     allModels: models,
     conversationHasImages: request.conversationHasImages,
-    qualityTier: request.qualityTier,
+    strategy: request.strategy,
   };
 
   const { result: textScores, durationMs: scoringMs } = measureTimeSync(() =>
@@ -819,7 +819,7 @@ function generateUpgradeHint(
     constraints: request.constraints,
     conversationContext: request.context,
     allModels: models,
-    qualityTier: request.qualityTier,
+    strategy: request.strategy,
   });
 
   // Collect already-scored model IDs to avoid re-scoring

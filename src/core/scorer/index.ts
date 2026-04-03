@@ -4,6 +4,7 @@ import {
   ScoringContext,
   FactorScore,
   resolveWeights,
+  WEB_SEARCH_BONUS,
 } from '@/types';
 import {
   calculateTaskFitness,
@@ -33,7 +34,7 @@ export function scoreModel(
   context: ScoringContext
 ): ModelScore {
   const hasHumanContext = !!context.humanContext;
-  const weights = resolveWeights(context.qualityTier, hasHumanContext);
+  const weights = resolveWeights(context.strategy, hasHumanContext);
 
   const factors: FactorScore[] = [];
 
@@ -92,7 +93,22 @@ export function scoreModel(
   // Calculate composite score
   let compositeScore = factors.reduce((sum, f) => sum + f.weightedScore, 0);
 
-  // Apply conversation image history bonus: soft preference for image-capable models
+  // Web search correctness bonus: when the query requires real-time information,
+  // strongly prefer models that support web search. Without this, a fast model
+  // without web search (e.g. Flash-Lite) will give stale or wrong answers for
+  // queries like "what is today's date" or "are we in Easter".
+  if (context.analysis.webSearchRequired && model.capabilities.supportsWebSearch) {
+    compositeScore += WEB_SEARCH_BONUS;
+    factors.push({
+      name: 'Web Search Fitness',
+      score: 1.0,
+      weight: WEB_SEARCH_BONUS,
+      weightedScore: WEB_SEARCH_BONUS,
+      detail: 'Query requires real-time information — model supports web search',
+    });
+  }
+
+  // Conversation image history bonus: soft preference for image-capable models
   // when the conversation has previously generated images. Acts as a tiebreaker.
   if (context.conversationHasImages && model.capabilities.supportsImageGeneration) {
     const imageBonus = 0.05;

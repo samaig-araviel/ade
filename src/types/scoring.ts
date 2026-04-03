@@ -1,7 +1,7 @@
 import { ModelDefinition } from './models';
 import { QueryAnalysis } from './responses';
 import { HumanContext, Constraints, ConversationContext } from './requests';
-import { QualityTier } from './enums';
+import { RoutingStrategy } from './enums';
 
 // Individual factor score
 export interface FactorScore {
@@ -27,7 +27,7 @@ export interface ScoringContext {
   conversationContext?: ConversationContext;
   allModels: ModelDefinition[];
   conversationHasImages?: boolean;
-  qualityTier?: QualityTier;
+  strategy?: RoutingStrategy;
 }
 
 // Weights configuration
@@ -42,19 +42,21 @@ export interface ScoringWeights {
   humanContextFit?: number;
 }
 
-// Default weights without human context
-// Balanced to prevent single-model dominance while prioritizing task fit
+// ── Weight profiles ───────────────────────────────────────────────────────────
+// All profiles sum to 1.0. Each strategy shifts emphasis to match user intent.
+
+// Auto: default balanced routing — task fitness is king, speed is secondary
 export const DEFAULT_WEIGHTS: ScoringWeights = {
-  taskFitness: 0.38,        // Primary factor - matches task requirements
-  specialization: 0.18,     // Gives specialists a decisive edge in their domain
+  taskFitness: 0.38,
+  specialization: 0.18,
   modalityFitness: 0.15,
-  costEfficiency: 0.08,     // Cost matters but shouldn't override quality signals
+  costEfficiency: 0.08,
   userPreference: 0.08,
   conversationCoherence: 0.06,
-  speed: 0.07,              // Speed matters for UX but not at the expense of quality
+  speed: 0.07,
 };
 
-// Weights with human context (used when humanContext is provided and no quality tier override)
+// Auto + human context
 export const HUMAN_CONTEXT_WEIGHTS: ScoringWeights = {
   taskFitness: 0.28,
   specialization: 0.14,
@@ -66,56 +68,54 @@ export const HUMAN_CONTEXT_WEIGHTS: ScoringWeights = {
   humanContextFit: 0.20,
 };
 
-// ── Quality tier weight profiles ──────────────────────────────────────────────
-// Each tier shifts the scoring emphasis to match the user's intent.
-
-// Speed: favour low-latency, cost-efficient models
+// Speed: fastest capable model — NOT cheapest. Cost is near-irrelevant.
+// A Pro user on Speed should get GPT-4o or Gemini Flash, not Flash-Lite.
 export const SPEED_WEIGHTS: ScoringWeights = {
-  taskFitness: 0.20,
-  specialization: 0.08,
+  taskFitness: 0.28,
+  specialization: 0.10,
   modalityFitness: 0.10,
-  costEfficiency: 0.25,
-  userPreference: 0.03,
-  conversationCoherence: 0.04,
-  speed: 0.30,
+  costEfficiency: 0.02,
+  userPreference: 0.05,
+  conversationCoherence: 0.05,
+  speed: 0.40,
 };
 
 // Speed + human context
 export const SPEED_HUMAN_CONTEXT_WEIGHTS: ScoringWeights = {
-  taskFitness: 0.16,
-  specialization: 0.06,
+  taskFitness: 0.22,
+  specialization: 0.08,
   modalityFitness: 0.08,
-  costEfficiency: 0.20,
-  userPreference: 0.03,
-  conversationCoherence: 0.03,
-  speed: 0.24,
+  costEfficiency: 0.02,
+  userPreference: 0.04,
+  conversationCoherence: 0.04,
+  speed: 0.32,
   humanContextFit: 0.20,
 };
 
 // Balanced: even distribution — no single factor dominates
 export const BALANCED_WEIGHTS: ScoringWeights = {
-  taskFitness: 0.24,
-  specialization: 0.13,
-  modalityFitness: 0.13,
-  costEfficiency: 0.14,
-  userPreference: 0.06,
-  conversationCoherence: 0.06,
+  taskFitness: 0.22,
+  specialization: 0.14,
+  modalityFitness: 0.12,
+  costEfficiency: 0.12,
+  userPreference: 0.08,
+  conversationCoherence: 0.08,
   speed: 0.24,
 };
 
 // Balanced + human context
 export const BALANCED_HUMAN_CONTEXT_WEIGHTS: ScoringWeights = {
-  taskFitness: 0.20,
+  taskFitness: 0.18,
   specialization: 0.10,
   modalityFitness: 0.10,
-  costEfficiency: 0.11,
-  userPreference: 0.05,
-  conversationCoherence: 0.05,
-  speed: 0.19,
+  costEfficiency: 0.10,
+  userPreference: 0.06,
+  conversationCoherence: 0.06,
+  speed: 0.20,
   humanContextFit: 0.20,
 };
 
-// Quality: favour task fitness and specialisation, deprioritise cost and speed
+// Quality: best model for the task — cost and speed are near-irrelevant
 export const QUALITY_WEIGHTS: ScoringWeights = {
   taskFitness: 0.42,
   specialization: 0.25,
@@ -138,20 +138,34 @@ export const QUALITY_HUMAN_CONTEXT_WEIGHTS: ScoringWeights = {
   humanContextFit: 0.26,
 };
 
-// Resolve the correct weight profile for a given quality tier and human context state
+// ── Weight resolution ─────────────────────────────────────────────────────────
+
+// Resolve the correct weight profile for a given strategy and human context state
 export function resolveWeights(
-  qualityTier: QualityTier | undefined,
+  strategy: RoutingStrategy | undefined,
   hasHumanContext: boolean
 ): ScoringWeights {
-  switch (qualityTier) {
-    case QualityTier.Speed:
+  switch (strategy) {
+    case RoutingStrategy.Speed:
       return hasHumanContext ? SPEED_HUMAN_CONTEXT_WEIGHTS : SPEED_WEIGHTS;
-    case QualityTier.Balanced:
+    case RoutingStrategy.Balanced:
       return hasHumanContext ? BALANCED_HUMAN_CONTEXT_WEIGHTS : BALANCED_WEIGHTS;
-    case QualityTier.Quality:
+    case RoutingStrategy.Quality:
       return hasHumanContext ? QUALITY_HUMAN_CONTEXT_WEIGHTS : QUALITY_WEIGHTS;
-    case QualityTier.Auto:
+    case RoutingStrategy.Auto:
     default:
       return hasHumanContext ? HUMAN_CONTEXT_WEIGHTS : DEFAULT_WEIGHTS;
   }
 }
+
+// ── Web search bonus ──────────────────────────────────────────────────────────
+
+// When the query requires real-time information (webSearchRequired), models that
+// support web search receive a significant scoring bonus. This is a correctness
+// signal — a model without web search will give stale or wrong answers for
+// queries like "what is today's date" or "are we in Easter".
+//
+// The bonus is large enough to overcome speed/cost advantages of non-search
+// models (e.g. Flash-Lite at 300ms vs Flash at 500ms) while being small enough
+// not to override task fitness for non-search queries.
+export const WEB_SEARCH_BONUS = 0.20;
