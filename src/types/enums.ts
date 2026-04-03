@@ -149,3 +149,12 @@ export enum AccessTier {
   Lite = 'lite',
   Pro = 'pro',
 }
+
+// Quality tier for model routing strategy
+// Controls how scoring weights are balanced when selecting models
+export enum QualityTier {
+  Auto = 'auto',         // Default balanced routing — best model for the task
+  Speed = 'speed',       // Prioritise low latency and cost efficiency
+  Balanced = 'balanced', // Equal weight across speed, cost, and quality
+  Quality = 'quality',   // Prioritise task fitness and specialisation
+}

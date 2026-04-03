@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { route } from '@/core';
-import { RouteRequest, Modality, AccessTier, Provider } from '@/types';
+import { RouteRequest, Modality, AccessTier, Provider, QualityTier } from '@/types';
 import { badRequest, invalidField, internalError } from '@/lib/errors';
 import { storeDecision } from '@/lib/kv';
 
@@ -100,6 +100,18 @@ function validateRequest(body: unknown): RouteRequest | { error: string; field?:
       return { error: 'conversationHasImages must be a boolean', field: 'conversationHasImages' };
     }
     validated.conversationHasImages = request.conversationHasImages;
+  }
+
+  // Optional qualityTier
+  if (request.qualityTier !== undefined) {
+    const validTiers = new Set(Object.values(QualityTier));
+    if (typeof request.qualityTier !== 'string' || !validTiers.has(request.qualityTier as QualityTier)) {
+      return {
+        error: `Invalid qualityTier. Must be one of: ${Object.values(QualityTier).join(', ')}`,
+        field: 'qualityTier',
+      };
+    }
+    validated.qualityTier = request.qualityTier as QualityTier;
   }
 
   return validated;
