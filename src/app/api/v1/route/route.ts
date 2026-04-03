@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { route } from '@/core';
-import { RouteRequest, Modality, AccessTier, Provider, QualityTier } from '@/types';
+import { RouteRequest, Modality, AccessTier, Provider, RoutingStrategy } from '@/types';
 import { badRequest, invalidField, internalError } from '@/lib/errors';
 import { storeDecision } from '@/lib/kv';
 
@@ -102,16 +102,16 @@ function validateRequest(body: unknown): RouteRequest | { error: string; field?:
     validated.conversationHasImages = request.conversationHasImages;
   }
 
-  // Optional qualityTier
-  if (request.qualityTier !== undefined) {
-    const validTiers = new Set(Object.values(QualityTier));
-    if (typeof request.qualityTier !== 'string' || !validTiers.has(request.qualityTier as QualityTier)) {
+  // Optional strategy (routing preference: auto, speed, balanced, quality)
+  if (request.strategy !== undefined) {
+    const validStrategies = new Set(Object.values(RoutingStrategy));
+    if (typeof request.strategy !== 'string' || !validStrategies.has(request.strategy as RoutingStrategy)) {
       return {
-        error: `Invalid qualityTier. Must be one of: ${Object.values(QualityTier).join(', ')}`,
-        field: 'qualityTier',
+        error: `Invalid strategy. Must be one of: ${Object.values(RoutingStrategy).join(', ')}`,
+        field: 'strategy',
       };
     }
-    validated.qualityTier = request.qualityTier as QualityTier;
+    validated.strategy = request.strategy as RoutingStrategy;
   }
 
   return validated;
