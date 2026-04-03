@@ -102,7 +102,7 @@ function validateRequest(body: unknown): RouteRequest | { error: string; field?:
     validated.conversationHasImages = request.conversationHasImages;
   }
 
-  // Optional strategy (routing preference: auto, speed, balanced, quality)
+  // Optional strategy (routing preference: auto, balanced, quality)
   if (request.strategy !== undefined) {
     const validStrategies = new Set(Object.values(RoutingStrategy));
     if (typeof request.strategy !== 'string' || !validStrategies.has(request.strategy as RoutingStrategy)) {

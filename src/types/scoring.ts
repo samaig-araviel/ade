@@ -45,7 +45,7 @@ export interface ScoringWeights {
 // ── Weight profiles ───────────────────────────────────────────────────────────
 // All profiles sum to 1.0. Each strategy shifts emphasis to match user intent.
 
-// Auto: default balanced routing — task fitness is king, speed is secondary
+// Auto: default routing — task fitness is primary, other factors secondary
 export const DEFAULT_WEIGHTS: ScoringWeights = {
   taskFitness: 0.38,
   specialization: 0.18,
@@ -65,30 +65,6 @@ export const HUMAN_CONTEXT_WEIGHTS: ScoringWeights = {
   userPreference: 0.08,
   conversationCoherence: 0.06,
   speed: 0.06,
-  humanContextFit: 0.20,
-};
-
-// Speed: fastest capable model — NOT cheapest. Cost is near-irrelevant.
-// A Pro user on Speed should get GPT-4o or Gemini Flash, not Flash-Lite.
-export const SPEED_WEIGHTS: ScoringWeights = {
-  taskFitness: 0.28,
-  specialization: 0.10,
-  modalityFitness: 0.10,
-  costEfficiency: 0.02,
-  userPreference: 0.05,
-  conversationCoherence: 0.05,
-  speed: 0.40,
-};
-
-// Speed + human context
-export const SPEED_HUMAN_CONTEXT_WEIGHTS: ScoringWeights = {
-  taskFitness: 0.22,
-  specialization: 0.08,
-  modalityFitness: 0.08,
-  costEfficiency: 0.02,
-  userPreference: 0.04,
-  conversationCoherence: 0.04,
-  speed: 0.32,
   humanContextFit: 0.20,
 };
 
@@ -146,8 +122,6 @@ export function resolveWeights(
   hasHumanContext: boolean
 ): ScoringWeights {
   switch (strategy) {
-    case RoutingStrategy.Speed:
-      return hasHumanContext ? SPEED_HUMAN_CONTEXT_WEIGHTS : SPEED_WEIGHTS;
     case RoutingStrategy.Balanced:
       return hasHumanContext ? BALANCED_HUMAN_CONTEXT_WEIGHTS : BALANCED_WEIGHTS;
     case RoutingStrategy.Quality:
@@ -164,8 +138,4 @@ export function resolveWeights(
 // support web search receive a significant scoring bonus. This is a correctness
 // signal — a model without web search will give stale or wrong answers for
 // queries like "what is today's date" or "are we in Easter".
-//
-// The bonus is large enough to overcome speed/cost advantages of non-search
-// models (e.g. Flash-Lite at 300ms vs Flash at 500ms) while being small enough
-// not to override task fitness for non-search queries.
 export const WEB_SEARCH_BONUS = 0.20;

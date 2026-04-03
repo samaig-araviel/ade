@@ -153,7 +153,6 @@ export enum AccessTier {
 // Routing strategy — controls how scoring weights are balanced when selecting models
 export enum RoutingStrategy {
   Auto = 'auto',         // Default routing — best model for the task
-  Speed = 'speed',       // Prioritise low latency for the fastest capable model
   Balanced = 'balanced', // Even weight across speed, cost, and quality
   Quality = 'quality',   // Prioritise task fitness and specialisation
 }
