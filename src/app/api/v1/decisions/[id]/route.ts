@@ -1,15 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getDecision } from '@/lib/kv';
-import { notFound, internalError } from '@/lib/errors';
+import { notFound } from '@/lib/errors';
+import { requestContext } from '@/lib/request-context';
+import { respondError, respondJson } from '@/lib/error-response';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(
-  _request: Request,
-  { params }: RouteParams
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  const ctx = requestContext(request, 'decisions.get');
   try {
     const { id } = await params;
 
@@ -19,9 +19,10 @@ export async function GET(
       return notFound(`Decision ${id}`);
     }
 
-    return NextResponse.json(decision);
+    return respondJson(decision as unknown as Record<string, unknown>, {
+      requestId: ctx.requestId,
+    });
   } catch (error) {
-    console.error('Get decision error:', error);
-    return internalError('An error occurred while retrieving the decision');
+    return respondError(error, ctx.log, { requestId: ctx.requestId });
   }
 }

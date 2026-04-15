@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { analyzeOnly } from '@/core';
 import { AnalyzeRequest, Modality } from '@/types';
-import { badRequest, invalidField, internalError } from '@/lib/errors';
+import { badRequest, invalidField } from '@/lib/errors';
+import { requestContext } from '@/lib/request-context';
+import { respondError, respondJson } from '@/lib/error-response';
 
 // Valid modalities
 const VALID_MODALITIES = new Set(['text', 'code', 'image', 'video', 'voice', 'document', 'text+image', 'text+voice', 'text+code', 'text+video']);
@@ -40,18 +42,24 @@ function validateRequest(body: unknown): AnalyzeRequest | { error: string; field
 }
 
 export async function POST(request: NextRequest) {
+  const ctx = requestContext(request, 'analyze');
   try {
     // Parse body
     let body: unknown;
     try {
       body = await request.json();
     } catch {
+      ctx.log.warn('Invalid JSON in request body');
       return badRequest('Invalid JSON in request body');
     }
 
     // Validate request
     const validation = validateRequest(body);
     if ('error' in validation) {
+      ctx.log.warn('Analyze validation failed', {
+        field: validation.field,
+        reason: validation.error,
+      });
       if (validation.field) {
         return invalidField(validation.field, validation.error);
       }
@@ -61,9 +69,10 @@ export async function POST(request: NextRequest) {
     // Execute analysis
     const response = analyzeOnly(validation.prompt, validation.modality);
 
-    return NextResponse.json(response);
+    return respondJson(response as unknown as Record<string, unknown>, {
+      requestId: ctx.requestId,
+    });
   } catch (error) {
-    console.error('Analyze error:', error);
-    return internalError('An error occurred while analyzing the prompt');
+    return respondError(error, ctx.log, { requestId: ctx.requestId });
   }
 }

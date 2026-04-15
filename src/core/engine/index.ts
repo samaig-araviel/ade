@@ -32,6 +32,9 @@ import {
   isDedicatedImageModel,
 } from '@/models';
 import {generateDecisionId, measureTimeSync, round} from '@/lib/helpers';
+import {logger} from '@/lib/logger';
+
+const engineLog = logger.child({module: 'engine'});
 
 // Maximum allowed routing time
 const MAX_ROUTING_TIME_MS = 50;
@@ -452,7 +455,10 @@ function handleStandardRoute(
 
   // Log warning if over budget
   if (totalMs > MAX_ROUTING_TIME_MS) {
-    console.warn(`Routing exceeded ${MAX_ROUTING_TIME_MS}ms: ${totalMs}ms`);
+    engineLog.warn('Routing exceeded budget', {
+      budgetMs: MAX_ROUTING_TIME_MS,
+      actualMs: totalMs,
+    });
   }
 
   // Check if we should attach a fallback suggestion (low confidence or unsupported task)
