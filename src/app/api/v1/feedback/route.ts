@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { FeedbackRequest, FeedbackResponse, FeedbackSignal } from '@/types';
 import { badRequest, invalidField, notFound, internalError } from '@/lib/errors';
 import { addFeedback, getDecision } from '@/lib/kv';
+import { requestContext } from '@/lib/request-context';
+import { respondError, respondJson } from '@/lib/error-response';
 
 // Valid feedback signals
 const VALID_SIGNALS = new Set(['positive', 'neutral', 'negative']);
@@ -47,18 +49,24 @@ function validateRequest(body: unknown): FeedbackRequest | { error: string; fiel
 }
 
 export async function POST(request: NextRequest) {
+  const ctx = requestContext(request, 'feedback');
   try {
     // Parse body
     let body: unknown;
     try {
       body = await request.json();
     } catch {
+      ctx.log.warn('Invalid JSON in request body');
       return badRequest('Invalid JSON in request body');
     }
 
     // Validate request
     const validation = validateRequest(body);
     if ('error' in validation) {
+      ctx.log.warn('Feedback validation failed', {
+        field: validation.field,
+        reason: validation.error,
+      });
       if (validation.field) {
         return invalidField(validation.field, validation.error);
       }
@@ -88,9 +96,15 @@ export async function POST(request: NextRequest) {
       message: 'Feedback recorded successfully',
     };
 
-    return NextResponse.json(response);
+    ctx.log.info('Feedback recorded', {
+      decisionId: validation.decisionId,
+      signal: validation.signal,
+    });
+
+    return respondJson(response as unknown as Record<string, unknown>, {
+      requestId: ctx.requestId,
+    });
   } catch (error) {
-    console.error('Feedback error:', error);
-    return internalError('An error occurred while storing feedback');
+    return respondError(error, ctx.log, { requestId: ctx.requestId });
   }
 }

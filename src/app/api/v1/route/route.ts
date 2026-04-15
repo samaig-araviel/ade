@@ -1,8 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { createHash } from 'crypto';
 import { route } from '@/core';
 import { RouteRequest, Modality, AccessTier, Provider, RoutingStrategy } from '@/types';
-import { badRequest, invalidField, internalError } from '@/lib/errors';
+import { badRequest, invalidField } from '@/lib/errors';
 import { storeDecision } from '@/lib/kv';
+import { requestContext } from '@/lib/request-context';
+import { respondError, respondJson } from '@/lib/error-response';
+import { routingMetrics } from '@/lib/metrics';
 
 // Valid modalities
 const VALID_MODALITIES = new Set(['text', 'code', 'image', 'video', 'voice', 'document', 'text+image', 'text+voice', 'text+code', 'text+video']);
@@ -118,18 +122,27 @@ function validateRequest(body: unknown): RouteRequest | { error: string; field?:
 }
 
 export async function POST(request: NextRequest) {
+  const ctx = requestContext(request, 'route');
+  const started = Date.now();
   try {
     // Parse body
     let body: unknown;
     try {
       body = await request.json();
     } catch {
+      ctx.log.warn('Invalid JSON in request body');
+      routingMetrics.recordRoutingError();
       return badRequest('Invalid JSON in request body');
     }
 
     // Validate request
     const validation = validateRequest(body);
     if ('error' in validation) {
+      ctx.log.warn('Route request validation failed', {
+        field: validation.field,
+        reason: validation.error,
+      });
+      routingMetrics.recordRoutingError();
       if (validation.field) {
         return invalidField(validation.field, validation.error);
       }
@@ -138,6 +151,35 @@ export async function POST(request: NextRequest) {
 
     // Execute routing
     const response = route(validation);
+    const durationMs = Date.now() - started;
+
+    // Update in-memory metrics so /v1/health reflects live throughput.
+    routingMetrics.recordRoutingDecision(durationMs, {
+      modelId: response.primaryModel.id,
+      provider: response.primaryModel.provider,
+    });
+
+    // Emit one structured log per decision. The prompt itself is NEVER
+    // logged — only a short hash — so logs cannot leak user content.
+    ctx.log.info('Routing decision', {
+      decisionId: response.decisionId,
+      modelId: response.primaryModel.id,
+      provider: response.primaryModel.provider,
+      score: response.primaryModel.score,
+      confidence: response.confidence,
+      durationMs,
+      modality: validation.modality,
+      strategy: validation.strategy,
+      promptHash: createHash('sha256')
+        .update(validation.prompt)
+        .digest('hex')
+        .slice(0, 12),
+      scoringFactors: {
+        intent: response.analysis.intent,
+        domain: response.analysis.domain,
+        complexity: response.analysis.complexity,
+      },
+    });
 
     // Store decision asynchronously (fire-and-forget)
     storeDecision({
@@ -152,12 +194,15 @@ export async function POST(request: NextRequest) {
       response,
       timestamp: new Date().toISOString(),
     }).catch((error) => {
-      console.warn('Failed to store decision:', error);
+      ctx.log.warn('Failed to store decision', { decisionId: response.decisionId }, error);
     });
 
-    return NextResponse.json(response);
+    return respondJson(
+      response as unknown as Record<string, unknown>,
+      { requestId: ctx.requestId }
+    );
   } catch (error) {
-    console.error('Route error:', error);
-    return internalError('An error occurred while processing the routing request');
+    routingMetrics.recordRoutingError();
+    return respondError(error, ctx.log, { requestId: ctx.requestId });
   }
 }

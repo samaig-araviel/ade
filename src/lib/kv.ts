@@ -1,4 +1,7 @@
 import { StoredDecision, FeedbackSignal } from '@/types';
+import { logger } from './logger';
+
+const log = logger.child({ module: 'kv' });
 
 // In-memory storage (replaces Vercel KV - no external dependencies needed)
 const memoryStore = new Map<string, unknown>();
@@ -42,7 +45,7 @@ export async function getUserContext(userId: string): Promise<UserKVData | null>
     const data = memoryStore.get(KEYS.user(userId)) as UserKVData | undefined;
     return data ?? null;
   } catch (error) {
-    console.warn('Failed to get user context:', error);
+    log.warn('Failed to get user context', {}, error);
     return null;
   }
 }
@@ -62,7 +65,7 @@ export async function setUserContext(
     };
     memoryStore.set(KEYS.user(userId), updated);
   } catch (error) {
-    console.warn('Failed to set user context:', error);
+    log.warn('Failed to set user context', {}, error);
   }
 }
 
@@ -74,7 +77,7 @@ export async function getConversationContext(
     const data = memoryStore.get(KEYS.conversation(conversationId)) as ConversationKVData | undefined;
     return data ?? null;
   } catch (error) {
-    console.warn('Failed to get conversation context:', error);
+    log.warn('Failed to get conversation context', {}, error);
     return null;
   }
 }
@@ -95,7 +98,7 @@ export async function updateConversationContext(
     };
     memoryStore.set(KEYS.conversation(conversationId), updated);
   } catch (error) {
-    console.warn('Failed to update conversation context:', error);
+    log.warn('Failed to update conversation context', {}, error);
   }
 }
 
@@ -115,7 +118,7 @@ export async function storeDecision(decision: StoredDecision): Promise<void> {
     }, 60 * 60 * 24 * 7 * 1000);
     expiryTimers.set(key, timer);
   } catch (error) {
-    console.warn('Failed to store decision:', error);
+    log.warn('Failed to store decision', {}, error);
   }
 }
 
@@ -125,7 +128,7 @@ export async function getDecision(decisionId: string): Promise<StoredDecision | 
     const data = memoryStore.get(KEYS.decision(decisionId)) as StoredDecision | undefined;
     return data ?? null;
   } catch (error) {
-    console.warn('Failed to get decision:', error);
+    log.warn('Failed to get decision', {}, error);
     return null;
   }
 }
@@ -151,7 +154,7 @@ export async function addFeedback(
     memoryStore.set(KEYS.decision(decisionId), decision);
     return true;
   } catch (error) {
-    console.warn('Failed to add feedback:', error);
+    log.warn('Failed to add feedback', {}, error);
     return false;
   }
 }

@@ -7,9 +7,8 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16.1-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-[Overview](#overview) • [Features](#features) • [Quick Start](#quick-start) • [API Reference](#api-reference) • [Architecture](#architecture) • [Contributing](#contributing)
+[Overview](#overview) • [Features](#features) • [Quick Start](#quick-start) • [API Reference](#api-reference) • [Architecture](#architecture)
 
 </div>
 
@@ -57,7 +56,7 @@ Before you begin, ensure you have the following installed:
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/your-org/ade.git
+   git clone https://github.com/samaig-araviel/ade.git
    cd ade
    ```
 
@@ -478,24 +477,6 @@ docker run -p 3000:3000 -e ADE_API_KEYS=your_key ade
 npm run build
 npm start
 ```
-
----
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
