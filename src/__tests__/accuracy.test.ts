@@ -345,8 +345,9 @@ describe('Routing Accuracy', () => {
   describe('Claude Not Selected for Image Generation', () => {
     it('Claude models are not marked as image-generation capable in registry', () => {
       const claudeModels = [
-        'claude-opus-4-6', 'claude-sonnet-4-6', 'claude-opus-4-5-20251101',
-        'claude-sonnet-4-5-20250929', 'claude-haiku-4-5-20251001',
+        'claude-opus-4-7', 'claude-opus-4-6', 'claude-sonnet-4-6',
+        'claude-opus-4-5-20251101', 'claude-sonnet-4-5-20250929',
+        'claude-haiku-4-5-20251001',
       ];
 
       for (const modelId of claudeModels) {
