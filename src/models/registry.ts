@@ -37,6 +37,60 @@ import {
  */
 const models: ModelDefinition[] = [
     // ---------------------------------------------------------------
+    // Claude Opus 4.7 (ANTHROPIC)
+    // ---------------------------------------------------------------
+    {
+        id: 'claude-opus-4-7',
+        name: 'Claude Opus 4.7',
+        provider: 'anthropic',
+        description: 'Most capable Claude. Agentic coding, adaptive thinking, high-res vision (2576px), task budgets, file-system memory. 1M context, 128K output. Released April 2026.',
+        pricing: { inputPer1k: 0.005, outputPer1k: 0.025, cachedInputPer1k: 0.0005 },
+        capabilities: {
+            maxInputTokens: 1000000, maxOutputTokens: 128000,
+            supportsStreaming: true, supportsVision: true, supportsAudio: false,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
+            supportsReasoning: false, supportsImageGeneration: false,
+            supportsExtendedThinking: false, supportsAdaptiveThinking: true,
+            supportsCodeExecution: true, supportsTTS: false, supportsSTT: false,
+            supportsVideoGeneration: false, supportsRealtimeAudio: false,
+            visionScore: 0.99, audioScore: 0,
+        },
+        performance: { avgLatencyMs: 2000, reliabilityPercent: 99.6 },
+        taskStrengths: {
+            intents: {
+                [Intent.Coding]: 0.98, [Intent.Creative]: 0.96,
+                [Intent.Analysis]: 0.97, [Intent.Factual]: 0.94,
+                [Intent.Conversation]: 0.87, [Intent.Task]: 0.97,
+                [Intent.Brainstorm]: 0.94, [Intent.Translation]: 0.88,
+                [Intent.Summarization]: 0.95, [Intent.Extraction]: 0.95,
+                [Intent.ImageGeneration]: 0.0, [Intent.VideoGeneration]: 0.0,
+                [Intent.VoiceGeneration]: 0.0, [Intent.MusicGeneration]: 0.0,
+                [Intent.Research]: 0.9, [Intent.Math]: 0.94, [Intent.Planning]: 0.94,
+            },
+            domains: {
+                [Domain.Technology]: 0.98, [Domain.Business]: 0.94,
+                [Domain.Health]: 0.91, [Domain.Legal]: 0.93,
+                [Domain.Finance]: 0.96, [Domain.Education]: 0.95,
+                [Domain.Science]: 0.96, [Domain.CreativeArts]: 0.95,
+                [Domain.Lifestyle]: 0.82, [Domain.General]: 0.94,
+                [Domain.Government]: 0.89, [Domain.Relationships]: 0.79,
+                [Domain.Shopping]: 0.75, [Domain.EventPlanning]: 0.8,
+                [Domain.Weather]: 0.72, [Domain.Sports]: 0.74,
+            },
+            complexity: { [Complexity.Quick]: 0.76, [Complexity.Standard]: 0.96, [Complexity.Demanding]: 0.99 },
+        },
+        humanFactors: {
+            empathyScore: 0.93, playfulnessScore: 0.85,
+            professionalismScore: 0.99, conciseness: 0.85,
+            verbosity: 0.82, conversationalTone: 0.88,
+            formalTone: 0.97, lateNightSuitability: 0.84, workHoursSuitability: 0.99,
+        },
+        specializations: ['creative_writing', 'reasoning', 'coding', 'agentic', 'agentic_coding', 'multimodal', 'long_context', 'instruction_following'],
+        accessTier: AccessTier.Pro, creditCost: 22,
+        toolPricing: { webSearchPer1k: 10.0 },
+        available: true,
+    },
+    // ---------------------------------------------------------------
     // Claude Opus 4.6 (ANTHROPIC)
     // ---------------------------------------------------------------
     {
