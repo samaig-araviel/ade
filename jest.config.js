@@ -8,7 +8,7 @@ const config = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!(uuid)/)',
+    '/node_modules/(?!(uuid|jose)/)',
   ],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {

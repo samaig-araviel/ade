@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { routingMetrics } from "@/lib/metrics";
+import { authMetrics, routingMetrics } from "@/lib/metrics";
 import { requestContext, withRequestId } from "@/lib/request-context";
 
 // Version from package.json or default
@@ -16,6 +16,7 @@ const VERSION = process.env.npm_package_version ?? "1.0.0";
 export async function GET(request: NextRequest) {
   const ctx = requestContext(request, "health");
   const metrics = routingMetrics.snapshot();
+  const auth = authMetrics.snapshot();
   const response = {
     status: "healthy" as const,
     timestamp: new Date().toISOString(),
@@ -25,6 +26,7 @@ export async function GET(request: NextRequest) {
       store: "in-memory" as const,
     },
     metrics,
+    auth,
     requestId: ctx.requestId,
   };
 

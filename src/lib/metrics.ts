@@ -117,3 +117,46 @@ class RoutingMetrics {
  * counts and latencies accumulate across endpoints.
  */
 export const routingMetrics = new RoutingMetrics();
+
+/**
+ * Auth-specific metrics. Kept separate from routing metrics so operators
+ * can distinguish "ADE is failing to route" from "ADE is rejecting
+ * traffic at the door" at a glance. A spike in `failureCount` — especially
+ * in `unknown_key_id` or `invalid_caller_secret` — is the canonical
+ * signal of either a key-rotation mismatch or an active probing attempt.
+ */
+class AuthMetrics {
+  private successCount = 0;
+  private failureCount = 0;
+  private readonly failuresByReason = new Map<string, number>();
+
+  recordSuccess(): void {
+    this.successCount += 1;
+  }
+
+  recordFailure(reason: string): void {
+    this.failureCount += 1;
+    this.failuresByReason.set(
+      reason,
+      (this.failuresByReason.get(reason) ?? 0) + 1
+    );
+  }
+
+  snapshot(): {
+    successCount: number;
+    failureCount: number;
+    failureRate: number;
+    failuresByReason: Record<string, number>;
+  } {
+    const total = this.successCount + this.failureCount;
+    return {
+      successCount: this.successCount,
+      failureCount: this.failureCount,
+      failureRate:
+        total > 0 ? Number((this.failureCount / total).toFixed(4)) : 0,
+      failuresByReason: Object.fromEntries(this.failuresByReason),
+    };
+  }
+}
+
+export const authMetrics = new AuthMetrics();
