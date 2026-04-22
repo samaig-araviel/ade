@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatusPage } from '@/components/status/StatusPage';
+import { AccessTier } from '@/types';
 import {
   Sparkles,
   Search,
@@ -29,7 +30,6 @@ import {
   CheckCircle,
   XCircle,
   Box,
-  BookOpen,
   Paperclip,
   MapPin,
   Cloud,
@@ -104,6 +104,7 @@ interface ModelInfo {
     supportsWebSearch?: boolean;
   };
   performance: { avgLatencyMs: number; reliabilityPercent: number };
+  accessTier: AccessTier;
 }
 
 interface HumanContext {
@@ -222,850 +223,16 @@ const SCORING_FACTORS = [
   { key: 'conversationCoherence', label: 'Coherence', weight: 10, icon: TrendingUp, color: '#3B82F6', desc: 'Consistency with previous model in conversation' },
 ];
 
-// ============ DOCS COMPONENT ============
-function DocsView() {
-  const [activeSection, setActiveSection] = useState('route');
-  const [activeCodeLang, setActiveCodeLang] = useState('curl');
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
-
-  const copyToClipboard = async (code: string, id: string) => {
-    await navigator.clipboard.writeText(code);
-    setCopiedCode(id);
-    setTimeout(() => setCopiedCode(null), 2000);
-  };
-
-  // Language tabs like Stripe
-  const codeLangs = [
-    { id: 'curl', label: 'curl' },
-    { id: 'node', label: 'Node' },
-    { id: 'python', label: 'Python' },
-    { id: 'ruby', label: 'Ruby' },
-    { id: 'go', label: 'Go' },
-  ];
-
-  // Navigation structure like Stripe
-  const navSections = [
-    {
-      category: 'GETTING STARTED',
-      items: [
-        { id: 'introduction', label: 'Introduction' },
-        { id: 'authentication', label: 'Authentication' },
-      ],
-    },
-    {
-      category: 'CORE RESOURCES',
-      items: [
-        { id: 'route', label: 'Route' },
-        { id: 'models', label: 'Models' },
-        { id: 'analyze', label: 'Analyze' },
-        { id: 'feedback', label: 'Feedback' },
-      ],
-    },
-    {
-      category: 'OTHER',
-      items: [
-        { id: 'health', label: 'Health' },
-        { id: 'errors', label: 'Errors' },
-      ],
-    },
-  ];
-
-  // Endpoint definitions
-  const endpoints: Record<string, {
-    method: string;
-    path: string;
-    title: string;
-    description: string;
-    descriptionCode?: string;
-    params: Array<{ name: string; type: string; required: boolean; description: string; descriptionCode?: string }>;
-  }> = {
-    route: {
-      method: 'POST',
-      path: '/v1/route',
-      title: 'Route a prompt',
-      description: 'To route a prompt to the optimal model, you create a ',
-      descriptionCode: 'RouteRequest',
-      params: [
-        { name: 'prompt', type: 'string', required: true, description: 'The user prompt to analyze and route to the optimal model. This is the text that will be sent to the selected LLM.' },
-        { name: 'modality', type: 'string', required: false, description: 'Input modality type. Options: ', descriptionCode: 'text, image, voice, text+image, text+voice' },
-        { name: 'humanContext', type: 'object', required: false, description: 'Optional context about the user including mood, energy level, preferences, and temporal context.' },
-        { name: 'constraints', type: 'object', required: false, description: 'Optional constraints like ', descriptionCode: 'maxCostPer1kTokens, maxLatencyMs, requireVision' },
-        { name: 'conversationId', type: 'string', required: false, description: 'Conversation ID for maintaining model coherence across conversation turns.' },
-      ],
-    },
-    models: {
-      method: 'GET',
-      path: '/v1/models',
-      title: 'List all models',
-      description: 'Returns a list of all available models with their capabilities, pricing, and performance metrics.',
-      params: [
-        { name: 'provider', type: 'string', required: false, description: 'Filter by provider: ', descriptionCode: 'anthropic, openai, google' },
-        { name: 'capability', type: 'string', required: false, description: 'Filter by capability: ', descriptionCode: 'vision, audio, streaming' },
-        { name: 'limit', type: 'integer', required: false, description: 'Number of results per page. Default: 50, Max: 100.' },
-      ],
-    },
-    analyze: {
-      method: 'POST',
-      path: '/v1/analyze',
-      title: 'Analyze a prompt',
-      description: 'Analyze a prompt without model selection. Returns the detected intent, domain, complexity, and extracted keywords.',
-      params: [
-        { name: 'prompt', type: 'string', required: true, description: 'The prompt text to analyze.' },
-        { name: 'modality', type: 'string', required: false, description: 'Input modality type. Defaults to ', descriptionCode: 'text' },
-      ],
-    },
-    feedback: {
-      method: 'POST',
-      path: '/v1/feedback',
-      title: 'Submit feedback',
-      description: 'Submit feedback for a routing decision. This helps improve the engine\'s recommendations over time.',
-      params: [
-        { name: 'decisionId', type: 'string', required: true, description: 'The decision ID returned from the ', descriptionCode: '/v1/route' },
-        { name: 'rating', type: 'integer', required: true, description: 'Rating from 1 (poor) to 5 (excellent).' },
-        { name: 'selectedModel', type: 'string', required: false, description: 'Model ID if the user chose a different model than recommended.' },
-        { name: 'comment', type: 'string', required: false, description: 'Optional feedback comment.' },
-      ],
-    },
-    health: {
-      method: 'GET',
-      path: '/v1/health',
-      title: 'Health check',
-      description: 'Check the health status of the ADE engine and its dependent services. No authentication required.',
-      params: [],
-    },
-  };
-
-  // Code examples with Stripe-like formatting
-  const codeExamples: Record<string, Record<string, string>> = {
-    route: {
-      curl: `curl https://api.ade.dev/v1/route \\
-  -u sk_test_4eC39HqLyjWDarjtT1zdp7dc: \\
-  -d prompt="Write a creative story about AI" \\
-  -d modality=text \\
-  -d "humanContext[preferences][style]=detailed"`,
-      node: `const ade = require('ade')('sk_test_...');
-
-const decision = await ade.route.create({
-  prompt: 'Write a creative story about AI',
-  modality: 'text',
-  humanContext: {
-    preferences: { style: 'detailed' }
-  }
-});`,
-      python: `import ade
-ade.api_key = "sk_test_..."
-
-decision = ade.Route.create(
-  prompt="Write a creative story about AI",
-  modality="text",
-  human_context={
-    "preferences": {"style": "detailed"}
-  }
-)`,
-      ruby: `require 'ade'
-Ade.api_key = 'sk_test_...'
-
-decision = Ade::Route.create({
-  prompt: 'Write a creative story about AI',
-  modality: 'text',
-  human_context: {
-    preferences: { style: 'detailed' }
-  }
-})`,
-      go: `ade.Key = "sk_test_..."
-
-decision, _ := route.New(&ade.RouteParams{
-  Prompt:   ade.String("Write a creative story about AI"),
-  Modality: ade.String("text"),
-})`,
-    },
-    models: {
-      curl: `curl https://api.ade.dev/v1/models \\
-  -u sk_test_4eC39HqLyjWDarjtT1zdp7dc:`,
-      node: `const ade = require('ade')('sk_test_...');
-
-const models = await ade.models.list();`,
-      python: `import ade
-ade.api_key = "sk_test_..."
-
-models = ade.Model.list()`,
-      ruby: `require 'ade'
-Ade.api_key = 'sk_test_...'
-
-models = Ade::Model.list()`,
-      go: `ade.Key = "sk_test_..."
-
-models, _ := model.List(&ade.ModelListParams{})`,
-    },
-    analyze: {
-      curl: `curl https://api.ade.dev/v1/analyze \\
-  -u sk_test_4eC39HqLyjWDarjtT1zdp7dc: \\
-  -d prompt="Debug this Python function"`,
-      node: `const ade = require('ade')('sk_test_...');
-
-const analysis = await ade.analyze.create({
-  prompt: 'Debug this Python function'
-});`,
-      python: `import ade
-ade.api_key = "sk_test_..."
-
-analysis = ade.Analyze.create(
-  prompt="Debug this Python function"
-)`,
-      ruby: `require 'ade'
-Ade.api_key = 'sk_test_...'
-
-analysis = Ade::Analyze.create({
-  prompt: 'Debug this Python function'
-})`,
-      go: `ade.Key = "sk_test_..."
-
-analysis, _ := analyze.New(&ade.AnalyzeParams{
-  Prompt: ade.String("Debug this Python function"),
-})`,
-    },
-    feedback: {
-      curl: `curl https://api.ade.dev/v1/feedback \\
-  -u sk_test_4eC39HqLyjWDarjtT1zdp7dc: \\
-  -d decisionId="dec_1MtIR92eZvKYlo2C" \\
-  -d rating=5 \\
-  -d comment="Perfect recommendation"`,
-      node: `const ade = require('ade')('sk_test_...');
-
-const feedback = await ade.feedback.create({
-  decisionId: 'dec_1MtIR92eZvKYlo2C',
-  rating: 5,
-  comment: 'Perfect recommendation'
-});`,
-      python: `import ade
-ade.api_key = "sk_test_..."
-
-feedback = ade.Feedback.create(
-  decision_id="dec_1MtIR92eZvKYlo2C",
-  rating=5,
-  comment="Perfect recommendation"
-)`,
-      ruby: `require 'ade'
-Ade.api_key = 'sk_test_...'
-
-feedback = Ade::Feedback.create({
-  decision_id: 'dec_1MtIR92eZvKYlo2C',
-  rating: 5,
-  comment: 'Perfect recommendation'
-})`,
-      go: `ade.Key = "sk_test_..."
-
-feedback, _ := feedback.New(&ade.FeedbackParams{
-  DecisionID: ade.String("dec_1MtIR92eZvKYlo2C"),
-  Rating:     ade.Int64(5),
-})`,
-    },
-    health: {
-      curl: `curl https://api.ade.dev/v1/health`,
-      node: `const response = await fetch('https://api.ade.dev/v1/health');
-const health = await response.json();`,
-      python: `import requests
-
-response = requests.get('https://api.ade.dev/v1/health')
-health = response.json()`,
-      ruby: `require 'net/http'
-
-uri = URI('https://api.ade.dev/v1/health')
-response = Net::HTTP.get(uri)`,
-      go: `resp, _ := http.Get("https://api.ade.dev/v1/health")`,
-    },
-    authentication: {
-      curl: `curl https://api.ade.dev/v1/route \\
-  -u sk_test_4eC39HqLyjWDarjtT1zdp7dc: \\
-  -d prompt="Hello, world!"`,
-      node: `const ade = require('ade')('sk_test_4eC39HqLyjWDarjtT1zdp7dc');
-
-// All API calls will use your key automatically`,
-      python: `import ade
-ade.api_key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"
-
-# All API calls will use your key automatically`,
-      ruby: `require 'ade'
-Ade.api_key = 'sk_test_4eC39HqLyjWDarjtT1zdp7dc'
-
-# All API calls will use your key automatically`,
-      go: `import "github.com/ade/ade-go"
-
-ade.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"`,
-    },
-  };
-
-  // Response examples
-  const responseExamples: Record<string, string> = {
-    route: `{
-  "id": "dec_1DpeX82eZvKYlo2CmYWvyOvp",
-  "object": "decision",
-  "primaryModel": {
-    "id": "claude-sonnet-4-5",
-    "name": "Claude Sonnet 4.5",
-    "provider": "anthropic",
-    "score": 0.912
-  },
-  "backupModels": [
-    {
-      "id": "claude-opus-4-5",
-      "score": 0.889
-    }
-  ],
-  "confidence": 0.87,
-  "analysis": {
-    "intent": "creative",
-    "domain": "creative_arts",
-    "complexity": "standard"
-  },
-  "created": 1546792290,
-  "timing": {
-    "totalMs": 24.5
-  }
-}`,
-    models: `{
-  "object": "list",
-  "data": [
-    {
-      "id": "claude-opus-4-5",
-      "object": "model",
-      "name": "Claude Opus 4.5",
-      "provider": "anthropic",
-      "created": 1686935002,
-      "capabilities": {
-        "vision": true,
-        "audio": false
-      }
-    },
-    {
-      "id": "gpt-4-1",
-      "object": "model",
-      "name": "GPT-4.1",
-      "provider": "openai",
-      "created": 1687882411
-    }
-  ],
-  "has_more": false
-}`,
-    analyze: `{
-  "id": "anl_82eZvKYlo2CmYWvy",
-  "object": "analysis",
-  "intent": "coding",
-  "domain": "technology",
-  "complexity": "standard",
-  "tone": "neutral",
-  "keywords": ["debug", "python", "function"],
-  "created": 1546792290
-}`,
-    feedback: `{
-  "id": "fb_xyz789abc123",
-  "object": "feedback",
-  "success": true,
-  "message": "Feedback recorded successfully"
-}`,
-    health: `{
-  "status": "healthy",
-  "version": "1.0.0",
-  "timestamp": "2025-01-26T14:30:00Z",
-  "services": {
-    "kv": "connected",
-    "cache": "connected"
-  }
-}`,
-  };
-
-  // Syntax highlighting for curl commands (Stripe style)
-  const highlightCurl = (code: string) => {
-    const lines = code.split('\n');
-    return lines.map((line) => {
-      let highlighted = line;
-
-      // curl command
-      highlighted = highlighted.replace(/^(curl)(\s)/, '<span class="hl-cmd">$1</span>$2');
-
-      // URLs
-      highlighted = highlighted.replace(/(https:\/\/[^\s\\]+)/g, '<span class="hl-url">$1</span>');
-
-      // Flags (-u, -d, -H, -X)
-      highlighted = highlighted.replace(/\s(-u|-d|-H|-X)(\s)/g, ' <span class="hl-flag">$1</span>$2');
-
-      // API key (cyan color like Stripe)
-      highlighted = highlighted.replace(/(sk_test_[a-zA-Z0-9]+)(:?)/g, '<span class="hl-key">$1</span>$2');
-
-      // Parameter names before = (cyan)
-      highlighted = highlighted.replace(/\s([a-zA-Z_\[\]\.]+)(=)/g, ' <span class="hl-param">$1</span><span class="hl-eq">=</span>');
-
-      // Values after = (without quotes)
-      highlighted = highlighted.replace(/=([a-zA-Z0-9_]+)(\s|\\|$)/g, '=<span class="hl-value">$1</span>$2');
-
-      // String values in double quotes (yellow/green)
-      highlighted = highlighted.replace(/"([^"]+)"/g, '<span class="hl-quote">"</span><span class="hl-string">$1</span><span class="hl-quote">"</span>');
-
-      return highlighted;
-    }).join('\n');
-  };
-
-  // Syntax highlighting for JSON (Stripe style)
-  const highlightJSON = (json: string) => {
-    let result = json;
-
-    // Keys (cyan)
-    result = result.replace(/"([^"]+)"(\s*:)/g, '<span class="hl-quote">"</span><span class="hl-json-key">$1</span><span class="hl-quote">"</span>$2');
-
-    // String values (yellow)
-    result = result.replace(/:(\s*)"([^"]+)"/g, ':$1<span class="hl-quote">"</span><span class="hl-json-string">$2</span><span class="hl-quote">"</span>');
-
-    // Numbers (orange)
-    result = result.replace(/:(\s*)(\d+\.?\d*)(,|\s|\n|}|])/g, ':$1<span class="hl-json-number">$2</span>$3');
-
-    // Booleans (pink)
-    result = result.replace(/:\s*(true|false)/g, ': <span class="hl-json-bool">$1</span>');
-
-    // null
-    result = result.replace(/:\s*(null)/g, ': <span class="hl-json-null">$1</span>');
-
-    return result;
-  };
-
-  const currentEndpoint = endpoints[activeSection];
-  const currentCode = codeExamples[activeSection];
-  const currentResponse = responseExamples[activeSection];
-
-  return (
-    <div style={{ display: 'flex', marginLeft: -24, marginRight: -24, minHeight: 'calc(100vh - 96px)' }}>
-      {/* Left Sidebar - Light theme like Stripe */}
-      <aside style={{
-        width: 240,
-        background: '#FAFAFA',
-        borderRight: '1px solid #E5E7EB',
-        padding: '24px 0',
-        flexShrink: 0,
-        overflowY: 'auto',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-      }}>
-        {navSections.map((section, sectionIdx) => (
-          <div key={sectionIdx} style={{ marginBottom: 24 }}>
-            {/* Category Header */}
-            <div style={{
-              padding: '0 20px',
-              marginBottom: 8,
-              fontSize: 11,
-              fontWeight: 600,
-              color: '#6B7280',
-              letterSpacing: '0.05em'
-            }}>
-              {section.category}
-            </div>
-
-            {/* Items */}
-            {section.items.map((item) => {
-              const isActive = activeSection === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveSection(item.id)}
-                  style={{
-                    width: '100%',
-                    display: 'block',
-                    padding: '8px 20px',
-                    background: 'transparent',
-                    border: 'none',
-                    borderLeft: isActive ? '2px solid #635BFF' : '2px solid transparent',
-                    cursor: 'pointer',
-                    fontSize: 14,
-                    color: isActive ? '#635BFF' : '#374151',
-                    fontWeight: isActive ? 500 : 400,
-                    textAlign: 'left',
-                    textDecoration: 'none',
-                    transition: 'color 0.15s',
-                  }}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
-        ))}
-      </aside>
-
-      {/* Main Content - White background like Stripe */}
-      <main style={{
-        flex: 1,
-        background: '#FFFFFF',
-        borderRight: '1px solid #E5E7EB',
-        overflowY: 'auto',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-      }}>
-        <div style={{ maxWidth: 640, padding: '40px 48px' }}>
-
-          {/* Introduction Page */}
-          {activeSection === 'introduction' && (
-            <div>
-              <h1 style={{ fontSize: 32, fontWeight: 600, color: '#1a1a1a', margin: '0 0 16px', letterSpacing: '-0.02em' }}>
-                API Reference
-              </h1>
-              <p style={{ fontSize: 16, color: '#4B5563', lineHeight: 1.7, margin: '0 0 32px' }}>
-                The ADE API is organized around REST. Our API has predictable resource-oriented URLs,
-                accepts JSON-encoded request bodies, returns JSON-encoded responses, and uses standard HTTP response codes.
-              </p>
-
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: '32px 0 12px' }}>Base URL</h2>
-              <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 6, padding: '12px 16px' }}>
-                <code style={{ fontSize: 14, color: '#1a1a1a', fontFamily: 'SF Mono, Monaco, monospace' }}>
-                  https://api.ade.dev
-                </code>
-              </div>
-            </div>
-          )}
-
-          {/* Authentication Page */}
-          {activeSection === 'authentication' && (
-            <div>
-              <h1 style={{ fontSize: 32, fontWeight: 600, color: '#1a1a1a', margin: '0 0 16px', letterSpacing: '-0.02em' }}>
-                Authentication
-              </h1>
-              <p style={{ fontSize: 16, color: '#4B5563', lineHeight: 1.7, margin: '0 0 24px' }}>
-                The ADE API uses API keys to authenticate requests. You can view and manage your API keys in the Dashboard.
-              </p>
-              <p style={{ fontSize: 16, color: '#4B5563', lineHeight: 1.7, margin: '0 0 24px' }}>
-                Authentication is performed via HTTP Basic Auth. Provide your API key as the basic auth username value.
-                You do not need to provide a password.
-              </p>
-              <p style={{ fontSize: 16, color: '#4B5563', lineHeight: 1.7, margin: '0 0 24px' }}>
-                All API requests must be made over HTTPS. Calls made over plain HTTP will fail.
-                API requests without authentication will also fail.
-              </p>
-            </div>
-          )}
-
-          {/* Errors Page */}
-          {activeSection === 'errors' && (
-            <div>
-              <h1 style={{ fontSize: 32, fontWeight: 600, color: '#1a1a1a', margin: '0 0 16px', letterSpacing: '-0.02em' }}>
-                Errors
-              </h1>
-              <p style={{ fontSize: 16, color: '#4B5563', lineHeight: 1.7, margin: '0 0 32px' }}>
-                ADE uses conventional HTTP response codes to indicate the success or failure of an API request.
-              </p>
-
-              <h2 style={{ fontSize: 14, fontWeight: 600, color: '#6B7280', margin: '32px 0 16px', letterSpacing: '0.05em' }}>
-                HTTP STATUS CODES
-              </h2>
-
-              <div style={{ borderTop: '1px solid #E5E7EB' }}>
-                {[
-                  { code: '200', status: 'OK', desc: 'Everything worked as expected.' },
-                  { code: '400', status: 'Bad Request', desc: 'The request was unacceptable, often due to missing a required parameter.' },
-                  { code: '401', status: 'Unauthorized', desc: 'No valid API key provided.' },
-                  { code: '403', status: 'Forbidden', desc: 'The API key doesn\'t have permissions to perform the request.' },
-                  { code: '404', status: 'Not Found', desc: 'The requested resource doesn\'t exist.' },
-                  { code: '429', status: 'Too Many Requests', desc: 'Too many requests hit the API too quickly.' },
-                  { code: '500', status: 'Server Error', desc: 'Something went wrong on ADE\'s end.' },
-                ].map((error) => (
-                  <div key={error.code} style={{
-                    display: 'flex',
-                    padding: '16px 0',
-                    borderBottom: '1px solid #E5E7EB',
-                    gap: 16
-                  }}>
-                    <code style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: error.code.startsWith('2') ? '#059669' : error.code.startsWith('4') ? '#D97706' : '#DC2626',
-                      fontFamily: 'SF Mono, Monaco, monospace',
-                      minWidth: 50
-                    }}>
-                      {error.code}
-                    </code>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', marginBottom: 4 }}>{error.status}</div>
-                      <div style={{ fontSize: 14, color: '#6B7280' }}>{error.desc}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Endpoint Pages */}
-          {currentEndpoint && (
-            <div>
-              {/* Title */}
-              <h1 style={{ fontSize: 32, fontWeight: 600, color: '#1a1a1a', margin: '0 0 16px', letterSpacing: '-0.02em' }}>
-                {currentEndpoint.title}
-              </h1>
-
-              {/* Description */}
-              <p style={{ fontSize: 16, color: '#4B5563', lineHeight: 1.7, margin: '0 0 32px' }}>
-                {currentEndpoint.description}
-                {currentEndpoint.descriptionCode && (
-                  <code style={{
-                    background: '#FEE2E2',
-                    color: '#991B1B',
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    fontSize: 14,
-                    fontFamily: 'SF Mono, Monaco, monospace'
-                  }}>
-                    {currentEndpoint.descriptionCode}
-                  </code>
-                )}
-                {currentEndpoint.descriptionCode && ' object.'}
-              </p>
-
-              {/* Arguments Section */}
-              {currentEndpoint.params.length > 0 && (
-                <>
-                  <h2 style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: '#6B7280',
-                    margin: '0 0 20px',
-                    letterSpacing: '0.05em'
-                  }}>
-                    ARGUMENTS
-                  </h2>
-
-                  <div style={{ borderTop: '1px solid #E5E7EB' }}>
-                    {currentEndpoint.params.map((param) => (
-                      <div key={param.name} style={{
-                        display: 'flex',
-                        padding: '20px 0',
-                        borderBottom: '1px solid #E5E7EB',
-                        gap: 24
-                      }}>
-                        {/* Parameter name and required badge */}
-                        <div style={{ width: 140, flexShrink: 0 }}>
-                          <div style={{
-                            fontSize: 14,
-                            fontWeight: 600,
-                            color: '#1a1a1a',
-                            marginBottom: 4,
-                            fontFamily: 'SF Mono, Monaco, monospace'
-                          }}>
-                            {param.name}
-                          </div>
-                          <div style={{
-                            fontSize: 12,
-                            color: param.required ? '#DC6803' : '#6B7280',
-                            fontWeight: param.required ? 600 : 400,
-                            textTransform: param.required ? 'uppercase' : 'none'
-                          }}>
-                            {param.required ? 'REQUIRED' : 'optional'}
-                          </div>
-                        </div>
-
-                        {/* Description */}
-                        <div style={{ flex: 1, fontSize: 14, color: '#4B5563', lineHeight: 1.6 }}>
-                          {param.description}
-                          {param.descriptionCode && (
-                            <code style={{
-                              background: '#FEE2E2',
-                              color: '#991B1B',
-                              padding: '1px 5px',
-                              borderRadius: 3,
-                              fontSize: 13,
-                              fontFamily: 'SF Mono, Monaco, monospace'
-                            }}>
-                              {param.descriptionCode}
-                            </code>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </main>
-
-      {/* Right Code Panel - Light mode */}
-      <aside style={{
-        width: 480,
-        background: '#F8F9FA',
-        flexShrink: 0,
-        overflowY: 'auto',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-      }}>
-        {/* Language Tabs */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          padding: '16px 24px',
-          borderBottom: '1px solid #E5E7EB',
-          gap: 4
-        }}>
-          {codeLangs.map((lang) => (
-            <button
-              key={lang.id}
-              onClick={() => setActiveCodeLang(lang.id)}
-              style={{
-                padding: '8px 14px',
-                fontSize: 13,
-                fontWeight: 500,
-                color: activeCodeLang === lang.id ? '#FFFFFF' : '#4B5563',
-                background: activeCodeLang === lang.id ? '#4F46E5' : 'transparent',
-                border: 'none',
-                borderRadius: 5,
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-            >
-              {lang.label}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ padding: '20px 24px' }}>
-          {/* Endpoint badge */}
-          {currentEndpoint && (
-            <div style={{ marginBottom: 20 }}>
-              <span style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: currentEndpoint.method === 'POST' ? '#16A34A' : '#2563EB',
-                fontFamily: '"SF Mono", Monaco, "Menlo", monospace'
-              }}>
-                {currentEndpoint.method}
-              </span>
-              <span style={{
-                fontSize: 13,
-                color: '#374151',
-                marginLeft: 10,
-                fontFamily: '"SF Mono", Monaco, "Menlo", monospace'
-              }}>
-                {currentEndpoint.path}
-              </span>
-            </div>
-          )}
-
-          {/* Example Request */}
-          {currentCode && (
-            <div style={{ marginBottom: 24 }}>
-              <div style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#374151',
-                marginBottom: 12
-              }}>
-                Example Request
-              </div>
-              <div style={{
-                background: '#FFFFFF',
-                borderRadius: 8,
-                padding: '16px 18px',
-                border: '1px solid #E5E7EB',
-                position: 'relative'
-              }}>
-                <button
-                  onClick={() => copyToClipboard(currentCode[activeCodeLang] || '', 'request')}
-                  style={{
-                    position: 'absolute',
-                    top: 12,
-                    right: 12,
-                    padding: '5px 10px',
-                    fontSize: 11,
-                    color: '#6B7280',
-                    background: '#F3F4F6',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {copiedCode === 'request' ? 'Copied!' : 'Copy'}
-                </button>
-                <pre style={{
-                  margin: 0,
-                  fontSize: 13,
-                  lineHeight: 1.7,
-                  fontFamily: '"SF Mono", Monaco, "Menlo", "Consolas", monospace',
-                  color: '#1F2937',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word'
-                }}>
-                  <style>{`
-                    .hl-cmd { color: #1F2937; font-weight: 500; }
-                    .hl-url { color: #1F2937; }
-                    .hl-flag { color: #1F2937; }
-                    .hl-key { color: #0891B2; }
-                    .hl-param { color: #0891B2; }
-                    .hl-eq { color: #6B7280; }
-                    .hl-value { color: #0891B2; }
-                    .hl-quote { color: #059669; }
-                    .hl-string { color: #059669; }
-                    .hl-json-key { color: #7C3AED; }
-                    .hl-json-string { color: #059669; }
-                    .hl-json-number { color: #D97706; }
-                    .hl-json-bool { color: #DC2626; }
-                    .hl-json-null { color: #6B7280; }
-                  `}</style>
-                  <span style={{ color: '#9CA3AF', userSelect: 'none' }}>$ </span>
-                  {activeCodeLang === 'curl' ? (
-                    <span dangerouslySetInnerHTML={{ __html: highlightCurl(currentCode[activeCodeLang] || '') }} />
-                  ) : (
-                    currentCode[activeCodeLang]
-                  )}
-                </pre>
-              </div>
-            </div>
-          )}
-
-          {/* Example Response */}
-          {currentResponse && (
-            <div>
-              <div style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#374151',
-                marginBottom: 12
-              }}>
-                Example Response
-              </div>
-              <div style={{
-                background: '#FFFFFF',
-                borderRadius: 8,
-                padding: '16px 18px',
-                border: '1px solid #E5E7EB',
-                maxHeight: 420,
-                overflowY: 'auto'
-              }}>
-                <pre style={{
-                  margin: 0,
-                  fontSize: 13,
-                  lineHeight: 1.7,
-                  fontFamily: '"SF Mono", Monaco, "Menlo", "Consolas", monospace',
-                  color: '#1F2937',
-                  whiteSpace: 'pre-wrap'
-                }}>
-                  <span dangerouslySetInnerHTML={{ __html: highlightJSON(currentResponse) }} />
-                </pre>
-              </div>
-            </div>
-          )}
-
-          {/* Placeholder for sections without code */}
-          {!currentCode && !currentResponse && (
-            <div style={{ color: '#6B7280', fontSize: 14, textAlign: 'center', paddingTop: 60 }}>
-              Select an endpoint to see code examples
-            </div>
-          )}
-        </div>
-      </aside>
-    </div>
-  );
-}
 
 export default function Home() {
   // Navigation
-  const [activeView, setActiveView] = useState<'router' | 'analyze' | 'models' | 'docs'>('router');
+  const [activeView, setActiveView] = useState<'router' | 'analyze' | 'models'>('router');
   const [showStatus, setShowStatus] = useState(false);
 
   // Router State
   const [prompt, setPrompt] = useState('');
   const [modality, setModality] = useState('text');
-  const [userTier, setUserTier] = useState<'free' | 'pro'>('free');
+  const [userTier, setUserTier] = useState<AccessTier>(AccessTier.Free);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<RouteResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1121,6 +288,13 @@ export default function Home() {
   const [selectedProvider, setSelectedProvider] = useState<string>('all');
   const [modelsPage, setModelsPage] = useState(1);
   const MODELS_PER_PAGE = 8;
+
+  // Model counts per tier, derived from the registry response so UI never drifts.
+  const modelsByTier = useMemo(() => ({
+    [AccessTier.Free]: models.filter(m => m.accessTier === AccessTier.Free).length,
+    [AccessTier.Lite]: models.filter(m => m.accessTier === AccessTier.Lite).length,
+    [AccessTier.Pro]:  models.filter(m => m.accessTier === AccessTier.Pro).length,
+  }), [models]);
 
   // ============ EFFECTS ============
   useEffect(() => {
@@ -1471,7 +645,6 @@ export default function Home() {
                 { id: 'router', label: 'Router', icon: Search },
                 { id: 'analyze', label: 'Analyze', icon: FlaskConical },
                 { id: 'models', label: 'Models', icon: Box },
-                { id: 'docs', label: 'Docs', icon: BookOpen },
               ].map(tab => {
                 const Icon = tab.icon;
                 const isActive = activeView === tab.id;
@@ -1686,25 +859,31 @@ export default function Home() {
 
                     {/* Tier Selector */}
                     <div style={{ display: 'flex', alignItems: 'center', background: '#F3F4F6', borderRadius: 8, padding: 3 }}>
-                      {(['free', 'pro'] as const).map((tier) => {
+                      {([
+                        { tier: AccessTier.Free, label: 'Free',  mode: 'Basic' },
+                        { tier: AccessTier.Lite, label: 'Lite',  mode: 'Full (cost-optimised)' },
+                        { tier: AccessTier.Pro,  label: 'Pro',   mode: 'Full (quality-optimised)' },
+                      ] as const).map(({ tier, label, mode }) => {
                         const isActive = userTier === tier;
+                        const isPro = tier === AccessTier.Pro;
+                        const count = modelsByTier[tier];
                         return (
                             <button
                                 key={tier}
                                 onClick={() => setUserTier(tier)}
-                                title={tier === 'free' ? 'Free tier: 15 budget models' : 'Pro tier: All 39 models'}
+                                title={`${label} tier: ${mode} · ${count} models`}
                                 style={{
                                   display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px',
-                                  background: isActive ? (tier === 'pro' ? '#111' : '#fff') : 'transparent',
+                                  background: isActive ? (isPro ? '#111' : '#fff') : 'transparent',
                                   border: 'none', borderRadius: 6,
                                   cursor: 'pointer', boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                                  fontSize: 12, color: isActive ? (tier === 'pro' ? '#fff' : '#111') : '#9CA3AF',
+                                  fontSize: 12, color: isActive ? (isPro ? '#fff' : '#111') : '#9CA3AF',
                                   fontWeight: isActive ? 600 : 400,
                                   transition: 'all 0.15s',
                                 }}
                             >
-                              {tier === 'pro' && <span style={{ fontSize: 10 }}>⚡</span>}
-                              {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                              {isPro && <span style={{ fontSize: 10 }}>⚡</span>}
+                              {label}
                             </button>
                         );
                       })}
@@ -1987,7 +1166,7 @@ export default function Home() {
                             </span>
                             </div>
                             <button
-                                onClick={() => setUserTier('pro')}
+                                onClick={() => setUserTier(AccessTier.Pro)}
                                 style={{
                                   padding: '4px 12px', fontSize: 11, fontWeight: 600,
                                   color: '#fff', background: '#F59E0B', border: 'none',
@@ -2832,10 +2011,6 @@ export default function Home() {
           );
         })()}
 
-        {/* ============ DOCS VIEW ============ */}
-        {activeView === 'docs' && (
-          <DocsView />
-        )}
       </main>
 
       {/* Status Modal */}
