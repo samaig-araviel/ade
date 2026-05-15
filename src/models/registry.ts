@@ -8,10 +8,10 @@ import {
     Constraints,
 } from '@/types';
 /**
- * Araveil Model Registry v3.0
- * 48 models across 6 providers
+ * Araveil Model Registry v3.1
+ * Multi-provider model catalog.
  *
- * Last verified: March 5, 2026
+ * Last verified: May 15, 2026
  *
  * Sources:
  * - Anthropic: platform.claude.com/docs/en/about-claude/pricing
@@ -34,6 +34,14 @@ import {
  *
  * REMOVED PROVIDERS: Mistral, StabilityAI, DeepSeek (per business decision)
  * REMOVED MODELS: All deprecated, discontinued, computer-use, robotics, music-gen-experimental
+ *
+ * OpenAI deprecations applied 2026-05-15:
+ * - Removed: gpt-5.2-codex, gpt-5.1-codex-mini (shutdown 2026-07-23)
+ * - Removed: gpt-4.1-nano (shutdown 2026-10-23) — replaced by gpt-5-nano
+ * - Removed: sora-2 (shutdown 2026-09-24) — Videos API discontinued, no replacement
+ * - Added: gpt-5.4, gpt-5.4-pro (frontier flagship + premium)
+ * - Added: gpt-5.3-codex (current Codex successor)
+ * - Added: gpt-image-2 (current image generation flagship)
  */
 const models: ModelDefinition[] = [
     // ---------------------------------------------------------------
@@ -365,6 +373,93 @@ const models: ModelDefinition[] = [
         toolPricing: { webSearchPer1k: 10.0 }, available: true,
     },
     // ---------------------------------------------------------------
+    // GPT-5.4 (OPENAI)
+    // ---------------------------------------------------------------
+    {
+        id: 'gpt-5.4', name: 'GPT-5.4', provider: 'openai',
+        description: 'OpenAI most capable and efficient frontier model for professional work. Five-level reasoning effort, native Computer Use, 1M+ context.',
+        pricing: { inputPer1k: 0.0025, outputPer1k: 0.015, cachedInputPer1k: 0.00025 },
+        capabilities: {
+            maxInputTokens: 1000000, maxOutputTokens: 128000,
+            supportsStreaming: true, supportsVision: true, supportsAudio: false,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
+            supportsReasoning: true, supportsImageGeneration: true,
+            supportsExtendedThinking: false, supportsAdaptiveThinking: false,
+            supportsCodeExecution: false, supportsTTS: false, supportsSTT: false,
+            supportsVideoGeneration: false, supportsRealtimeAudio: false,
+            visionScore: 0.96, audioScore: 0,
+        },
+        performance: { avgLatencyMs: 1800, reliabilityPercent: 99.5 },
+        taskStrengths: {
+            intents: {
+                [Intent.Coding]: 0.96, [Intent.Creative]: 0.86, [Intent.Analysis]: 0.97, [Intent.Factual]: 0.94,
+                [Intent.Conversation]: 0.84, [Intent.Task]: 0.95, [Intent.Brainstorm]: 0.89, [Intent.Translation]: 0.89,
+                [Intent.Summarization]: 0.92, [Intent.Extraction]: 0.94,
+                [Intent.ImageGeneration]: 0.72, [Intent.VideoGeneration]: 0.0,
+                [Intent.VoiceGeneration]: 0.0, [Intent.MusicGeneration]: 0.0,
+                [Intent.Research]: 0.91, [Intent.Math]: 0.97, [Intent.Planning]: 0.91,
+            },
+            domains: {
+                [Domain.Technology]: 0.97, [Domain.Business]: 0.92, [Domain.Health]: 0.89, [Domain.Legal]: 0.91,
+                [Domain.Finance]: 0.94, [Domain.Education]: 0.92, [Domain.Science]: 0.97, [Domain.CreativeArts]: 0.84,
+                [Domain.Lifestyle]: 0.81, [Domain.General]: 0.92, [Domain.Government]: 0.91, [Domain.Relationships]: 0.76,
+                [Domain.Shopping]: 0.73, [Domain.EventPlanning]: 0.79, [Domain.Weather]: 0.75, [Domain.Sports]: 0.77,
+            },
+            complexity: { [Complexity.Quick]: 0.78, [Complexity.Standard]: 0.94, [Complexity.Demanding]: 0.98 },
+        },
+        humanFactors: {
+            empathyScore: 0.88, playfulnessScore: 0.82, professionalismScore: 0.97, conciseness: 0.78,
+            verbosity: 0.86, conversationalTone: 0.85, formalTone: 0.95,
+            lateNightSuitability: 0.83, workHoursSuitability: 0.97,
+        },
+        specializations: ['reasoning', 'coding', 'math', 'agentic', 'long_context'],
+        accessTier: AccessTier.Lite, creditCost: 12,
+        toolPricing: { webSearchPer1k: 10.0 }, available: true,
+    },
+    // ---------------------------------------------------------------
+    // GPT-5.4 Pro (OPENAI)
+    // ---------------------------------------------------------------
+    {
+        id: 'gpt-5.4-pro', name: 'GPT-5.4 Pro', provider: 'openai',
+        description: 'Premium GPT-5.4 with more compute. Smarter, more precise responses for tough problems. 1.05M context. Responses API only; long requests may use background mode.',
+        pricing: { inputPer1k: 0.03, outputPer1k: 0.18 },
+        capabilities: {
+            maxInputTokens: 1050000, maxOutputTokens: 128000,
+            supportsStreaming: true, supportsVision: true, supportsAudio: false,
+            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: true,
+            supportsReasoning: true, supportsImageGeneration: true,
+            supportsExtendedThinking: false, supportsAdaptiveThinking: false,
+            supportsCodeExecution: false, supportsTTS: false, supportsSTT: false,
+            supportsVideoGeneration: false, supportsRealtimeAudio: false,
+            visionScore: 0.97, audioScore: 0,
+        },
+        performance: { avgLatencyMs: 10000, reliabilityPercent: 99.3 },
+        taskStrengths: {
+            intents: {
+                [Intent.Coding]: 0.95, [Intent.Creative]: 0.84, [Intent.Analysis]: 0.98, [Intent.Factual]: 0.95,
+                [Intent.Conversation]: 0.8, [Intent.Task]: 0.96, [Intent.Brainstorm]: 0.91, [Intent.Translation]: 0.9,
+                [Intent.Summarization]: 0.94, [Intent.Extraction]: 0.95,
+                [Intent.ImageGeneration]: 0.72, [Intent.VideoGeneration]: 0.0,
+                [Intent.VoiceGeneration]: 0.0, [Intent.MusicGeneration]: 0.0,
+                [Intent.Research]: 0.93, [Intent.Math]: 0.99, [Intent.Planning]: 0.92,
+            },
+            domains: {
+                [Domain.Technology]: 0.98, [Domain.Business]: 0.94, [Domain.Health]: 0.93, [Domain.Legal]: 0.94,
+                [Domain.Finance]: 0.96, [Domain.Education]: 0.94, [Domain.Science]: 0.98, [Domain.CreativeArts]: 0.82,
+                [Domain.Lifestyle]: 0.77, [Domain.General]: 0.91, [Domain.Government]: 0.93, [Domain.Relationships]: 0.74,
+                [Domain.Shopping]: 0.71, [Domain.EventPlanning]: 0.77, [Domain.Weather]: 0.74, [Domain.Sports]: 0.75,
+            },
+            complexity: { [Complexity.Quick]: 0.6, [Complexity.Standard]: 0.89, [Complexity.Demanding]: 0.99 },
+        },
+        humanFactors: {
+            empathyScore: 0.83, playfulnessScore: 0.76, professionalismScore: 0.99, conciseness: 0.66,
+            verbosity: 0.92, conversationalTone: 0.78, formalTone: 0.98,
+            lateNightSuitability: 0.76, workHoursSuitability: 0.97,
+        },
+        specializations: ['reasoning', 'math', 'research', 'agentic', 'long_context', 'ultra_premium'],
+        accessTier: AccessTier.Pro, creditCost: 60, available: true,
+    },
+    // ---------------------------------------------------------------
     // GPT-5.2 (OPENAI)
     // ---------------------------------------------------------------
     {
@@ -669,49 +764,6 @@ const models: ModelDefinition[] = [
         accessTier: AccessTier.Free, creditCost: 2, available: true,
     },
     // ---------------------------------------------------------------
-    // GPT-4.1 Nano (OPENAI)
-    // ---------------------------------------------------------------
-    {
-        id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano', provider: 'openai',
-        description: 'Cheapest GPT-4 class model. 1M context. For classification, extraction, and simple tasks.',
-        pricing: { inputPer1k: 0.0001, outputPer1k: 0.0004, cachedInputPer1k: 2.5e-05 },
-        capabilities: {
-            maxInputTokens: 1000000, maxOutputTokens: 32768,
-            supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: false,
-            supportsReasoning: false, supportsImageGeneration: false,
-            supportsExtendedThinking: false, supportsAdaptiveThinking: false,
-            supportsCodeExecution: false, supportsTTS: false, supportsSTT: false,
-            supportsVideoGeneration: false, supportsRealtimeAudio: false,
-            visionScore: 0.8, audioScore: 0,
-        },
-        performance: { avgLatencyMs: 350, reliabilityPercent: 99.8 },
-        taskStrengths: {
-            intents: {
-                [Intent.Coding]: 0.70, [Intent.Creative]: 0.65, [Intent.Analysis]: 0.68, [Intent.Factual]: 0.74,
-                [Intent.Conversation]: 0.78, [Intent.Task]: 0.72, [Intent.Brainstorm]: 0.63, [Intent.Translation]: 0.72,
-                [Intent.Summarization]: 0.78, [Intent.Extraction]: 0.80,
-                [Intent.ImageGeneration]: 0.05, [Intent.VideoGeneration]: 0.04,
-                [Intent.VoiceGeneration]: 0.03, [Intent.MusicGeneration]: 0.03,
-                [Intent.Research]: 0.58, [Intent.Math]: 0.62, [Intent.Planning]: 0.60,
-            },
-            domains: {
-                [Domain.Technology]: 0.72, [Domain.Business]: 0.7, [Domain.Health]: 0.68, [Domain.Legal]: 0.66,
-                [Domain.Finance]: 0.7, [Domain.Education]: 0.74, [Domain.Science]: 0.71, [Domain.CreativeArts]: 0.64,
-                [Domain.Lifestyle]: 0.74, [Domain.General]: 0.78, [Domain.Government]: 0.62, [Domain.Relationships]: 0.66,
-                [Domain.Shopping]: 0.68, [Domain.EventPlanning]: 0.62, [Domain.Weather]: 0.64, [Domain.Sports]: 0.64,
-            },
-            complexity: { [Complexity.Quick]: 0.96, [Complexity.Standard]: 0.78, [Complexity.Demanding]: 0.55 },
-        },
-        humanFactors: {
-            empathyScore: 0.7, playfulnessScore: 0.68, professionalismScore: 0.84, conciseness: 0.95,
-            verbosity: 0.52, conversationalTone: 0.8, formalTone: 0.82,
-            lateNightSuitability: 0.9, workHoursSuitability: 0.86,
-        },
-        specializations: ['fast_tasks', 'budget', 'classification', 'long_context'],
-        accessTier: AccessTier.Free, creditCost: 1, available: true,
-    },
-    // ---------------------------------------------------------------
     // GPT-4o (OPENAI)
     // ---------------------------------------------------------------
     {
@@ -798,11 +850,11 @@ const models: ModelDefinition[] = [
         accessTier: AccessTier.Free, creditCost: 1, available: true,
     },
     // ---------------------------------------------------------------
-    // GPT-5.2 Codex (OPENAI)
+    // GPT-5.3 Codex (OPENAI)
     // ---------------------------------------------------------------
     {
-        id: 'gpt-5.2-codex', name: 'GPT-5.2 Codex', provider: 'openai',
-        description: 'Premium agentic coding model. Best-in-class for complex multi-file coding tasks. Runs in cloud sandbox.',
+        id: 'gpt-5.3-codex', name: 'GPT-5.3 Codex', provider: 'openai',
+        description: 'OpenAI most advanced agentic coding model. Frontier software engineering with broader reasoning. Supports low, medium, high, and xhigh reasoning effort. 400K context.',
         pricing: { inputPer1k: 0.00175, outputPer1k: 0.014, cachedInputPer1k: 0.000175 },
         capabilities: {
             maxInputTokens: 400000, maxOutputTokens: 128000,
@@ -817,71 +869,28 @@ const models: ModelDefinition[] = [
         performance: { avgLatencyMs: 3000, reliabilityPercent: 99.4 },
         taskStrengths: {
             intents: {
-                [Intent.Coding]: 0.98, [Intent.Creative]: 0.7, [Intent.Analysis]: 0.92, [Intent.Factual]: 0.85,
-                [Intent.Conversation]: 0.7, [Intent.Task]: 0.95, [Intent.Brainstorm]: 0.78, [Intent.Translation]: 0.75,
-                [Intent.Summarization]: 0.82, [Intent.Extraction]: 0.88,
+                [Intent.Coding]: 0.99, [Intent.Creative]: 0.7, [Intent.Analysis]: 0.93, [Intent.Factual]: 0.86,
+                [Intent.Conversation]: 0.7, [Intent.Task]: 0.96, [Intent.Brainstorm]: 0.78, [Intent.Translation]: 0.75,
+                [Intent.Summarization]: 0.83, [Intent.Extraction]: 0.89,
                 [Intent.ImageGeneration]: 0.0, [Intent.VideoGeneration]: 0.0,
                 [Intent.VoiceGeneration]: 0.0, [Intent.MusicGeneration]: 0.0,
-                [Intent.Research]: 0.8, [Intent.Math]: 0.9, [Intent.Planning]: 0.88,
+                [Intent.Research]: 0.81, [Intent.Math]: 0.91, [Intent.Planning]: 0.89,
             },
             domains: {
-                [Domain.Technology]: 0.98, [Domain.Business]: 0.82, [Domain.Health]: 0.75, [Domain.Legal]: 0.78,
-                [Domain.Finance]: 0.84, [Domain.Education]: 0.82, [Domain.Science]: 0.88, [Domain.CreativeArts]: 0.68,
-                [Domain.Lifestyle]: 0.65, [Domain.General]: 0.8, [Domain.Government]: 0.76, [Domain.Relationships]: 0.6,
-                [Domain.Shopping]: 0.6, [Domain.EventPlanning]: 0.65, [Domain.Weather]: 0.6, [Domain.Sports]: 0.6,
+                [Domain.Technology]: 0.99, [Domain.Business]: 0.83, [Domain.Health]: 0.76, [Domain.Legal]: 0.79,
+                [Domain.Finance]: 0.85, [Domain.Education]: 0.83, [Domain.Science]: 0.89, [Domain.CreativeArts]: 0.69,
+                [Domain.Lifestyle]: 0.66, [Domain.General]: 0.81, [Domain.Government]: 0.77, [Domain.Relationships]: 0.61,
+                [Domain.Shopping]: 0.61, [Domain.EventPlanning]: 0.66, [Domain.Weather]: 0.61, [Domain.Sports]: 0.61,
             },
-            complexity: { [Complexity.Quick]: 0.7, [Complexity.Standard]: 0.9, [Complexity.Demanding]: 0.99 },
+            complexity: { [Complexity.Quick]: 0.71, [Complexity.Standard]: 0.91, [Complexity.Demanding]: 0.99 },
         },
         humanFactors: {
             empathyScore: 0.7, playfulnessScore: 0.6, professionalismScore: 0.96, conciseness: 0.72,
             verbosity: 0.88, conversationalTone: 0.7, formalTone: 0.95,
             lateNightSuitability: 0.75, workHoursSuitability: 0.96,
         },
-        specializations: ['coding', 'agentic_coding'],
+        specializations: ['coding', 'agentic_coding', 'reasoning'],
         accessTier: AccessTier.Pro, creditCost: 30, available: true,
-    },
-    // ---------------------------------------------------------------
-    // GPT-5.1 Codex Mini (OPENAI)
-    // ---------------------------------------------------------------
-    {
-        id: 'gpt-5.1-codex-mini', name: 'GPT-5.1 Codex Mini', provider: 'openai',
-        description: 'Fast agentic coding model. Efficient for everyday coding tasks and code review.',
-        pricing: { inputPer1k: 0.00025, outputPer1k: 0.002, cachedInputPer1k: 2.5e-05 },
-        capabilities: {
-            maxInputTokens: 400000, maxOutputTokens: 128000,
-            supportsStreaming: true, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: true, supportsJsonMode: true, supportsWebSearch: false,
-            supportsReasoning: true, supportsImageGeneration: false,
-            supportsExtendedThinking: false, supportsAdaptiveThinking: false,
-            supportsCodeExecution: true, supportsTTS: false, supportsSTT: false,
-            supportsVideoGeneration: false, supportsRealtimeAudio: false,
-            visionScore: 0.85, audioScore: 0,
-        },
-        performance: { avgLatencyMs: 800, reliabilityPercent: 99.7 },
-        taskStrengths: {
-            intents: {
-                [Intent.Coding]: 0.92, [Intent.Creative]: 0.50, [Intent.Analysis]: 0.72, [Intent.Factual]: 0.68,
-                [Intent.Conversation]: 0.48, [Intent.Task]: 0.78, [Intent.Brainstorm]: 0.58, [Intent.Translation]: 0.55,
-                [Intent.Summarization]: 0.68, [Intent.Extraction]: 0.75,
-                [Intent.ImageGeneration]: 0.06, [Intent.VideoGeneration]: 0.05,
-                [Intent.VoiceGeneration]: 0.03, [Intent.MusicGeneration]: 0.03,
-                [Intent.Research]: 0.52, [Intent.Math]: 0.82, [Intent.Planning]: 0.62,
-            },
-            domains: {
-                [Domain.Technology]: 0.94, [Domain.Business]: 0.58, [Domain.Health]: 0.48, [Domain.Legal]: 0.48,
-                [Domain.Finance]: 0.55, [Domain.Education]: 0.62, [Domain.Science]: 0.75, [Domain.CreativeArts]: 0.40,
-                [Domain.Lifestyle]: 0.38, [Domain.General]: 0.58, [Domain.Government]: 0.44, [Domain.Relationships]: 0.32,
-                [Domain.Shopping]: 0.32, [Domain.EventPlanning]: 0.35, [Domain.Weather]: 0.32, [Domain.Sports]: 0.32,
-            },
-            complexity: { [Complexity.Quick]: 0.82, [Complexity.Standard]: 0.88, [Complexity.Demanding]: 0.9 },
-        },
-        humanFactors: {
-            empathyScore: 0.65, playfulnessScore: 0.58, professionalismScore: 0.92, conciseness: 0.8,
-            verbosity: 0.78, conversationalTone: 0.66, formalTone: 0.92,
-            lateNightSuitability: 0.78, workHoursSuitability: 0.94,
-        },
-        specializations: ['coding', 'agentic_coding'],
-        accessTier: AccessTier.Free, creditCost: 3, available: true,
     },
     // ---------------------------------------------------------------
     // o3 Deep Research (OPENAI)
@@ -970,6 +979,50 @@ const models: ModelDefinition[] = [
         accessTier: AccessTier.Lite, creditCost: 15, available: true,
     },
     // ---------------------------------------------------------------
+    // GPT Image 2 (OPENAI)
+    // ---------------------------------------------------------------
+    {
+        id: 'gpt-image-2', name: 'GPT Image 2', provider: 'openai',
+        description: 'OpenAI flagship image generation. Near-perfect multilingual text rendering, complex compositions, reasoning-driven outputs. Supports transparent backgrounds and arbitrary sizes.',
+        pricing: { inputPer1k: 0.005, outputPer1k: 0.03, cachedInputPer1k: 0.00125 },
+        capabilities: {
+            maxInputTokens: 32000, maxOutputTokens: 4096,
+            supportsStreaming: true, supportsVision: true, supportsAudio: false,
+            supportsFunctionCalling: false, supportsJsonMode: false, supportsWebSearch: false,
+            supportsReasoning: true, supportsImageGeneration: true,
+            supportsExtendedThinking: false, supportsAdaptiveThinking: false,
+            supportsCodeExecution: false, supportsTTS: false, supportsSTT: false,
+            supportsVideoGeneration: false, supportsRealtimeAudio: false,
+            visionScore: 0.95, audioScore: 0,
+        },
+        performance: { avgLatencyMs: 9000, reliabilityPercent: 99.3 },
+        taskStrengths: {
+            intents: {
+                [Intent.Coding]: 0.1, [Intent.Creative]: 0.97, [Intent.Analysis]: 0.2, [Intent.Factual]: 0.15,
+                [Intent.Conversation]: 0.1, [Intent.Task]: 0.4, [Intent.Brainstorm]: 0.5, [Intent.Translation]: 0.05,
+                [Intent.Summarization]: 0.05, [Intent.Extraction]: 0.1,
+                [Intent.ImageGeneration]: 0.99, [Intent.VideoGeneration]: 0.0,
+                [Intent.VoiceGeneration]: 0.0, [Intent.MusicGeneration]: 0.0,
+                [Intent.Research]: 0.05, [Intent.Math]: 0.05, [Intent.Planning]: 0.1,
+            },
+            domains: {
+                [Domain.Technology]: 0.65, [Domain.Business]: 0.75, [Domain.Health]: 0.58, [Domain.Legal]: 0.32,
+                [Domain.Finance]: 0.48, [Domain.Education]: 0.7, [Domain.Science]: 0.62, [Domain.CreativeArts]: 0.99,
+                [Domain.Lifestyle]: 0.88, [Domain.General]: 0.84, [Domain.Government]: 0.38, [Domain.Relationships]: 0.52,
+                [Domain.Shopping]: 0.78, [Domain.EventPlanning]: 0.73, [Domain.Weather]: 0.42, [Domain.Sports]: 0.58,
+            },
+            complexity: { [Complexity.Quick]: 0.82, [Complexity.Standard]: 0.92, [Complexity.Demanding]: 0.82 },
+        },
+        humanFactors: {
+            empathyScore: 0.5, playfulnessScore: 0.88, professionalismScore: 0.9, conciseness: 0.95,
+            verbosity: 0.2, conversationalTone: 0.4, formalTone: 0.72,
+            lateNightSuitability: 0.85, workHoursSuitability: 0.92,
+        },
+        specializations: ['image_generation', 'image_editing', 'multilingual', 'reasoning'],
+        accessTier: AccessTier.Lite, creditCost: 10,
+        toolPricing: { webSearchPer1k: 0 }, available: true,
+    },
+    // ---------------------------------------------------------------
     // GPT Image 1.5 (OPENAI)
     // ---------------------------------------------------------------
     {
@@ -1054,49 +1107,6 @@ const models: ModelDefinition[] = [
         },
         specializations: ['image_generation', 'budget'],
         accessTier: AccessTier.Free, creditCost: 4, available: true,
-    },
-    // ---------------------------------------------------------------
-    // Sora 2 (OPENAI)
-    // ---------------------------------------------------------------
-    {
-        id: 'sora-2', name: 'Sora 2', provider: 'openai',
-        description: 'State-of-the-art video generation. Text-to-video and image-to-video with cinematic quality.',
-        pricing: { inputPer1k: 0.015, outputPer1k: 0.06 },
-        capabilities: {
-            maxInputTokens: 16000, maxOutputTokens: 4096,
-            supportsStreaming: false, supportsVision: true, supportsAudio: false,
-            supportsFunctionCalling: false, supportsJsonMode: false, supportsWebSearch: false,
-            supportsReasoning: false, supportsImageGeneration: false,
-            supportsExtendedThinking: false, supportsAdaptiveThinking: false,
-            supportsCodeExecution: false, supportsTTS: false, supportsSTT: false,
-            supportsVideoGeneration: true, supportsRealtimeAudio: false,
-            visionScore: 0.9, audioScore: 0,
-        },
-        performance: { avgLatencyMs: 60000, reliabilityPercent: 97.5 },
-        taskStrengths: {
-            intents: {
-                [Intent.Coding]: 0.0, [Intent.Creative]: 0.92, [Intent.Analysis]: 0.1, [Intent.Factual]: 0.05,
-                [Intent.Conversation]: 0.05, [Intent.Task]: 0.3, [Intent.Brainstorm]: 0.4, [Intent.Translation]: 0.0,
-                [Intent.Summarization]: 0.0, [Intent.Extraction]: 0.0,
-                [Intent.ImageGeneration]: 0.3, [Intent.VideoGeneration]: 0.97,
-                [Intent.VoiceGeneration]: 0.0, [Intent.MusicGeneration]: 0.0,
-                [Intent.Research]: 0.0, [Intent.Math]: 0.0, [Intent.Planning]: 0.1,
-            },
-            domains: {
-                [Domain.Technology]: 0.5, [Domain.Business]: 0.65, [Domain.Health]: 0.4, [Domain.Legal]: 0.2,
-                [Domain.Finance]: 0.35, [Domain.Education]: 0.6, [Domain.Science]: 0.5, [Domain.CreativeArts]: 0.97,
-                [Domain.Lifestyle]: 0.8, [Domain.General]: 0.7, [Domain.Government]: 0.25, [Domain.Relationships]: 0.45,
-                [Domain.Shopping]: 0.65, [Domain.EventPlanning]: 0.6, [Domain.Weather]: 0.3, [Domain.Sports]: 0.55,
-            },
-            complexity: { [Complexity.Quick]: 0.6, [Complexity.Standard]: 0.8, [Complexity.Demanding]: 0.85 },
-        },
-        humanFactors: {
-            empathyScore: 0.4, playfulnessScore: 0.8, professionalismScore: 0.85, conciseness: 0.95,
-            verbosity: 0.1, conversationalTone: 0.3, formalTone: 0.65,
-            lateNightSuitability: 0.8, workHoursSuitability: 0.85,
-        },
-        specializations: ['video_generation'],
-        accessTier: AccessTier.Pro, creditCost: 100, available: true,
     },
     // ---------------------------------------------------------------
     // GPT-4o Mini TTS (OPENAI)
