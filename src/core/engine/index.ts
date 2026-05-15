@@ -201,7 +201,7 @@ function createImageGenerationFallbackResponse(
       supported: false,
       category: 'Image Generation',
       message: 'For best results with image generation, we recommend using a specialized image generation model. Consider selecting one of the suggested platforms.',
-      suggestedPlatforms: ['GPT Image 1.5', 'Imagen 4 Standard', 'GPT-4o', 'Nano Banana 2', 'GPT Image 1 Mini'],
+      suggestedPlatforms: ['GPT Image 2', 'GPT Image 1.5', 'Imagen 4 Standard', 'GPT-5.4', 'GPT-4o', 'Nano Banana 2'],
     },
   };
 }
@@ -751,12 +751,12 @@ const FALLBACK_SUGGESTIONS: Partial<Record<Intent, { category: string; message: 
   [Intent.ImageGeneration]: {
     category: 'Image Generation',
     message: 'For best results with image generation, we recommend using a specialized image generation model or a multimodal model with native image generation support.',
-    suggestedPlatforms: ['GPT Image 1.5', 'Imagen 4 Standard', 'GPT-4o', 'Nano Banana 2', 'GPT Image 1 Mini'],
+    suggestedPlatforms: ['GPT Image 2', 'GPT Image 1.5', 'Imagen 4 Standard', 'GPT-5.4', 'GPT-4o', 'Nano Banana 2'],
   },
   [Intent.VideoGeneration]: {
     category: 'Video Generation',
-    message: 'Video generation requires specialized AI models. Our registry includes Sora 2 and Veo 3.1 for Premium users.',
-    suggestedPlatforms: ['Sora 2', 'Veo 3.1'],
+    message: 'Video generation requires specialized AI models. Our registry includes Veo 3.1 for Premium users.',
+    suggestedPlatforms: ['Veo 3.1'],
   },
   [Intent.VoiceGeneration]: {
     category: 'Voice & Speech Generation',
