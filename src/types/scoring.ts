@@ -1,7 +1,7 @@
 import { ModelDefinition } from './models';
 import { QueryAnalysis } from './responses';
 import { HumanContext, Constraints, ConversationContext } from './requests';
-import { RoutingStrategy } from './enums';
+import { AccessTier, RoutingStrategy } from './enums';
 
 // Individual factor score
 export interface FactorScore {
@@ -28,6 +28,7 @@ export interface ScoringContext {
   allModels: ModelDefinition[];
   conversationHasImages?: boolean;
   strategy?: RoutingStrategy;
+  userTier?: AccessTier;
 }
 
 // Weights configuration
@@ -139,3 +140,71 @@ export function resolveWeights(
 // signal — a model without web search will give stale or wrong answers for
 // queries like "what is today's date" or "are we in Easter".
 export const WEB_SEARCH_BONUS = 0.20;
+
+// ── Free tier provider preference ─────────────────────────────────────────────
+
+// Free tier auto-selection has historically been dominated by GPT-5 Mini due to
+// its 'general_purpose' specialization tag, which gave it a structural advantage
+// for conversational, task, and planning intents. The result was a slow,
+// homogeneous first-impression experience for free users.
+//
+// To diversify routing and lead with web-grounded responses (citations,
+// real-time data), Perplexity models receive a preference bonus on the Free
+// tier — but only for queries where Perplexity is genuinely capable. The intent
+// threshold prevents Perplexity from winning queries it would handle poorly
+// (coding, math, creative writing), and the Conversation+Quick gate keeps
+// short casual replies ("hi", "thanks") on faster lightweight models (Haiku,
+// Flash) where Perplexity's higher latency would feel sluggish.
+export const FREE_TIER_PROVIDER_PREFERENCE_BONUS = 0.20;
+
+// Minimum task fitness intent score required for a Perplexity model to receive
+// the Free tier preference bonus. Below this threshold the model is considered
+// a poor fit for the query and the bonus is withheld to avoid steering users
+// toward an unsuitable choice.
+//
+// 0.65 covers Perplexity's reasonable strengths (factual, research, analysis,
+// summarization, extraction, conversation, task, planning, brainstorm) while
+// excluding intents where Perplexity scores poorly: coding/math (0.60),
+// translation (0.60), creative writing (0.55), and all generation modalities
+// (image/video/voice/music at 0.0).
+export const FREE_TIER_PROVIDER_PREFERENCE_MIN_INTENT_SCORE = 0.65;
+
+// ── Free tier deprioritized models ────────────────────────────────────────────
+
+// Models that the platform considers a poor default for Free tier auto-selection
+// despite being technically capable. The penalty pushes them below faster
+// alternatives in the same tier (e.g. Claude Haiku 4.5 at 400ms, GPT-4o Mini at
+// 500ms, Gemini Flash-Lite at 300ms) without removing them from the model pool —
+// they remain available for explicit selection and as backups.
+//
+// GPT-5 Mini (800ms) is the slowest non-Perplexity text model in the Free tier
+// and historically dominated auto-selection because of its 'general_purpose'
+// specialization. Slow first-token times produce a worse first impression than
+// faster alternatives that handle the same query nearly as well.
+export const FREE_TIER_DEPRIORITIZED_MODEL_IDS: ReadonlySet<string> = new Set([
+  'gpt-5-mini',
+]);
+
+// Penalty applied to deprioritized Free tier models. Sized to push them behind
+// peer models of comparable quality but lower latency, without making them
+// completely unreachable when the user has no alternative (e.g. provider
+// constraints, all other models unavailable).
+export const FREE_TIER_DEPRIORITIZATION_PENALTY = 0.15;
+
+// ── Free tier speed preference for non-Perplexity models ──────────────────────
+
+// When Perplexity isn't a good fit (coding, math, creative, translation), Free
+// tier routing should favor fast models. The cost factor in the standard
+// scoring weights tends to crown the cheapest model in a tier, which produces a
+// homogeneous "everything goes to Gemini Flash" outcome on the Free tier. This
+// bonus rewards low latency so that faster peers (Claude Haiku 4.5 at 400ms,
+// Gemini Flash-Lite at 300ms, GPT-4o Mini at 500ms) can compete on speed even
+// when they're more expensive per token. Perplexity is excluded because it has
+// its own provider preference bonus.
+export const FREE_TIER_SPEED_PREFERENCE_BONUS = 0.06;
+
+// Latency threshold (ms) below which a non-Perplexity Free tier model qualifies
+// for the speed preference bonus. Set at 500ms to include the fast workhorses
+// while excluding sluggish text models like GPT-5 Mini (800ms) and Grok 4 Fast
+// (700ms).
+export const FREE_TIER_SPEED_PREFERENCE_MAX_LATENCY_MS = 500;

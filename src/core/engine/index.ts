@@ -364,7 +364,7 @@ function handleStandardRoute(
 
       const userTierForUpgrade = request.userTier ?? AccessTier.Free;
       const upgradeHint = userTierForUpgrade !== AccessTier.Pro
-        ? generateUpgradeHint(analysis, selection.primary, request, imageScores)
+        ? generateUpgradeHint(analysis, selection.primary, request)
         : undefined;
 
       return {
@@ -424,6 +424,7 @@ function handleStandardRoute(
     allModels: models,
     conversationHasImages: request.conversationHasImages,
     strategy: request.strategy,
+    userTier,
   };
 
   const { result: scores, durationMs: scoringMs } = measureTimeSync(() =>
@@ -466,7 +467,7 @@ function handleStandardRoute(
 
   // Generate upgrade hint for non-premium users if a better higher-tier model exists
   const upgradeHint = userTier !== AccessTier.Pro
-      ? generateUpgradeHint(analysis, selection.primary, request, scores)
+      ? generateUpgradeHint(analysis, selection.primary, request)
       : undefined;
 
   return {
@@ -526,6 +527,7 @@ function handleCombinedModality(
     allModels: models,
     conversationHasImages: request.conversationHasImages,
     strategy: request.strategy,
+    userTier: request.userTier ?? AccessTier.Free,
   };
 
   const { result: textScores, durationMs: scoringMs } = measureTimeSync(() =>
@@ -805,12 +807,13 @@ function detectFallbackNeeded(
 //
 // For Lite users: suggests Pro when a meaningful improvement exists.
 //
-// Reuses already-scored tier models to avoid redundant work.
+// Higher tiers are scored from scratch under the hypothetical tier's context so
+// any tier-specific scoring bonuses (e.g. Free tier provider preference) don't
+// leak into the upgrade comparison.
 function generateUpgradeHint(
     analysis: QueryAnalysis,
     currentSelection: ModelScore,
-    request: RouteRequest,
-    alreadyScoredModels?: ModelScore[]
+    request: RouteRequest
 ): UpgradeHint | undefined {
   const userTier = request.userTier ?? AccessTier.Free;
 
@@ -818,40 +821,29 @@ function generateUpgradeHint(
   const nextTier = userTier === AccessTier.Free ? AccessTier.Lite : AccessTier.Pro;
   const hasJumpTier = userTier === AccessTier.Free; // Free can jump to Pro
 
-  // Build scoring context helper
-  const buildContext = (models: ModelDefinition[]): ScoringContext => ({
+  // Build scoring context helper. `tier` here is the hypothetical tier being
+  // evaluated for an upgrade — its tier-aware preferences should govern scoring,
+  // not the user's current tier.
+  const buildContext = (models: ModelDefinition[], tier: AccessTier): ScoringContext => ({
     analysis,
     humanContext: request.humanContext,
     constraints: request.constraints,
     conversationContext: request.context,
     allModels: models,
     strategy: request.strategy,
+    userTier: tier,
   });
 
-  // Collect already-scored model IDs to avoid re-scoring
-  const alreadyScoredIds = new Set(
-    (alreadyScoredModels ?? []).map(s => s.model.id)
-  );
-
-  // Score models for a given tier, reusing already-scored results
+  // Score models for a given tier from scratch. We re-score rather than reuse
+  // already-scored results because the user's current-tier scores carry
+  // tier-specific bonuses that wouldn't apply at the hypothetical higher tier.
   const scoreForTier = (tier: AccessTier): ModelScore[] => {
     const tierModels = getModelsForTier(tier);
     const filtered = request.constraints
       ? filterModelsByConstraints(tierModels, request.constraints)
       : tierModels;
 
-    // Partition into already-scored and unscored
-    const reused = (alreadyScoredModels ?? []).filter(
-      s => filtered.some(m => m.id === s.model.id)
-    );
-    const unscored = filtered.filter(m => !alreadyScoredIds.has(m.id));
-
-    if (unscored.length === 0) return reused;
-
-    const newScores = scoreAllModels(buildContext(unscored));
-    const merged = [...reused, ...newScores];
-    merged.sort((a, b) => b.compositeScore - a.compositeScore);
-    return merged;
+    return scoreAllModels(buildContext(filtered, tier));
   };
 
   // Score the next tier up (Lite for Free users, Pro for Lite users)

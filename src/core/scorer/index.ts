@@ -1,10 +1,19 @@
 import {
+  AccessTier,
+  Complexity,
+  Intent,
   ModelDefinition,
   ModelScore,
   ScoringContext,
   FactorScore,
   resolveWeights,
   WEB_SEARCH_BONUS,
+  FREE_TIER_PROVIDER_PREFERENCE_BONUS,
+  FREE_TIER_PROVIDER_PREFERENCE_MIN_INTENT_SCORE,
+  FREE_TIER_DEPRIORITIZED_MODEL_IDS,
+  FREE_TIER_DEPRIORITIZATION_PENALTY,
+  FREE_TIER_SPEED_PREFERENCE_BONUS,
+  FREE_TIER_SPEED_PREFERENCE_MAX_LATENCY_MS,
 } from '@/types';
 import {
   calculateTaskFitness,
@@ -122,11 +131,108 @@ export function scoreModel(
     });
   }
 
+  // Free tier provider preference bonus.
+  // Lead Free tier users with Perplexity's web-grounded, citation-backed answers
+  // rather than GPT-5 Mini's slower general-purpose output. Gated by intent
+  // fitness and complexity so it never overrides capability mismatches
+  // (coding/math/creative) or steers quick chats to a slower model.
+  if (shouldApplyFreeTierProviderPreference(model, context)) {
+    compositeScore += FREE_TIER_PROVIDER_PREFERENCE_BONUS;
+    factors.push({
+      name: 'Free Tier Provider Preference',
+      score: 1.0,
+      weight: FREE_TIER_PROVIDER_PREFERENCE_BONUS,
+      weightedScore: FREE_TIER_PROVIDER_PREFERENCE_BONUS,
+      detail: 'Preferred provider for Free tier — real-time web-grounded answers with citations',
+    });
+  }
+
+  // Free tier model deprioritization.
+  // Some Free tier models are technically capable but produce a worse first
+  // impression than faster peers (e.g. GPT-5 Mini at 800ms vs Claude Haiku 4.5
+  // at 400ms). The penalty pushes them behind faster alternatives without
+  // removing them from selection entirely.
+  if (
+    context.userTier === AccessTier.Free &&
+    FREE_TIER_DEPRIORITIZED_MODEL_IDS.has(model.id)
+  ) {
+    compositeScore -= FREE_TIER_DEPRIORITIZATION_PENALTY;
+    factors.push({
+      name: 'Free Tier Deprioritization',
+      score: 0,
+      weight: -FREE_TIER_DEPRIORITIZATION_PENALTY,
+      weightedScore: -FREE_TIER_DEPRIORITIZATION_PENALTY,
+      detail: 'Slower than faster Free tier alternatives — deprioritized in auto-selection',
+    });
+  }
+
+  // Free tier speed preference for non-Perplexity models.
+  // When Perplexity isn't the right fit (coding, math, etc.), favor fast peers
+  // so cost-cheap-but-mid-latency models don't structurally dominate every
+  // non-Perplexity selection.
+  if (shouldApplyFreeTierSpeedPreference(model, context)) {
+    compositeScore += FREE_TIER_SPEED_PREFERENCE_BONUS;
+    factors.push({
+      name: 'Free Tier Speed Preference',
+      score: 1.0,
+      weight: FREE_TIER_SPEED_PREFERENCE_BONUS,
+      weightedScore: FREE_TIER_SPEED_PREFERENCE_BONUS,
+      detail: `Fast latency (${model.performance.avgLatencyMs}ms) favored for Free tier auto-selection`,
+    });
+  }
+
   return {
     model,
     factors,
     compositeScore,
   };
+}
+
+// Decide whether a model should receive the Free tier speed preference bonus.
+// See FREE_TIER_SPEED_PREFERENCE_BONUS for the policy rationale.
+function shouldApplyFreeTierSpeedPreference(
+  model: ModelDefinition,
+  context: ScoringContext
+): boolean {
+  if (context.userTier !== AccessTier.Free) return false;
+  // Perplexity has its own preference bonus — don't compound them.
+  if (model.provider === 'perplexity') return false;
+  // Deprioritized models don't get help from the speed bonus either.
+  if (FREE_TIER_DEPRIORITIZED_MODEL_IDS.has(model.id)) return false;
+  return model.performance.avgLatencyMs <= FREE_TIER_SPEED_PREFERENCE_MAX_LATENCY_MS;
+}
+
+// Decide whether a model should receive the Free tier provider preference bonus.
+// See FREE_TIER_PROVIDER_PREFERENCE_BONUS for the policy rationale.
+function shouldApplyFreeTierProviderPreference(
+  model: ModelDefinition,
+  context: ScoringContext
+): boolean {
+  if (context.userTier !== AccessTier.Free) return false;
+  if (model.provider !== 'perplexity') return false;
+
+  // Casual chat (e.g. "Hi there", "Thanks!") feels sluggish at Perplexity's
+  // ~1200ms latency — keep short conversational replies on faster models like
+  // Claude Haiku or GPT-5 Mini. We only skip the Conversation+Quick combination
+  // because short factual lookups ("What is the capital of France?") still
+  // benefit from web-grounded, citation-backed answers.
+  if (
+    context.analysis.intent === Intent.Conversation &&
+    context.analysis.complexity === Complexity.Quick
+  ) {
+    return false;
+  }
+
+  // Don't push Perplexity for intents where it is genuinely weak (coding, math,
+  // creative, translation, generation modalities).
+  const intentScore = model.taskStrengths.intents[context.analysis.intent] ?? 0;
+  if (intentScore < FREE_TIER_PROVIDER_PREFERENCE_MIN_INTENT_SCORE) return false;
+
+  // Respect explicit user opt-outs.
+  const avoidedByUser = context.humanContext?.preferences?.avoidModels?.includes(model.id);
+  if (avoidedByUser) return false;
+
+  return true;
 }
 
 // Score all models and sort by score, with anti-monopoly diversity enforcement
