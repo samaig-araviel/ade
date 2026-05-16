@@ -1,7 +1,7 @@
 import { ModelDefinition } from './models';
 import { QueryAnalysis } from './responses';
 import { HumanContext, Constraints, ConversationContext } from './requests';
-import { RoutingStrategy } from './enums';
+import { AccessTier, RoutingStrategy } from './enums';
 
 // Individual factor score
 export interface FactorScore {
@@ -28,6 +28,7 @@ export interface ScoringContext {
   allModels: ModelDefinition[];
   conversationHasImages?: boolean;
   strategy?: RoutingStrategy;
+  userTier?: AccessTier;
 }
 
 // Weights configuration
@@ -139,3 +140,25 @@ export function resolveWeights(
 // signal — a model without web search will give stale or wrong answers for
 // queries like "what is today's date" or "are we in Easter".
 export const WEB_SEARCH_BONUS = 0.20;
+
+// ── Free tier provider preference ─────────────────────────────────────────────
+
+// Free tier auto-selection has historically been dominated by GPT-5 Mini due to
+// its 'general_purpose' specialization tag, which gave it a structural advantage
+// for conversational, task, and planning intents. The result was a slow,
+// homogeneous first-impression experience for free users.
+//
+// To diversify routing and lead with web-grounded responses (citations,
+// real-time data), Perplexity models receive a preference bonus on the Free
+// tier — but only for queries where Perplexity is genuinely capable. The intent
+// threshold prevents Perplexity from winning queries it would handle poorly
+// (coding, math, creative writing), and the Conversation+Quick gate keeps
+// short casual replies ("hi", "thanks") on faster lightweight models (Haiku,
+// Flash) where Perplexity's higher latency would feel sluggish.
+export const FREE_TIER_PROVIDER_PREFERENCE_BONUS = 0.20;
+
+// Minimum task fitness intent score required for a Perplexity model to receive
+// the Free tier preference bonus. Below this threshold the model is considered
+// a poor fit for the query and the bonus is withheld to avoid steering users
+// toward an unsuitable choice.
+export const FREE_TIER_PROVIDER_PREFERENCE_MIN_INTENT_SCORE = 0.7;

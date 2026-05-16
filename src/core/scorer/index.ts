@@ -1,10 +1,15 @@
 import {
+  AccessTier,
+  Complexity,
+  Intent,
   ModelDefinition,
   ModelScore,
   ScoringContext,
   FactorScore,
   resolveWeights,
   WEB_SEARCH_BONUS,
+  FREE_TIER_PROVIDER_PREFERENCE_BONUS,
+  FREE_TIER_PROVIDER_PREFERENCE_MIN_INTENT_SCORE,
 } from '@/types';
 import {
   calculateTaskFitness,
@@ -122,11 +127,60 @@ export function scoreModel(
     });
   }
 
+  // Free tier provider preference bonus.
+  // Lead Free tier users with Perplexity's web-grounded, citation-backed answers
+  // rather than GPT-5 Mini's slower general-purpose output. Gated by intent
+  // fitness and complexity so it never overrides capability mismatches
+  // (coding/math/creative) or steers quick chats to a slower model.
+  if (shouldApplyFreeTierProviderPreference(model, context)) {
+    compositeScore += FREE_TIER_PROVIDER_PREFERENCE_BONUS;
+    factors.push({
+      name: 'Free Tier Provider Preference',
+      score: 1.0,
+      weight: FREE_TIER_PROVIDER_PREFERENCE_BONUS,
+      weightedScore: FREE_TIER_PROVIDER_PREFERENCE_BONUS,
+      detail: 'Preferred provider for Free tier — real-time web-grounded answers with citations',
+    });
+  }
+
   return {
     model,
     factors,
     compositeScore,
   };
+}
+
+// Decide whether a model should receive the Free tier provider preference bonus.
+// See FREE_TIER_PROVIDER_PREFERENCE_BONUS for the policy rationale.
+function shouldApplyFreeTierProviderPreference(
+  model: ModelDefinition,
+  context: ScoringContext
+): boolean {
+  if (context.userTier !== AccessTier.Free) return false;
+  if (model.provider !== 'perplexity') return false;
+
+  // Casual chat (e.g. "Hi there", "Thanks!") feels sluggish at Perplexity's
+  // ~1200ms latency — keep short conversational replies on faster models like
+  // Claude Haiku or GPT-5 Mini. We only skip the Conversation+Quick combination
+  // because short factual lookups ("What is the capital of France?") still
+  // benefit from web-grounded, citation-backed answers.
+  if (
+    context.analysis.intent === Intent.Conversation &&
+    context.analysis.complexity === Complexity.Quick
+  ) {
+    return false;
+  }
+
+  // Don't push Perplexity for intents where it is genuinely weak (coding, math,
+  // creative, translation, generation modalities).
+  const intentScore = model.taskStrengths.intents[context.analysis.intent] ?? 0;
+  if (intentScore < FREE_TIER_PROVIDER_PREFERENCE_MIN_INTENT_SCORE) return false;
+
+  // Respect explicit user opt-outs.
+  const avoidedByUser = context.humanContext?.preferences?.avoidModels?.includes(model.id);
+  if (avoidedByUser) return false;
+
+  return true;
 }
 
 // Score all models and sort by score, with anti-monopoly diversity enforcement

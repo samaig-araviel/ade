@@ -480,6 +480,80 @@ describe('Engine', () => {
     });
   });
 
+  describe('free tier provider preference', () => {
+    it('prefers Perplexity for free tier factual queries', () => {
+      const request: RouteRequest = {
+        prompt: 'Explain how photosynthesis works in plants and trees in detail',
+        modality: Modality.Text,
+        userTier: AccessTier.Free,
+      };
+
+      const response = route(request);
+
+      expect(response.primaryModel.provider).toBe('perplexity');
+    });
+
+    it('does not push Perplexity for free tier coding queries', () => {
+      const request: RouteRequest = {
+        prompt: 'Write a Python function that implements binary search recursively',
+        modality: Modality.Text,
+        userTier: AccessTier.Free,
+      };
+
+      const response = route(request);
+
+      expect(response.primaryModel.provider).not.toBe('perplexity');
+    });
+
+    it('does not push Perplexity for free tier math queries', () => {
+      const request: RouteRequest = {
+        prompt: 'Solve the integral of x squared times sine of x using integration by parts',
+        modality: Modality.Text,
+        userTier: AccessTier.Free,
+      };
+
+      const response = route(request);
+
+      expect(response.primaryModel.provider).not.toBe('perplexity');
+    });
+
+    it('does not apply free tier preference for Pro tier users', () => {
+      const request: RouteRequest = {
+        prompt: 'Explain how photosynthesis works in plants and trees in detail',
+        modality: Modality.Text,
+        userTier: AccessTier.Pro,
+      };
+
+      const response = route(request);
+
+      // Pro users see Perplexity's reasoning factors absent the Free preference factor
+      const hasFreeTierFactor = response.primaryModel.reasoning.factors.some(
+        (f) => f.name === 'Free Tier Provider Preference'
+      );
+      expect(hasFreeTierFactor).toBe(false);
+    });
+
+    it('respects user opt-out for the Perplexity preference', () => {
+      const baseRequest: RouteRequest = {
+        prompt: 'Explain how photosynthesis works in plants and trees in detail',
+        modality: Modality.Text,
+        userTier: AccessTier.Free,
+      };
+
+      const baseline = route(baseRequest);
+      expect(baseline.primaryModel.provider).toBe('perplexity');
+
+      const optedOut = route({
+        ...baseRequest,
+        humanContext: {
+          preferences: { avoidModels: [baseline.primaryModel.id] },
+        },
+      });
+
+      expect(optedOut.primaryModel.id).not.toBe(baseline.primaryModel.id);
+    });
+  });
+
   describe('analyzeOnly', () => {
     it('returns analysis without scoring', () => {
       const response = analyzeOnly('Write a function in JavaScript', Modality.Text);

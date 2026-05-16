@@ -11,6 +11,7 @@ import {
 } from '@/core/scorer';
 import { getAvailableModels } from '@/models';
 import {
+  AccessTier,
   QueryAnalysis,
   Intent,
   Domain,
@@ -21,6 +22,8 @@ import {
   EnergyLevel,
   ResponseStyle,
 } from '@/types';
+
+const FREE_TIER_PROVIDER_PREFERENCE_FACTOR = 'Free Tier Provider Preference';
 
 describe('Scorer', () => {
   const models = getAvailableModels();
@@ -325,6 +328,212 @@ describe('Scorer', () => {
           results[i]!.compositeScore
         );
       }
+    });
+  });
+
+  describe('Free tier provider preference bonus', () => {
+    const perplexitySonar = models.find((m) => m.id === 'sonar')!;
+    const gpt5Mini = models.find((m) => m.id === 'gpt-5-mini')!;
+    const factualAnalysis: QueryAnalysis = {
+      intent: Intent.Factual,
+      domain: Domain.General,
+      complexity: Complexity.Standard,
+      tone: Tone.Default,
+      modality: Modality.Text,
+      keywords: ['what', 'capital'],
+      humanContextUsed: false,
+      webSearchRequired: false,
+    };
+
+    it('applies bonus for Perplexity model when user is on Free tier and intent fits', () => {
+      const withBonus = scoreModel(perplexitySonar, {
+        analysis: factualAnalysis,
+        allModels: models,
+        userTier: AccessTier.Free,
+      });
+
+      const factor = withBonus.factors.find((f) => f.name === FREE_TIER_PROVIDER_PREFERENCE_FACTOR);
+      expect(factor).toBeDefined();
+      expect(factor!.weightedScore).toBeGreaterThan(0);
+    });
+
+    it('does not apply bonus when user is on Lite tier', () => {
+      const result = scoreModel(perplexitySonar, {
+        analysis: factualAnalysis,
+        allModels: models,
+        userTier: AccessTier.Lite,
+      });
+
+      const factor = result.factors.find((f) => f.name === FREE_TIER_PROVIDER_PREFERENCE_FACTOR);
+      expect(factor).toBeUndefined();
+    });
+
+    it('does not apply bonus when user is on Pro tier', () => {
+      const result = scoreModel(perplexitySonar, {
+        analysis: factualAnalysis,
+        allModels: models,
+        userTier: AccessTier.Pro,
+      });
+
+      const factor = result.factors.find((f) => f.name === FREE_TIER_PROVIDER_PREFERENCE_FACTOR);
+      expect(factor).toBeUndefined();
+    });
+
+    it('does not apply bonus when userTier is undefined', () => {
+      const result = scoreModel(perplexitySonar, {
+        analysis: factualAnalysis,
+        allModels: models,
+      });
+
+      const factor = result.factors.find((f) => f.name === FREE_TIER_PROVIDER_PREFERENCE_FACTOR);
+      expect(factor).toBeUndefined();
+    });
+
+    it('does not apply bonus to non-Perplexity providers', () => {
+      const result = scoreModel(gpt5Mini, {
+        analysis: factualAnalysis,
+        allModels: models,
+        userTier: AccessTier.Free,
+      });
+
+      const factor = result.factors.find((f) => f.name === FREE_TIER_PROVIDER_PREFERENCE_FACTOR);
+      expect(factor).toBeUndefined();
+    });
+
+    it('does not apply bonus for low-intent-score queries (e.g. coding)', () => {
+      const codingAnalysis: QueryAnalysis = {
+        ...factualAnalysis,
+        intent: Intent.Coding,
+        domain: Domain.Technology,
+      };
+
+      const result = scoreModel(perplexitySonar, {
+        analysis: codingAnalysis,
+        allModels: models,
+        userTier: AccessTier.Free,
+      });
+
+      const factor = result.factors.find((f) => f.name === FREE_TIER_PROVIDER_PREFERENCE_FACTOR);
+      expect(factor).toBeUndefined();
+    });
+
+    it('does not apply bonus for math queries', () => {
+      const mathAnalysis: QueryAnalysis = {
+        ...factualAnalysis,
+        intent: Intent.Math,
+        domain: Domain.Science,
+      };
+
+      const result = scoreModel(perplexitySonar, {
+        analysis: mathAnalysis,
+        allModels: models,
+        userTier: AccessTier.Free,
+      });
+
+      const factor = result.factors.find((f) => f.name === FREE_TIER_PROVIDER_PREFERENCE_FACTOR);
+      expect(factor).toBeUndefined();
+    });
+
+    it('does not apply bonus for quick casual conversation', () => {
+      const quickConversation: QueryAnalysis = {
+        ...factualAnalysis,
+        intent: Intent.Conversation,
+        complexity: Complexity.Quick,
+      };
+
+      const result = scoreModel(perplexitySonar, {
+        analysis: quickConversation,
+        allModels: models,
+        userTier: AccessTier.Free,
+      });
+
+      const factor = result.factors.find((f) => f.name === FREE_TIER_PROVIDER_PREFERENCE_FACTOR);
+      expect(factor).toBeUndefined();
+    });
+
+    it('applies bonus for standard-complexity conversation', () => {
+      const standardConversation: QueryAnalysis = {
+        ...factualAnalysis,
+        intent: Intent.Conversation,
+        complexity: Complexity.Standard,
+      };
+
+      const result = scoreModel(perplexitySonar, {
+        analysis: standardConversation,
+        allModels: models,
+        userTier: AccessTier.Free,
+      });
+
+      const factor = result.factors.find((f) => f.name === FREE_TIER_PROVIDER_PREFERENCE_FACTOR);
+      expect(factor).toBeDefined();
+    });
+
+    it('applies bonus for quick factual queries (short fact-checks still benefit from citations)', () => {
+      const quickFactual: QueryAnalysis = {
+        ...factualAnalysis,
+        complexity: Complexity.Quick,
+      };
+
+      const result = scoreModel(perplexitySonar, {
+        analysis: quickFactual,
+        allModels: models,
+        userTier: AccessTier.Free,
+      });
+
+      const factor = result.factors.find((f) => f.name === FREE_TIER_PROVIDER_PREFERENCE_FACTOR);
+      expect(factor).toBeDefined();
+    });
+
+    it('respects user opt-out via avoidModels', () => {
+      const result = scoreModel(perplexitySonar, {
+        analysis: factualAnalysis,
+        allModels: models,
+        userTier: AccessTier.Free,
+        humanContext: {
+          preferences: { avoidModels: [perplexitySonar.id] },
+        },
+      });
+
+      const factor = result.factors.find((f) => f.name === FREE_TIER_PROVIDER_PREFERENCE_FACTOR);
+      expect(factor).toBeUndefined();
+    });
+
+    it('raises Perplexity above GPT-5 Mini for free tier factual queries', () => {
+      const perplexityScore = scoreModel(perplexitySonar, {
+        analysis: factualAnalysis,
+        allModels: models,
+        userTier: AccessTier.Free,
+      }).compositeScore;
+
+      const gpt5MiniScore = scoreModel(gpt5Mini, {
+        analysis: factualAnalysis,
+        allModels: models,
+        userTier: AccessTier.Free,
+      }).compositeScore;
+
+      expect(perplexityScore).toBeGreaterThan(gpt5MiniScore);
+    });
+
+    it('leaves GPT-5 Mini ahead of Perplexity for free tier coding queries', () => {
+      const codingAnalysis: QueryAnalysis = {
+        ...factualAnalysis,
+        intent: Intent.Coding,
+        domain: Domain.Technology,
+      };
+
+      const perplexityScore = scoreModel(perplexitySonar, {
+        analysis: codingAnalysis,
+        allModels: models,
+        userTier: AccessTier.Free,
+      }).compositeScore;
+
+      const gpt5MiniScore = scoreModel(gpt5Mini, {
+        analysis: codingAnalysis,
+        allModels: models,
+        userTier: AccessTier.Free,
+      }).compositeScore;
+
+      expect(gpt5MiniScore).toBeGreaterThan(perplexityScore);
     });
   });
 });
