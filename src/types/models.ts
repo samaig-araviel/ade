@@ -172,11 +172,16 @@ export interface ModelInfo {
     supportsFunctionCalling: boolean;
     supportsJsonMode: boolean;
     supportsWebSearch: boolean;
+    supportsExtendedThinking: boolean;
+    supportsImageGeneration: boolean;
+    supportsTTS: boolean;
+    supportsSTT: boolean;
   };
   performance: {
     avgLatencyMs: number;
     reliabilityPercent: number;
   };
   accessTier: AccessTier;
+  creditCost?: number;
   available: boolean;
 }
