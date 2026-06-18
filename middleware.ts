@@ -5,8 +5,11 @@ import { AdeAuthError, type AuthFailureReason } from "@/lib/auth/types";
 import { authMetrics } from "@/lib/metrics";
 
 /**
- * Edge middleware that gates every `/api/v1/*` endpoint except
- * `/api/v1/health`.
+ * Edge middleware that gates every `/api/v1/*` endpoint except the
+ * paths in `PUBLIC_PATHS` / `PUBLIC_PATH_PREFIXES`:
+ *   - `/api/v1/health`           – liveness probe
+ *   - `/api/v1/models`           – public model catalog
+ *   - `/api/v1/models/:id`       – public per-model lookup
  *
  * Rollout strategy:
  *   - `ADE_AUTH_REQUIRED=false` → auth runs in observe mode. Every
@@ -24,7 +27,13 @@ import { authMetrics } from "@/lib/metrics";
 
 assertRequiredEnvPresent();
 
-const PUBLIC_PATHS = new Set<string>(["/api/v1/health"]);
+const PUBLIC_PATHS = new Set<string>(["/api/v1/health", "/api/v1/models"]);
+const PUBLIC_PATH_PREFIXES = ["/api/v1/models/"];
+
+function isPublicPath(pathname: string): boolean {
+  if (PUBLIC_PATHS.has(pathname)) return true;
+  return PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
 
 function isAuthEnforced(): boolean {
   return process.env.ADE_AUTH_REQUIRED !== "false";
@@ -50,7 +59,7 @@ function buildUnauthorizedResponse(
 }
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
-  if (PUBLIC_PATHS.has(request.nextUrl.pathname)) {
+  if (isPublicPath(request.nextUrl.pathname)) {
     return NextResponse.next();
   }
 
