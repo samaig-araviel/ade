@@ -89,7 +89,7 @@ export default function ModelsPage() {
         </p>
       </div>
 
-      <div style={{ position: 'relative', marginBottom: 16 }}>
+      <div style={{ position: 'relative', marginBottom: 16, maxWidth: 380 }}>
         <Search
           style={{
             position: 'absolute',
