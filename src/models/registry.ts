@@ -2365,7 +2365,7 @@ const models: ModelDefinition[] = [
         accessTier: AccessTier.Lite, creditCost: 2, available: true,
     },
     // ---------------------------------------------------------------
-    // Claude Opus 4.8 (ANTHROPIC) — dormant
+    // Claude Opus 4.8 (ANTHROPIC)
     // ---------------------------------------------------------------
     {
         id: 'claude-opus-4-8',
@@ -2416,7 +2416,7 @@ const models: ModelDefinition[] = [
         specializations: ['creative_writing', 'reasoning', 'coding', 'agentic', 'agentic_coding', 'multimodal', 'long_context', 'instruction_following'],
         accessTier: AccessTier.Pro, creditCost: 22,
         toolPricing: { webSearchPer1k: 10.0 },
-        available: false,
+        available: true,
     },
     // ---------------------------------------------------------------
     // GPT-5.5 (OPENAI) — dormant
