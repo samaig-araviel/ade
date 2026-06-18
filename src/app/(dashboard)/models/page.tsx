@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   AudioLines,
   Box,
@@ -10,17 +10,31 @@ import {
   Filter,
   Globe,
   Loader2,
+  Search,
+  X,
   Zap,
 } from 'lucide-react';
 import { useAde } from '@/lib/dashboard/context';
 import { MODELS_PER_PAGE } from '@/lib/dashboard/constants';
 import { getProviderColor } from '@/lib/dashboard/helpers';
+import type { ModelInfo } from '@/lib/dashboard/types';
 
 const ALL_PROVIDERS = 'all';
+
+function matchesSearch(model: ModelInfo, needle: string): boolean {
+  if (!needle) return true;
+  const q = needle.toLowerCase();
+  return (
+    model.name.toLowerCase().includes(q) ||
+    model.id.toLowerCase().includes(q) ||
+    model.provider.toLowerCase().includes(q)
+  );
+}
 
 export default function ModelsPage() {
   const { models, modelsLoading, modelsError, refetchModels } = useAde();
   const [selectedProvider, setSelectedProvider] = useState<string>(ALL_PROVIDERS);
+  const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
 
   const providers = useMemo(
@@ -28,13 +42,15 @@ export default function ModelsPage() {
     [models]
   );
 
-  const filteredModels = useMemo(
-    () =>
-      selectedProvider === ALL_PROVIDERS
-        ? models
-        : models.filter((m) => m.provider.toLowerCase() === selectedProvider),
-    [models, selectedProvider]
-  );
+  const filteredModels = useMemo(() => {
+    const trimmed = searchQuery.trim();
+    return models.filter((m) => {
+      if (selectedProvider !== ALL_PROVIDERS && m.provider.toLowerCase() !== selectedProvider) {
+        return false;
+      }
+      return matchesSearch(m, trimmed);
+    });
+  }, [models, selectedProvider, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filteredModels.length / MODELS_PER_PAGE));
   const safePage = Math.min(page, totalPages);
@@ -43,10 +59,23 @@ export default function ModelsPage() {
     safePage * MODELS_PER_PAGE
   );
 
-  const onSelectProvider = (provider: string) => {
+  const hasActiveFilter = selectedProvider !== ALL_PROVIDERS || searchQuery.trim().length > 0;
+
+  const selectProvider = useCallback((provider: string) => {
     setSelectedProvider(provider);
     setPage(1);
-  };
+  }, []);
+
+  const updateSearch = useCallback((value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setSelectedProvider(ALL_PROVIDERS);
+    setSearchQuery('');
+    setPage(1);
+  }, []);
 
   return (
     <div>
@@ -60,17 +89,83 @@ export default function ModelsPage() {
         </p>
       </div>
 
+      <div style={{ position: 'relative', marginBottom: 16 }}>
+        <Search
+          style={{
+            position: 'absolute',
+            left: 14,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 16,
+            height: 16,
+            color: '#9CA3AF',
+            pointerEvents: 'none',
+          }}
+        />
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => updateSearch(e.target.value)}
+          placeholder="Search by model name, ID, or provider..."
+          aria-label="Search models"
+          style={{
+            width: '100%',
+            padding: searchQuery ? '11px 42px 11px 42px' : '11px 14px 11px 42px',
+            fontSize: 14,
+            color: '#111',
+            background: '#fff',
+            border: '1px solid #E5E5E5',
+            borderRadius: 10,
+            outline: 'none',
+            transition: 'border-color 0.15s, box-shadow 0.15s',
+            fontFamily: 'inherit',
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = '#111';
+            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(17, 17, 17, 0.06)';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = '#E5E5E5';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        />
+        {searchQuery && (
+          <button
+            onClick={() => updateSearch('')}
+            aria-label="Clear search"
+            style={{
+              position: 'absolute',
+              right: 10,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 24,
+              height: 24,
+              background: '#F3F4F6',
+              border: 'none',
+              borderRadius: 6,
+              cursor: 'pointer',
+              color: '#6B7280',
+            }}
+          >
+            <X style={{ width: 12, height: 12 }} />
+          </button>
+        )}
+      </div>
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <Filter style={{ width: 14, height: 14, color: '#6B7280' }} />
           <span style={{ fontSize: 13, color: '#6B7280' }}>Filter by provider:</span>
-          <div style={{ display: 'flex', gap: 4 }}>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
             {providers.map((provider) => {
               const active = selectedProvider === provider;
               return (
                 <button
                   key={provider}
-                  onClick={() => onSelectProvider(provider)}
+                  onClick={() => selectProvider(provider)}
                   style={{
                     padding: '6px 12px',
                     fontSize: 12,
@@ -113,7 +208,49 @@ export default function ModelsPage() {
         </div>
       )}
 
-      {!modelsLoading && !modelsError && (
+      {!modelsLoading && !modelsError && filteredModels.length === 0 && (
+        <div style={{ padding: '56px 32px', background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, textAlign: 'center' }}>
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              background: '#F3F4F6',
+              borderRadius: 12,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}
+          >
+            <Search style={{ width: 20, height: 20, color: '#9CA3AF' }} />
+          </div>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: '#111', margin: '0 0 4px' }}>
+            No models match your filters
+          </h3>
+          <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 16px' }}>
+            Try a different search term or clear the filters to see all models.
+          </p>
+          {hasActiveFilter && (
+            <button
+              onClick={clearFilters}
+              style={{
+                padding: '8px 16px',
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#fff',
+                background: '#111',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+              }}
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+
+      {!modelsLoading && !modelsError && filteredModels.length > 0 && (
         <>
           <div className="models-grid" style={{ display: 'grid', gap: 16 }}>
             {paginatedModels.map((model) => (
