@@ -2514,12 +2514,19 @@ export function toModelInfo(model: ModelDefinition): ModelInfo {
             supportsFunctionCalling: model.capabilities.supportsFunctionCalling,
             supportsJsonMode: model.capabilities.supportsJsonMode,
             supportsWebSearch: model.capabilities.supportsWebSearch ?? false,
+            supportsExtendedThinking:
+                (model.capabilities.supportsExtendedThinking ?? false) ||
+                (model.capabilities.supportsAdaptiveThinking ?? false),
+            supportsImageGeneration: model.capabilities.supportsImageGeneration ?? false,
+            supportsTTS: model.capabilities.supportsTTS ?? false,
+            supportsSTT: model.capabilities.supportsSTT ?? false,
         },
         performance: {
             avgLatencyMs: model.performance.avgLatencyMs,
             reliabilityPercent: model.performance.reliabilityPercent,
         },
         accessTier: model.accessTier,
+        creditCost: model.creditCost,
         available: model.available,
     };
 }
