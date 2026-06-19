@@ -1648,7 +1648,7 @@ const models: ModelDefinition[] = [
     {
         id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'google',
         description: 'Fast workhorse with thinking and native image generation. 1M context. Great balance of speed and quality.',
-        pricing: { inputPer1k: 7.5e-05, outputPer1k: 0.0003, cachedInputPer1k: 1.875e-05 },
+        pricing: { inputPer1k: 0.0003, outputPer1k: 0.0025, cachedInputPer1k: 7.5e-05 },
         capabilities: {
             maxInputTokens: 1000000, maxOutputTokens: 65536,
             supportsStreaming: true, supportsVision: true, supportsAudio: true,
@@ -1735,7 +1735,7 @@ const models: ModelDefinition[] = [
     {
         id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite', provider: 'google',
         description: 'Ultra-fast, cost-efficient Gemini. 1M context. Best for high-volume, latency-sensitive tasks.',
-        pricing: { inputPer1k: 2.5e-05, outputPer1k: 0.00015, cachedInputPer1k: 6.25e-06 },
+        pricing: { inputPer1k: 0.0001, outputPer1k: 0.0004, cachedInputPer1k: 2.5e-05 },
         capabilities: {
             maxInputTokens: 1000000, maxOutputTokens: 65536,
             supportsStreaming: true, supportsVision: true, supportsAudio: true,
