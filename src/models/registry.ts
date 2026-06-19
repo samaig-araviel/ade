@@ -424,7 +424,7 @@ const models: ModelDefinition[] = [
         },
         specializations: ['fast_tasks', 'budget', 'classification'],
         accessTier: AccessTier.Free, creditCost: 2,
-        toolPricing: { webSearchPer1k: 10.0 }, available: true,
+        toolPricing: { webSearchPer1k: 10.0 }, available: false,
     },
     // ---------------------------------------------------------------
     // GPT-5.5 (OPENAI)
@@ -1214,7 +1214,7 @@ const models: ModelDefinition[] = [
     {
         id: 'gpt-image-2', name: 'GPT Image 2', provider: 'openai',
         description: 'OpenAI flagship image generation. Near-perfect multilingual text rendering, complex compositions, reasoning-driven outputs. Supports transparent backgrounds and arbitrary sizes.',
-        pricing: { inputPer1k: 0.005, outputPer1k: 0.03, cachedInputPer1k: 0.00125 },
+        pricing: { inputPer1k: 0.008, outputPer1k: 0.03, cachedInputPer1k: 0.00125 },
         capabilities: {
             maxInputTokens: 32000, maxOutputTokens: 4096,
             supportsStreaming: true, supportsVision: true, supportsAudio: false,
@@ -1518,7 +1518,7 @@ const models: ModelDefinition[] = [
     {
         id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro Preview', provider: 'google',
         description: 'Latest Gemini flagship. Best reasoning and coding from Google. 1M context window.',
-        pricing: { inputPer1k: 0.00125, outputPer1k: 0.01, cachedInputPer1k: 0.000315 },
+        pricing: { inputPer1k: 0.002, outputPer1k: 0.012, cachedInputPer1k: 0.0005 },
         capabilities: {
             maxInputTokens: 1000000, maxOutputTokens: 65536,
             supportsStreaming: true, supportsVision: true, supportsAudio: true,
