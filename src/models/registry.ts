@@ -1773,7 +1773,50 @@ const models: ModelDefinition[] = [
         accessTier: AccessTier.Free, creditCost: 1, available: true,
     },
     // ---------------------------------------------------------------
-    // Nano Banana 2 (GOOGLE)
+    // Nano Banana 2 — Gemini 3.1 Flash Image GA (GOOGLE)
+    // ---------------------------------------------------------------
+    {
+        id: 'gemini-3.1-flash-image', name: 'Nano Banana 2', provider: 'google',
+        description: 'GA image generation from Gemini 3.1. Up to 4K resolution, advanced text rendering, grounding with Google Search for images, mix up to 14 reference images.',
+        pricing: { inputPer1k: 0.0005, outputPer1k: 0.06 },
+        capabilities: {
+            maxInputTokens: 32000, maxOutputTokens: 8192,
+            supportsStreaming: false, supportsVision: true, supportsAudio: false,
+            supportsFunctionCalling: false, supportsJsonMode: false, supportsWebSearch: true,
+            supportsReasoning: false, supportsImageGeneration: true,
+            supportsExtendedThinking: false, supportsAdaptiveThinking: false,
+            supportsCodeExecution: false, supportsTTS: false, supportsSTT: false,
+            supportsVideoGeneration: false, supportsRealtimeAudio: false,
+            visionScore: 0.92, audioScore: 0,
+        },
+        performance: { avgLatencyMs: 4000, reliabilityPercent: 99.5 },
+        taskStrengths: {
+            intents: {
+                [Intent.Coding]: 0.08, [Intent.Creative]: 0.94, [Intent.Analysis]: 0.15, [Intent.Factual]: 0.1,
+                [Intent.Conversation]: 0.1, [Intent.Task]: 0.4, [Intent.Brainstorm]: 0.55, [Intent.Translation]: 0.05,
+                [Intent.Summarization]: 0.05, [Intent.Extraction]: 0.08,
+                [Intent.ImageGeneration]: 0.96, [Intent.VideoGeneration]: 0.0,
+                [Intent.VoiceGeneration]: 0.0, [Intent.MusicGeneration]: 0.0,
+                [Intent.Research]: 0.04, [Intent.Math]: 0.04, [Intent.Planning]: 0.08,
+            },
+            domains: {
+                [Domain.Technology]: 0.6, [Domain.Business]: 0.72, [Domain.Health]: 0.54, [Domain.Legal]: 0.3,
+                [Domain.Finance]: 0.44, [Domain.Education]: 0.64, [Domain.Science]: 0.6, [Domain.CreativeArts]: 0.98,
+                [Domain.Lifestyle]: 0.86, [Domain.General]: 0.8, [Domain.Government]: 0.34, [Domain.Relationships]: 0.5,
+                [Domain.Shopping]: 0.74, [Domain.EventPlanning]: 0.7, [Domain.Weather]: 0.4, [Domain.Sports]: 0.54,
+            },
+            complexity: { [Complexity.Quick]: 0.88, [Complexity.Standard]: 0.92, [Complexity.Demanding]: 0.78 },
+        },
+        humanFactors: {
+            empathyScore: 0.48, playfulnessScore: 0.84, professionalismScore: 0.88, conciseness: 0.95,
+            verbosity: 0.2, conversationalTone: 0.42, formalTone: 0.7,
+            lateNightSuitability: 0.85, workHoursSuitability: 0.9,
+        },
+        specializations: ['image_generation'],
+        accessTier: AccessTier.Pro, creditCost: 8, available: true,
+    },
+    // ---------------------------------------------------------------
+    // Nano Banana 2 Preview (GOOGLE)
     // ---------------------------------------------------------------
     {
         id: 'gemini-3.1-flash-image-preview', name: 'Nano Banana 2', provider: 'google',
