@@ -130,8 +130,18 @@ export type Specialization =
  * if we ever choose to expose deprecated models during a transition window.
  */
 export interface DeprecationInfo {
-  /** ISO date the provider deprecated the model. */
-  since: string;
+  /**
+   * ISO date the model was deprecated. Used for audit, sorting, and
+   * "deprecated since" UI surfacing.
+   */
+  dateDeprecated: string;
+  /**
+   * ISO date the model actually stops working (provider sunset). Set this
+   * when the provider has announced a shutdown date; routing/alerting can
+   * sort by `dateSunset` to surface upcoming retirements that still need
+   * a replacement wired up.
+   */
+  dateSunset?: string;
   /** Optional ID of the documented replacement model. */
   replacedBy?: string;
   /** Optional human-readable reason for deprecation. */

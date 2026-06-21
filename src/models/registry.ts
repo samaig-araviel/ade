@@ -426,7 +426,7 @@ const models: ModelDefinition[] = [
         accessTier: AccessTier.Free, creditCost: 2,
         toolPricing: { webSearchPer1k: 10.0 }, available: false,
         deprecated: {
-            since: '2026-04-01',
+            dateDeprecated: '2026-04-01',
             replacedBy: 'claude-haiku-4-5-20251001',
             reason: 'Retired from Anthropic-direct API; still available on Bedrock/Vertex.',
         },
@@ -1861,7 +1861,13 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.85, workHoursSuitability: 0.88,
         },
         specializations: ['image_generation'],
-        accessTier: AccessTier.Lite, creditCost: 4, available: true,
+        accessTier: AccessTier.Lite, creditCost: 4, available: false,
+        deprecated: {
+            dateDeprecated: '2026-06-21',
+            dateSunset: '2026-06-25',
+            replacedBy: 'gemini-3.1-flash-image',
+            reason: 'Preview retired by Google; superseded by Gemini 3.1 Flash Image GA.',
+        },
     },
     // ---------------------------------------------------------------
     // Nano Banana (GOOGLE)
