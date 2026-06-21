@@ -1953,7 +1953,13 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.88, workHoursSuitability: 0.88,
         },
         specializations: ['image_generation', 'fast_tasks'],
-        accessTier: AccessTier.Free, creditCost: 2, available: true,
+        accessTier: AccessTier.Free, creditCost: 2, available: false,
+        deprecated: {
+            dateDeprecated: '2026-06-21',
+            dateSunset: '2026-08-17',
+            replacedBy: 'gemini-3.1-flash-image',
+            reason: 'Imagen 4 family retiring; Google directs users to Gemini image models (Nano Banana 2).',
+        },
     },
     // ---------------------------------------------------------------
     // Imagen 4 Standard (GOOGLE)
@@ -1996,7 +2002,13 @@ const models: ModelDefinition[] = [
             lateNightSuitability: 0.85, workHoursSuitability: 0.9,
         },
         specializations: ['image_generation'],
-        accessTier: AccessTier.Lite, creditCost: 6, available: true,
+        accessTier: AccessTier.Lite, creditCost: 6, available: false,
+        deprecated: {
+            dateDeprecated: '2026-06-21',
+            dateSunset: '2026-08-17',
+            replacedBy: 'gemini-3.1-flash-image',
+            reason: 'Imagen 4 family retiring; Google directs users to Gemini image models (Nano Banana 2).',
+        },
     },
     // ---------------------------------------------------------------
     // Veo 3.1 (GOOGLE)
