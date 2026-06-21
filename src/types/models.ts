@@ -117,6 +117,27 @@ export type Specialization =
   | 'comprehensive_reports'
   | 'ultra_premium';
 
+/**
+ * Lifecycle metadata for a deprecated model.
+ *
+ * Distinct from `available: false` (which can also mean "dormant /
+ * pre-positioned, not enabled yet"). When `deprecated` is set, the model has
+ * been announced as retiring or already retired by its provider and should
+ * also carry `available: false` so it does not surface in the catalog.
+ *
+ * The fields here are documentation + audit metadata: the routing/UI layer
+ * uses them to log structured deprecation events and to display sunset info
+ * if we ever choose to expose deprecated models during a transition window.
+ */
+export interface DeprecationInfo {
+  /** ISO date the provider deprecated the model. */
+  since: string;
+  /** Optional ID of the documented replacement model. */
+  replacedBy?: string;
+  /** Optional human-readable reason for deprecation. */
+  reason?: string;
+}
+
 // Complete model definition
 export interface ModelDefinition {
   // Identity
@@ -154,6 +175,10 @@ export interface ModelDefinition {
 
   // Availability
   available: boolean;
+
+  // Lifecycle — set when the provider has announced deprecation. Always
+  // accompanied by `available: false` so the catalog hides it.
+  deprecated?: DeprecationInfo;
 }
 
 // Simplified model info for API responses
@@ -184,4 +209,5 @@ export interface ModelInfo {
   accessTier: AccessTier;
   creditCost?: number;
   available: boolean;
+  deprecated?: DeprecationInfo;
 }

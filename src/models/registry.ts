@@ -425,6 +425,11 @@ const models: ModelDefinition[] = [
         specializations: ['fast_tasks', 'budget', 'classification'],
         accessTier: AccessTier.Free, creditCost: 2,
         toolPricing: { webSearchPer1k: 10.0 }, available: false,
+        deprecated: {
+            since: '2026-04-01',
+            replacedBy: 'claude-haiku-4-5-20251001',
+            reason: 'Retired from Anthropic-direct API; still available on Bedrock/Vertex.',
+        },
     },
     // ---------------------------------------------------------------
     // GPT-5.5 (OPENAI)
@@ -2889,6 +2894,7 @@ export function toModelInfo(model: ModelDefinition): ModelInfo {
         accessTier: model.accessTier,
         creditCost: model.creditCost,
         available: model.available,
+        ...(model.deprecated ? { deprecated: model.deprecated } : {}),
     };
 }
 
